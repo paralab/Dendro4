@@ -96,49 +96,30 @@ int pickInterProcessorBoundaryNodes(const std::vector<ot::TreeNode> & nodes,
 
 
   std::vector<ot::TreeNode> neighbourOct;
-  ot::TreeNode tmp;
+
   for(int i=0;i<nodes.size();i++)
   {
-    tmp=nodes[i].getTop();
-    if(!tmp.isRoot())
-      neighbourOct.push_back(tmp);
 
-    tmp=nodes[i].getBottom();
-    if(!tmp.isRoot())
-      neighbourOct.push_back(tmp);
 
-    tmp=nodes[i].getRight();
-    if(!tmp.isRoot())
-      neighbourOct.push_back(tmp);
+    neighbourOct=nodes[i].getAllNeighbours();
+    //sort the neighbour octants
+    seq::makeVectorUnique(neighbourOct,false);
+    ot::TreeNode negCorner;
+    if(!neighbourOct[0].isRoot())
+      negCorner=neighbourOct[0];
+    else
+      negCorner=neighbourOct[1];
 
-    tmp=nodes[i].getLeft();
-    if(!tmp.isRoot())
-      neighbourOct.push_back(tmp);
-
-    tmp=nodes[i].getFront();
-    if(!tmp.isRoot())
-      neighbourOct.push_back(tmp);
-
-    tmp=nodes[i].getBack();
-    if(!tmp.isRoot())
-      neighbourOct.push_back(tmp);
-
-    bool add=false;
-    for(int j=0;j<neighbourOct.size();j++)
-    {
-      if(!(nodes[0]<= neighbourOct[j] && neighbourOct[j]<=nodes[nodes.size()-1]))
-      {
-        add=true;
-        break;
-      }
+    ot::TreeNode posCorner=neighbourOct[neighbourOct.size()-1];
+    bool add = true;
+    if( (negCorner>= firstBlock) && ( posCorner <= lastBlock.getDLD()) ) {\
+      add = false;
     }
-
-    if(add)
-    {
+    if (add) {
       res.push_back(nodes[i]);
     }
-
     neighbourOct.clear();
+
 
   }
 #else
@@ -164,7 +145,7 @@ int pickInterProcessorBoundaryNodes(const std::vector<ot::TreeNode> & nodes,
     ot::TreeNode negCorner(negX, negY, negZ, myLevel, dim, maxDepth);
     ot::TreeNode posCorner(posX, posY, posZ, maxDepth, dim, maxDepth);
     bool add = true;
-    if( (negCorner >= firstBlock) && ( posCorner <= lastBlock.getDLD()) ) {\
+    if( (negCorner>= firstBlock) && ( posCorner <= lastBlock.getDLD()) ) {\
       add = false;
     }
     if (add) {
@@ -173,7 +154,7 @@ int pickInterProcessorBoundaryNodes(const std::vector<ot::TreeNode> & nodes,
   }
 #endif
 
-  treeNodesTovtk(res,rank,"oda_res");
+
 
   return 1;
   
