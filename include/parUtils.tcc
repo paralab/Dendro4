@@ -1312,9 +1312,9 @@ namespace par {
     std::vector<T> tmpVec;
     if (!isSorted) {
       //Sort partitions vecT and tmpVec internally.
-      // std::cout << "  rank: " << rank << " before samplesort, size: " << vecT.size() << std::endl;
+      //std::cout << "  rank: " << rank << " before samplesort, size: " << vecT.size() << std::endl;
       par::sampleSort<T>(vecT, tmpVec, comm);
-      // std::cout << "  rank: " << rank << " after samplesort, size: " << tmpVec.size() << std::endl;
+      //std::cout << "  rank: " << rank << " after samplesort, size: " << tmpVec.size() << std::endl;
     } else {
       swap(tmpVec, vecT);
     }
@@ -1438,7 +1438,7 @@ namespace par {
     if (npes == 1) {
       std::cout << " have to use seq. sort"
       << " since npes = 1 . inpSize: " << (arr.size()) << std::endl;
-//        std::sort(arr.begin(), arr.end());
+       // std::sort(arr.begin(), arr.end());
       omp_par::merge_sort(arr.begin(), arr.end());
       SortedElem = arr;
       PROF_SORT_END

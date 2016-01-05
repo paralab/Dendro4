@@ -1291,9 +1291,11 @@ namespace ot {
     for(unsigned int i = 0; i < allBoundaryLeaves.size(); i++) {
       ot::TreeNode thisOct = allBoundaryLeaves[i];
       ot::TreeNode thisOctParent = thisOct.getParent();
-      unsigned int thisCnum = ((unsigned int)(thisOct.getChildNumber()));
+      //unsigned int thisCnum = ((unsigned int)(thisOct.getChildNumber()));
+      // oda_change_milinda
+      unsigned int thisCnum = ((unsigned int)(thisOct.getMortonIndex()));
       std::vector<ot::TreeNode> siblingsToAdd;
-      thisOctParent.addChildren(siblingsToAdd);
+      thisOctParent.addChildrenMorton(siblingsToAdd);
       for(unsigned int j=0; j < 8; j++) {
         if( (j != thisCnum) && (j != (7-thisCnum)) ) {
           if( (siblingsToAdd[j] >= myFirstOctant) && 
@@ -1313,6 +1315,9 @@ namespace ot {
 
     //The two lists are independently sorted and unique, Now we do a linear
     //pass and merge them so that the result is also sorted and unique.
+
+
+    assert(seq::test::isUniqueAndSorted(tmpAllBoundaryLeaves));
 
     while ( (tmpCnt < tmpAllBoundaryLeaves.size()) &&
         (bdyCnt < allBoundaryLeaves.size()) ) {
@@ -1627,7 +1632,9 @@ namespace ot {
 
         ot::TreeNode parNode = allBoundaryLeaves[j].getParent();
         //@hari: Is this correct for Hilbert Ordering.
-        unsigned int myCnum = allBoundaryLeaves[j].getChildNumber();
+        //unsigned int myCnum = allBoundaryLeaves[j].getChildNumber();
+
+        unsigned int myCnum = allBoundaryLeaves[j].getMortonIndex();
         unsigned int parX = parNode.getX();
         unsigned int parY = parNode.getY();
         unsigned int parZ = parNode.getZ();
@@ -1708,6 +1715,8 @@ namespace ot {
       }//end if hanging anchor
 
 
+      //assert(par::test::isUniqueAndSorted(minsOfBlocks,MPI_COMM_WORLD));
+      assert(seq::test::isSorted(minsOfBlocks));
 
       std::vector<unsigned int> pIds;
       for(int k = 0; k < parVertices.size(); k++) {

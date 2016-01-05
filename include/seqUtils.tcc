@@ -9,6 +9,8 @@
 #include <vector>
 #include <cstdlib>
 #include <algorithm>
+#include <assert.h>
+#include <test/testUtils.h>
 
 namespace seq {
 
@@ -54,6 +56,8 @@ namespace seq {
   template <typename T>
     bool maxLowerBound(const std::vector<T>& arr, const T & key, unsigned int &ret_idx,
         unsigned int* leftIdx, unsigned int* rightIdx ) {
+
+
       unsigned int nelem = static_cast<unsigned int>(arr.size());
       ret_idx = 0;
       if(!nelem) { return false;}

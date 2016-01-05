@@ -319,38 +319,46 @@ void DynamicPartitioning(std::vector<ot::TreeNode>& partition, double slack, MPI
 
         global_nm_faces_mean=global_nm_faces_sum/size;
 
-//        if(!rank && global_opt>global_nm_faces_min)
-//        {
-//            slackCnt_opt=i;
-//            global_opt_stat[0]=global_nm_faces_min;
-//            global_opt_stat[1]=global_nm_faces_max;
-//            global_opt_stat[2]=global_nm_faces_mean;
-//        }
-
-
-        if (!rank) {
-            std::cout << YLW << "======= SLACK NODE:"<<ghosted[slackCnt+partition.size()+i]<<"========" << NRM << std::endl;
-            std::cout << RED " Boundary Surfaces (min):"<<global_nm_faces_min<< NRM << std::endl;
-            std::cout << RED " Boundary Surfaces (max):"<<global_nm_faces_max<< NRM << std::endl;
-            std::cout << RED " Boundary Surfaces (mean):"<<global_nm_faces_mean<< NRM << std::endl;
-            std::cout << YLW << "===============================================\n" << NRM << std::endl;
+        if(global_opt>global_nm_faces_min)
+        {
+            slackCnt_opt=i;
+            global_opt_stat[0]=global_nm_faces_min;
+            global_opt_stat[1]=global_nm_faces_max;
+            global_opt_stat[2]=global_nm_faces_mean;
         }
+
+
+//        if (!rank) {
+//            std::cout << YLW << "======= SLACK NODE:"<<ghosted[slackCnt+partition.size()+i]<<"========" << NRM << std::endl;
+//            std::cout << RED " Boundary Surfaces (min):"<<global_nm_faces_min<< NRM << std::endl;
+//            std::cout << RED " Boundary Surfaces (max):"<<global_nm_faces_max<< NRM << std::endl;
+//            std::cout << RED " Boundary Surfaces (mean):"<<global_nm_faces_mean<< NRM << std::endl;
+//            std::cout << YLW << "===============================================\n" << NRM << std::endl;
+//        }
 
 
     }
 
-//    MPI_Barrier(MPI_COMM_WORLD);
-//
-//    std::cout<<"Rank:"<<rank<<" Optiaml Slack index:"<<slackCnt_opt<<std::endl;
-//
-//
-//    if (!rank) {
-//            std::cout << YLW << "=======OPTIMAL NUMBER OF BOUNDARY SURFACES========" << NRM << std::endl;
-//            std::cout << RED " Boundary Surfaces (min):"<<global_opt_stat[0]<< NRM << std::endl;
-//            std::cout << RED " Boundary Surfaces (max):"<<global_opt_stat[1]<< NRM << std::endl;
-//            std::cout << RED " Boundary Surfaces (mean):"<<global_opt_stat[2]<< NRM << std::endl;
-//            std::cout << YLW << "===============================================\n" << NRM << std::endl;
-//    }
+    MPI_Barrier(MPI_COMM_WORLD);
 
+
+    if (!rank) {
+            std::cout<<"Rank:"<<rank<<" Optiaml Slack index:"<<slackCnt_opt<<std::endl;
+            std::cout << YLW << "=======OPTIMAL NUMBER OF BOUNDARY SURFACES========" << NRM << std::endl;
+            std::cout << RED " Boundary Surfaces (min):"<<global_opt_stat[0]<< NRM << std::endl;
+            std::cout << RED " Boundary Surfaces (max):"<<global_opt_stat[1]<< NRM << std::endl;
+            std::cout << RED " Boundary Surfaces (mean):"<<global_opt_stat[2]<< NRM << std::endl;
+            std::cout << YLW << "===============================================\n" << NRM << std::endl;
+    }
+
+
+
+
+
+
+
+
+    delete [] bdy_data;
+    ghosted.clear();
 
 }

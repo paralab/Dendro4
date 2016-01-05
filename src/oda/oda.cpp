@@ -186,28 +186,22 @@ namespace ot {
 
       DA_FactoryPart0(in, comm, activeInputComm, compressLut, iAmActive);
 
-      if(!rank)
-          std::cout<<"ODA Part 0 completed"<<std::endl;
 
     if(m_bIamActive) {
       DA_FactoryPart1(in);
-      if(!rank)
-            std::cout<<"ODA Part 1 completed"<<std::endl;
+      DA_FactoryPart2(in);
 
-       DA_FactoryPart2(in);
-       if(!rank)
-           std::cout<<"ODA Part 2 completed"<<std::endl;
-
+#ifdef HILBERT_ORDERING
         std::vector<ot::TreeNode> tmpIn;
         par::sampleSort(in,tmpIn,activeInputComm);
         in=tmpIn;
         tmpIn.clear();
-
+#endif
 
       DA_FactoryPart3(in, comm, compressLut, blocksPtr, iAmActive);
 
-       if(!rank)
-           std::cout<<"ODA Part 3 completed"<<std::endl;
+//       if(!rank)
+//           std::cout<<"ODA Part 3 completed"<<std::endl;
 
     }
 

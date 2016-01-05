@@ -158,7 +158,18 @@ void DA::DA_FactoryPart1(std::vector<ot::TreeNode>& in) {
   //Guarantee: in remains globally sorted in the end.
   //positiveBoundaryOctants need not be globally sorted, in fact I don't think
   //it will be sorted even on 1 processor.
+  assert(par::test::isUniqueAndSorted(in,m_mpiCommActive));
   addBoundaryNodesType1(in, positiveBoundaryOctants, m_uiDimension, m_uiMaxDepth);
+  //@hari: After Boundary nodes calculation the in won't be sorted due to embedding the current octree in one level higher. Hence we need to sort it using sample sort. This is a must.
+
+#ifdef HILBERT_ORDERING
+  std::vector<ot::TreeNode> tmpTN;
+  par::sampleSort(in,tmpTN,m_mpiCommActive);
+  in.clear();
+  in=tmpTN;
+  tmpTN.clear();
+#endif
+
   //treeNodesTovtk(positiveBoundaryOctants,rank,"positive_bdy_octs");
   // Update the maxDepth ...
   m_uiMaxDepth = m_uiMaxDepth + 1;
@@ -179,10 +190,11 @@ void DA::DA_FactoryPart1(std::vector<ot::TreeNode>& in) {
 
   }
 
+  assert(par::test::isUniqueAndSorted(positiveBoundaryOctants,m_mpiCommActive));
+
   par::concatenate<ot::TreeNode>(in, positiveBoundaryOctants, m_mpiCommActive);
   positiveBoundaryOctants.clear();
-  // @Hari: m_uiLevel corrupt bug.
-  //NOTE: @hari: After the concatanation the m_uiLevel get invalid values.
+  assert(par::test::isUniqueAndSorted(in,m_mpiCommActive));
 
   PROF_BUILD_DA_STAGE1_END
 }//end function
@@ -193,7 +205,7 @@ void DA::DA_FactoryPart2(std::vector<ot::TreeNode>& in) {
 #endif
   PROF_BUILD_DA_STAGE2_BEGIN
 
-    assert(!in.empty());
+  assert(!in.empty());
   //Marks regular nodes. MUST be called before DA_blockPartStage2
   //Assumption: in is globally sorted at this point, including positive
   //boundaries 
@@ -224,7 +236,7 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
   DendroIntL globalSizeBefore; 
   par::Mpi_Allreduce<DendroIntL>(&localSizeBefore, &globalSizeBefore, 1, MPI_SUM, m_mpiCommActive);
 
-  //assert(par::test::isUniqueAndSorted(in,m_mpiCommActive));
+  assert(par::test::isUniqueAndSorted(in,m_mpiCommActive));
 
   //Partition in and create blocks (blocks must be globally sorted).
   std::vector<ot::TreeNode> blocks;
@@ -286,17 +298,17 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
 
 
     ot::blockPartStage1(in, blocks, m_uiDimension, m_uiMaxDepth, m_mpiCommActive);
-    if(!m_iRankActive)
-       std::cout<<GRN<<"ot::blockPartStage1 is completed."<<NRM<<std::endl;
+//    if(!m_iRankActive)
+//       std::cout<<GRN<<"ot::blockPartStage1 is completed."<<NRM<<std::endl;
 
     PROF_DA_BPART1_END
 
       PROF_DA_BPART2_BEGIN
 
     DA_blockPartStage2(in, blocks, m_uiDimension, m_uiMaxDepth, m_mpiCommActive);
-
-    if(!m_iRankActive)
-      std::cout<<GRN<<"DA_blockPartStage2 is completed."<<NRM<<std::endl;
+//    treeNodesTovtk(blocks,m_iRankActive,"oda_blocks");
+//    if(!m_iRankActive)
+//      std::cout<<GRN<<"DA_blockPartStage2 is completed."<<NRM<<std::endl;
 
     PROF_DA_BPART2_END
   } else {
@@ -307,8 +319,8 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
 
     DA_blockPartStage3(in, blocks, m_tnMinAllBlocks, m_uiDimension, m_uiMaxDepth, m_mpiCommActive);
 
-  if(!m_iRankActive)
-      std::cout<<GRN<<"DA_blockPartStage3 is completed."<<NRM<<std::endl;
+//  if(!m_iRankActive)
+//      std::cout<<GRN<<"DA_blockPartStage3 is completed."<<NRM<<std::endl;
   PROF_DA_BPART3_END
 
     //Store Blocks. 
@@ -431,21 +443,14 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
 
   // first let's pick boundary nodes on each proc.
   std::vector<ot::TreeNode> allBoundaryLeaves;
-  treeNodesTovtk(blocks,rank,"oda_blocks");
-  treeNodesTovtk(in,rank,"oda_in");
 
   pickInterProcessorBoundaryNodes(in, allBoundaryLeaves, blocks[0], blocks[blocks.size() - 1]);
-  //assert(par::test::isUniqueAndSorted(blocks,MPI_COMM_WORLD));
-
-  treeNodesTovtk(allBoundaryLeaves,rank,"oda_interProcessBoundary");
 
   ot::TreeNode myFirstOctant = in[0];
   ot::TreeNode myLastOctant = in[in.size() - 1];
 
   includeSiblingsOfBoundary(allBoundaryLeaves, myFirstOctant, myLastOctant);
 
-
-  treeNodesTovtk(allBoundaryLeaves,rank,"oda_siblingsOfBoundary");
 
   PROF_BUILD_DA_STAGE4_END
 #ifdef __PROF_WITH_BARRIER__
@@ -496,6 +501,10 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
 
   allBoundaryLeaves.clear();
   blocks.clear();
+
+  assert(seq::test::isUniqueAndSorted(m_tnMinAllBlocks));
+
+  assert(par::test::isSorted(in,m_mpiCommActive));
 
 #ifdef __DEBUG_DA_PUBLIC__
   MPI_Barrier(m_mpiCommActive);
@@ -646,6 +655,10 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
   //only decendants of these blocks, hence recvK[i][j] < recvK[i+][k] for all i,j
   //and k.
   // PreGhost ....
+
+
+
+
   m_uiPreGhostElementSize = 0;
   for (int i=0; i<myOff; i++) {
     localOcts[i] = recvK[i];
@@ -679,10 +692,13 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
 
   m_uiLocalBufferSize = static_cast<unsigned int>(localOcts.size());
 
-
-
-
-
+//
+//  std::vector<ot::TreeNode> tempTN;
+//  par::sampleSort(localOcts,tempTN,m_mpiCommActive);
+//  localOcts=tempTN;
+//  tempTN.clear();
+//
+//  assert(par::test::isSorted(localOcts,m_mpiCommActive));
 
 
   PROF_BUILD_DA_STAGE7_END
@@ -727,7 +743,7 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
 //  assert(localOcts.size()!=0);
 //#endif
 
-  treeNodesTovtk(localOcts,rank,"localOct");
+ // treeNodesTovtk(localOcts,rank,"localOct");
   buildNodeList(localOcts);
 
 

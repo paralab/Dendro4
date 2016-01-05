@@ -162,7 +162,8 @@ namespace ot {
 #endif
     PROF_BLKPART2_BEGIN
 
-      int npesActive, rankActive;
+#define __DEBUG_DA__
+    int npesActive, rankActive;
 
     MPI_Comm_rank(commActive, &rankActive);
     MPI_Comm_size(commActive, &npesActive);
@@ -305,10 +306,10 @@ namespace ot {
         if( (recvK[nextNode].getAnchor() == nodes[nextPt].getAnchor()) &&
             (!(nodes[nextPt].getFlag() & ot::TreeNode::NODE)) ) {
           isAnchorHanging[nextNode] = 1;
-#ifdef __DEBUG_DA__
+//#ifdef __DEBUG_DA__
           //Only singular blocks can have hanging anchors
           assert(recvK[nextNode] == nodes[nextPt]);
-#endif
+//#endif
         }
         nextPt++;
       } else {
@@ -441,11 +442,16 @@ namespace ot {
       //singular Block's parent and the singular Block to 0. So that the global
       //scan of all these elements in partW is the same and hence they will be
       //sent to the same processor...
+      assert(par::test::isUniqueAndSorted(globalCoarse,MPI_COMM_WORLD));
+
       unsigned int lastIdxFound = (globalCoarse.size() -1);
       for(int singCnt = (allSingular.size()-1); singCnt >= 0; singCnt--) {
-        unsigned int idxMLB;          
-        bool foundMLB = seq::maxLowerBound<ot::TreeNode>(globalCoarse, 
+        unsigned int idxMLB;
+          //@hari. Perform the full binary search to make things sure.
+        bool foundMLB = seq::maxLowerBound<ot::TreeNode>(globalCoarse,
             allSingular[singCnt], idxMLB, NULL, &lastIdxFound);
+//          bool foundMLB = seq::maxLowerBound<ot::TreeNode>(globalCoarse,
+//                                                           allSingular[singCnt], idxMLB, NULL, NULL);
         if(foundMLB) {
           ot::TreeNode requiredOct = allSingular[singCnt].getParent().getDFD().
             getAncestor(allSingular[singCnt].getLevel());
@@ -504,7 +510,7 @@ namespace ot {
     MPI_Barrier(commActive);
 #endif
     PROF_BLKPART3_BEGIN
-
+#define  __DEBUG_DA__
       int npesActive, rankActive;
 
     MPI_Comm_rank(commActive, &rankActive);

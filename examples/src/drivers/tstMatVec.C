@@ -96,6 +96,14 @@ int main(int argc, char ** argv ) {
   if(argc > 8) { numLoops = atoi(argv[8]); }
   if(argc > 9) { compressLut = (bool)(atoi(argv[9]));}
 
+
+#ifdef HILBERT_ORDERING
+  G_MAX_DEPTH = maxDepth;
+  G_dim = dim;
+  _InitializeHcurve();
+#endif
+
+
   strcpy(bFile,argv[1]);
   ot::int2str(rank,Kstr);
   strcat(bFile,Kstr);
@@ -135,6 +143,11 @@ int main(int argc, char ** argv ) {
     }
   }
   pts.clear();
+//  if(!rank) {
+//    std::cout << "Number of Nodes Read:" << tmpNodes.size() << std::endl;
+//    for(int i=0;i<tmpNodes.size();i++)
+//      std::cout<<"Node:"<<tmpNodes[i]<<std::endl;
+//  }
   par::removeDuplicates<ot::TreeNode>(tmpNodes,false,MPI_COMM_WORLD);	
   linOct = tmpNodes;
   tmpNodes.clear();
@@ -295,5 +308,8 @@ int main(int argc, char ** argv ) {
   }
   ot::DA_Finalize();
   PetscFinalize();
+
+
+
 }//end function
 

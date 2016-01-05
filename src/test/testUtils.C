@@ -878,3 +878,75 @@ bool isBalancedInternal(unsigned int dim, unsigned int maxDepth,char*failFileNam
 }//end namespace
 }//end namespace
 
+namespace oda
+{
+    namespace test
+    {
+        bool odaTest( std::vector<unsigned int> &nlist, std::vector<ot::TreeNode> &balOctree, MPI_Comm comm)
+        {
+
+          int rank,size;
+          MPI_Comm_rank(comm,&rank);
+          MPI_Comm_size(comm,&size);
+
+          int gb_lowerBound;
+          int local_sz=balOctree.size();
+
+          MPI_Scan(&local_sz,&gb_lowerBound,1,MPI_INT,MPI_SUM,comm);
+
+          unsigned int x,y,z,mySize;
+
+
+          for(int i=0;i<balOctree.size();i++)
+          {
+
+            x=balOctree[i].getX();
+            y=balOctree[i].getY();
+            z=balOctree[i].getZ();
+            mySize=1u<<(balOctree[i].getMaxDepth()-balOctree[i].getLevel());
+            for(int j=0;j<8;j++)
+            {
+              // Trivial Case Test.
+
+              if(gb_lowerBound<=nlist[8*i+j] && nlist[8*i+j]<balOctree.size())
+              {
+
+                Point p;
+                switch (j)
+                {
+                  case 0: p=Point(x,y,z);
+                        break;
+                  case 1: p=Point(x+mySize,y,z);
+                        break;
+                  case 2: p=Point(x,y+mySize,z);
+                        break;
+                  case 3: p=Point(x+mySize,y+mySize,z);
+                        break;
+                  case 4: p=Point(x,y,z+mySize);
+                        break;
+                  case 5: p=Point(x+mySize,y,z+mySize);
+                        break;
+                  case 6: p=Point(x,y+mySize,z+mySize);
+                        break;
+                  case 7: p=Point(x+mySize,y+mySize,z+mySize);
+                        break;
+                  default:std::cout<<"Invalid Child Number "<<std::endl;
+                        break;
+                }
+                if(balOctree[nlist[8*i+j]].getAnchor()!=p)
+                {
+                  std::cout<<"Node List mismatch (Basic Case) balOctree:"<<balOctree[nlist[8*i+j]]<<" p:"<<p.x()<<","<<p.y()<<","<<p.z()<<std::endl;
+                  return false;
+                }
+
+              }
+
+            }
+
+          }
+
+        }
+
+    }
+
+}

@@ -1552,9 +1552,9 @@ namespace ot {
 
     PROF_MARK_HANGING_BEGIN
 
-      PROF_FLN_STAGE1_BEGIN
+    PROF_FLN_STAGE1_BEGIN
 
-      int npes;
+    int npes;
     int rank;
 
     MPI_Comm_rank(comm, &rank);
@@ -1563,6 +1563,7 @@ namespace ot {
     std::vector<ot::TreeNode > keys;
 
     assert(!in.empty());
+    assert(par::test::isUniqueAndSorted(in,MPI_COMM_WORLD));
     unsigned int maxD = in[0].getMaxDepth();
     unsigned int dim  = in[0].getDim();
     ot::TreeNode* inPtr = (&(*(in.begin())));
@@ -1578,14 +1579,15 @@ namespace ot {
       unsigned int currKeySz = static_cast<unsigned int>(keys.size());
 
       //unsigned int childNum = inPtr[i].getChildNumber();
-      unsigned int childNum=inPtr[i].getChildNumber();
+      //oda_change_milinda
+      unsigned int childNum=inPtr[i].getMortonIndex();
 
       unsigned int mySz = (1u << (maxD - myLev));
       unsigned int myX = inPtr[i].getX();
       unsigned int myY = inPtr[i].getY();
       unsigned int myZ = inPtr[i].getZ();
 
-     //@hari: I think this is incorrect for Hilbert,
+     //@hari: I think this is incorrect for Hilbert if we use the getChildNumber function,
       switch (childNum) {
         case 0:
           {
@@ -1681,6 +1683,8 @@ namespace ot {
     }//end for i	
 
     PROF_FLN_STAGE1_END
+    //std::sort(keys.begin(),keys.end()); @Hari: Do we need to sort these keys? In my view it is not necessary
+    //treeNodesTovtk(keys,rank,"oda_keys");
 
 #ifdef __DEBUG_DA_PUBLIC__
       MPI_Barrier(comm);
@@ -1702,6 +1706,8 @@ namespace ot {
       part = new unsigned int[keys.size()];    
       assert(part);
     }
+
+    assert(seq::test::isUniqueAndSorted(mins));
 
     for (unsigned int i = 0; i < keys.size(); i++) {
       unsigned int idx;
@@ -1728,7 +1734,7 @@ namespace ot {
 
     PROF_FLN_STAGE3_BEGIN
 
-      int *numKeysSend = new int[npes];
+    int *numKeysSend = new int[npes];
     int *numKeysRecv = new int[npes];
     for (int i = 0; i < npes; i++) {
       numKeysSend[i] = 0;
@@ -1887,6 +1893,8 @@ namespace ot {
     if(keysSz) {
       resRecv = new bool[keysSz];
     }
+
+    assert(par::test::isUniqueAndSorted(in,MPI_COMM_WORLD));
 
     for (unsigned int i = sendOffsets[rank];
         i < (sendOffsets[rank] + numKeysSend[rank]); i++) {

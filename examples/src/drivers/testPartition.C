@@ -190,8 +190,8 @@ int main(int argc, char **argv) {
   // unsigned int num_pseudo_proc=1;
 
 
-  // signal(SIGSEGV, handler);   // install our handler
-  // signal(SIGTERM, handler);   // install our handler
+   signal(SIGSEGV, handler);   // install our handler
+   signal(SIGTERM, handler);   // install our handler
 
 #ifdef PETSC_USE_LOG
   int stages[3];
@@ -484,7 +484,8 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
 
 
 
- // DynamicPartitioning(balOct,slack,MPI_COMM_WORLD);
+
+
     int totalOcts=0;
     int localOcts=balOct.size();
 
@@ -534,11 +535,16 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
       //ot::test::isBalanced(3, maxDepth, "Balfail", BalOctsAll, incCorner, 1);
 
 
+
+
     }
 
     // Clean up ...
     delete [] displs;
     delete [] recvcounts;
+    BalOctsAll.clear();
+
+
 
   if(!rank)
   {
@@ -546,7 +552,10 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
   }
 
 
-//  //==================ODA Meshing=================================
+  //DynamicPartitioning(balOct,slack,MPI_COMM_WORLD);
+
+
+  //==================ODA Meshing=================================
 
   if (!rank) {
     std::cout << BLU << "===============================================" << NRM << std::endl;
@@ -610,7 +619,17 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
     std::cout << GRN << "Finalizing ..." << NRM << std::endl;
   }
 
+
   ot::DA_Finalize();
   PetscFinalize();
+  delete[] rotations;
+  delete [] HILBERT_TABLE;
+
+
+  //assert(oda::test::odaTest(nodelist,balOct,MPI_COMM_WORLD));
+
+
+
+
 } //end function
 

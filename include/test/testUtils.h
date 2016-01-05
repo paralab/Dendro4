@@ -114,6 +114,21 @@ namespace ot {
   }//end namespace
 }//end namespace
 
+
+namespace oda
+{
+    class TreeNode;
+
+    namespace test
+    {
+        bool odaTest( std::vector<unsigned int> &nlist, std::vector<ot::TreeNode> &balOctree, MPI_Comm comm);
+
+    }
+
+}
+
+
+
 #include "testUtils.tcc"
 
 #endif

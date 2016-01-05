@@ -45,6 +45,10 @@ namespace ot {
 
 //Build Node list using 4-way searches...
 void DA::buildNodeList(std::vector<ot::TreeNode> &in) {
+
+
+
+
 #ifdef __PROF_WITH_BARRIER__
   MPI_Barrier(m_mpiCommActive);
 #endif
@@ -59,6 +63,9 @@ void DA::buildNodeList(std::vector<ot::TreeNode> &in) {
 
   std::vector<unsigned int> nlist;
 
+  std::vector<ot::TreeNode> debugKeys;
+  std::vector<ot::TreeNode> debugNodeFound;
+  std::vector<ot::TreeNode> debugNode;
   /*
      The first iteration is for pre-ghosts only.
      The second iteration is for own elements. 
@@ -71,11 +78,11 @@ void DA::buildNodeList(std::vector<ot::TreeNode> &in) {
     std::vector<ot::TreeNode> secondaryKeys;
     std::vector<ot::TreeNode> extraAtEnd;
 
-#ifdef __DEBUG_DA_NLIST__
+//#ifdef __DEBUG_DA_NLIST__
     MPI_Barrier(m_mpiCommActive);
     std::vector<ot:: TreeNode > checkSecondRing;
     std::vector<ot::TreeNode> chkMissedPrimary;
-#endif
+//#endif
 
     unsigned int iLoopSt,iLoopEnd;
     if( numFullLoopCtr == 0) {
@@ -148,14 +155,16 @@ void DA::buildNodeList(std::vector<ot::TreeNode> &in) {
 
       unsigned int ch_num = (4*c + 2*b + a);
 
-#ifdef __DEBUG_DA_NLIST__
-      if ( !ch_num || (ch_num==7) ) {
+
+//#ifdef __DEBUG_DA_NLIST__
+
+     if ( !ch_num || (ch_num==7) ) {
         if ( !(in[i].getFlag() & ot::TreeNode::NODE) ) {
           std::cerr << RED "Nodes are marked wrongly " NRM << std::endl;
           assert(false);
         }
       }
-#endif
+//#endif
 
       bool found[8];
       // haven't found anything yet. Set Default values.
@@ -166,6 +175,8 @@ void DA::buildNodeList(std::vector<ot::TreeNode> &in) {
 
       //~~~~~~~~~~~~~~~~~~~~~~~NEGATIVE SEARCH~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       if(numFullLoopCtr == 1) {
+
+
         unsigned int idnx, idny, idnz;
         //Basic Idea of a negative search. 
         //1. Search and find elements on the negative faces. 
@@ -180,11 +191,12 @@ void DA::buildNodeList(std::vector<ot::TreeNode> &in) {
         if (x) {
           ot::TreeNode knx( x-1, y, z, m_uiMaxDepth, m_uiDimension, m_uiMaxDepth);
           foundNegX = seq::maxLowerBound<ot::TreeNode> (in, knx, idnx,NULL,&i);
+          //foundNegX = seq::maxLowerBound<ot::TreeNode> (in, knx, idnx,NULL,NULL);
 #ifdef __DEBUG_DA_NLIST__
+          //@hari: This debug check is wrong for the negative search.
           CHECK_FAST_MAX_LOWER_BOUND(in,knx,idnx,foundNegX)
 #endif
-
-            if ( foundNegX && (!( (in[idnx].isAncestor(knx) ) || (in[idnx] == knx) )) ) {
+          if ( foundNegX && (!( (in[idnx].isAncestor(knx) ) || (in[idnx] == knx) )) ) {
               foundNegX=false;
             }
           if ( foundNegX && (m_ucpLutMasks[2*idnx+1] == ot::DA_FLAGS::FOREIGN) ) {
@@ -196,7 +208,9 @@ void DA::buildNodeList(std::vector<ot::TreeNode> &in) {
         if (y) {
           ot::TreeNode kny( x, y-1, z, m_uiMaxDepth, m_uiDimension, m_uiMaxDepth);
           foundNegY = seq::maxLowerBound<ot::TreeNode> (in, kny, idny,NULL,&i) ;
+          //foundNegY = seq::maxLowerBound<ot::TreeNode> (in, kny, idny,NULL,NULL) ;
 #ifdef __DEBUG_DA_NLIST__
+          //@hari: This debug check is wrong for the negative search.
           CHECK_FAST_MAX_LOWER_BOUND(in,kny,idny,foundNegY)
 #endif
             if ( foundNegY && (!( (in[idny].isAncestor(kny) ) || (in[idny] == kny) )) ) {
@@ -211,7 +225,9 @@ void DA::buildNodeList(std::vector<ot::TreeNode> &in) {
         if (z) {
           ot::TreeNode knz( x, y, z-1, m_uiMaxDepth, m_uiDimension, m_uiMaxDepth);
           foundNegZ = seq::maxLowerBound<ot::TreeNode> (in, knz, idnz,NULL,&i) ;
+          //foundNegZ = seq::maxLowerBound<ot::TreeNode> (in, knz, idnz,NULL,NULL) ;
 #ifdef __DEBUG_DA_NLIST__
+          //@hari: This debug check is wrong for the negative search.
           CHECK_FAST_MAX_LOWER_BOUND(in,knz,idnz,foundNegZ)
 #endif
             if ( foundNegZ && (!( (in[idnz].isAncestor(knz) ) || (in[idnz] == knz) )) ) {
@@ -443,13 +459,16 @@ switch (ch_num) {
 #undef NEG_SEARCH_BLOCK2
 
 //~~~~~~~~~~~~~~~~~~~~~POSITIVE SEARCH~~~~~~~~~~~~~~~~~~~~~~
+//#define __DEBUG_DA_NLIST__
 #ifdef __DEBUG_DA_NLIST__
 #define DEBUG_CHECK_FAST_MAX_LOWER_BOUND(arr,key,fastIdx,fastResult) CHECK_FAST_MAX_LOWER_BOUND(arr,key,fastIdx,fastResult)
 
 #define POS_SEARCH_DEBUG_BLOCK1(debugV1,debugV2) {\
   if ( (ch_num == debugV1) || (ch_num == debugV2) ) {\
     std::cout << "Failing for index " << i << " with child num " << ch_num << std::endl;\
+    std::cout << "found key: " << foundKey << std::endl; \
     assert(false);\
+    exit(0);\
   }\
 }
 
@@ -466,7 +485,7 @@ switch (ch_num) {
 }
 
 #else
-#define DEBUG_CHECK_FAST_MAX_LOWER_BOUND(arr,key,fastIdx,fastResult) 
+#define DEBUG_CHECK_FAST_MAX_LOWER_BOUND(arr,key,fastIdx,fastResult)
 #define POS_SEARCH_DEBUG_BLOCK1(debugV1,debugV2)
 #define POS_SEARCH_DEBUG_BLOCK2
 #define POS_SEARCH_DEBUG_BLOCK3
@@ -478,8 +497,9 @@ switch (ch_num) {
   /* All other cNums are anchored at the parent+(2*sz,0,0).*/\
   sKey = parNodeLocations[j];\
   lastLevel = d-1;\
-  foundKey = seq::maxLowerBound<ot::TreeNode>(in, sKey, idx,&i,NULL);\
-  DEBUG_CHECK_FAST_MAX_LOWER_BOUND(in, sKey,idx, foundKey) \
+  /*foundKey = seq::maxLowerBound<ot::TreeNode>(in, sKey, idx,&i,NULL);*/\
+  foundKey = seq::maxLowerBound<ot::TreeNode>(in, sKey, idx,NULL,NULL);\
+  /*DEBUG_CHECK_FAST_MAX_LOWER_BOUND(in, sKey,idx, foundKey)*/ \
   if ( foundKey && !((in[idx].getAnchor()==sKey.getAnchor()) && (in[idx].getFlag()&ot::TreeNode::NODE))) {\
     foundKey=false;\
   }\
@@ -495,13 +515,16 @@ switch (ch_num) {
   /* first search in default location */\
   sKey = nodeLocations[j];\
   lastLevel = d;\
-  foundKey = seq::maxLowerBound<ot::TreeNode>(in, sKey, idx,&i,NULL);\
-  DEBUG_CHECK_FAST_MAX_LOWER_BOUND(in, sKey,idx, foundKey) \
+  /*foundKey = seq::maxLowerBound<ot::TreeNode>(in, sKey, idx,&i,NULL);*/\
+  foundKey = seq::maxLowerBound<ot::TreeNode>(in, sKey, idx,NULL,NULL);\
+  /*DEBUG_CHECK_FAST_MAX_LOWER_BOUND(in, sKey,idx, foundKey)*/ \
   if(foundKey && !( (in[idx].isAncestor(sKey) ) || (in[idx]==sKey))) {\
     foundKey=false;\
   }\
   if(foundKey) {\
     /*found somebody*/\
+    /*std::cout<<"in[idx].getAnchor()==sKey.getAnchor():"<<(in[idx].getAnchor()==sKey.getAnchor())<<std::endl;\
+    std::cout<<"in[idx].getFlag() & ot::TreeNode::NODE):"<<(in[idx].getFlag() & ot::TreeNode::NODE)<<std::endl;\*/ \
     if((in[idx].getAnchor()==sKey.getAnchor())&&(in[idx].getFlag() & ot::TreeNode::NODE)) {\
       /*found a node, so set it.*/\
       nlist[8*i+j] = idx;\
@@ -579,38 +602,42 @@ for (unsigned int j = 0; j < 8; j++) {
               // first search is not required since we are searching for i
               if ( !(in[i].getFlag() & ot::TreeNode::NODE ) ) {
                 // if this is not a node, i.e., it is hanging
-#ifdef __DEBUG_DA_NLIST__
+//#ifdef __DEBUG_DA_NLIST__
                 if ( (ch_num == 0) || (ch_num == 7) ) {
                   std::cout << "Failing for index " << i << " with child num " << ch_num << std::endl;
                   assert(false);
                 }
-#endif
+//#endif
                 // All other child numbers are anchored at the parent.
                 sKey = parNodeLocations[j];
                 lastLevel = d-1;
-                foundKey = seq::maxLowerBound<ot::TreeNode> (in, sKey, idx,NULL,&i);
+                //foundKey = seq::maxLowerBound<ot::TreeNode> (in, sKey, idx,NULL,&i);
+                foundKey = seq::maxLowerBound<ot::TreeNode> (in, sKey, idx,NULL,NULL);
 #ifdef __DEBUG_DA_NLIST__
                 CHECK_FAST_MAX_LOWER_BOUND(in, sKey,idx, foundKey) 
 #endif
-                  if ( foundKey && 
+                 if ( foundKey &&
                       (!( (in[idx].getAnchor() == sKey.getAnchor()) && (in[idx].getFlag() & ot::TreeNode::NODE) )) ) {
                     foundKey=false;
                   }
                 if ( !foundKey ) {
-#ifdef __DEBUG_DA_NLIST__
+//#ifdef __DEBUG_DA_NLIST__
                   // should only happen for ghosts ...
                   if(i >= m_uiElementBegin) {
                     std::cout<<m_iRankActive<<" i = "<<i<<" preGhostElemEnd "<<m_uiPreGhostElementSize
                       <<" elemBeg: "<<m_uiElementBegin<<" elemEnd: "<<m_uiElementEnd<<std::endl;
                   }
                   assert (i < m_uiElementBegin);
-#endif
+//#endif
                   // for node zero, simply default to i.
+
                   nlist[8*i+j] = i;
                 } else {
+
                   nlist[8*i+j] = idx;
                 }
               } else {
+
                 nlist[8*i+j] = i;
               }
               break;
@@ -685,15 +712,19 @@ for (unsigned int j = 0; j < 8; j++) {
 #undef POS_SEARCH_DEBUG_BLOCK2
 #undef POS_SEARCH_DEBUG_BLOCK3
 
+
+
 // FINISHED Searching for Node Indices ...
 
 //Ensure that the anchor of the local element is not pointing to ghost.
 //This can happen only if the octant in question is a singular block
 //and its anchor is hanging and the 0th child of its parent is sitting on a different processor.
 //BlockPart should have detected this case and prevented this.
-#ifdef __DEBUG_DA_NLIST__
+//#ifdef __DEBUG_DA_NLIST__
 if ( (i >= m_uiElementBegin) && (i < m_uiElementEnd) &&
     ( (nlist[8*i] < m_uiElementBegin) || (nlist[8*i] >= m_uiPostGhostBegin) ) ) {
+
+  std::cout<<"numFullLoopCtr:"<<numFullLoopCtr<<std::endl;
   std::cout << "At index " << i << " anchor is at " << nlist[8*i] <<
     " where elemBegin is at " << m_uiElementBegin << " and postGhBegin is "
     << m_uiPostGhostBegin << std::endl;
@@ -705,14 +736,14 @@ if ( (i >= m_uiElementBegin) && (i < m_uiElementEnd) &&
   std::cout << std::endl;
   std::cout<<m_iRankActive<<" failingOct: "<<in[i]<<std::endl<<" it's parent: "<<in[i].getParent()<<std::endl;
   if( nlist[8*i] < in.size() ) {
-    std::cout<<m_iRankActive<<" failingOct's anchor is actually mapped to: "<<in[nlist[8*i]]<<std::endl;  
+    std::cout<<m_iRankActive<<" failingOct's anchor is actually mapped to: "<<in[nlist[8*i]]<<std::endl;
   }
-  assert(false);
+  //assert(false);
 }
-#endif
+//#endif
 
 #ifdef __DEBUG_DA_NLIST__
-//Check if you sent yourself apriori (Second Ring). 
+//Check if you sent yourself apriori (Second Ring).
 if( (i >= m_uiElementBegin) && (i < m_uiPostGhostBegin) ) {
   for(unsigned int j=0; j< 8; j++) {
     if(nlist[8*i + j] < m_uiElementBegin) {
@@ -965,7 +996,9 @@ for ( unsigned int j=0; j<8; j++) {
      7. The results are returned to the processors that requested the respective keys.
      8. The results are matched with the octants that generated the keys. 
      9. If a primary key returned a positive result, then it is used else the secondary key is used. 
-     10. There is a special for the secondary key for the nlist of a pre-ghost element. It is possible that while the primary key was NOT recieved during the a-priori communication, but the secondary key was recieved. In such situations if the secondary key is to be selected, then we must select the copy that was recieved during the a-priori comm and not the one got from this second-ring correction. This must be done in order to prevent having duplicate elements in our local buffer.
+     10. There is a special for the secondary key for the nlist of a pre-ghost element. It is possible that while the primary key was NOT recieved during the a-priori communication, but the secondary key was recieved.
+     In such situations if the secondary key is to be selected, then we must select the copy that was recieved during the a-priori comm and not the one got from this second-ring correction. This must be done in order
+     to prevent having duplicate elements in our local buffer.
      11. Each of the octants that were selected is given an unique id. This will be used to fix the nlist.
      12. The hanging masks need to be corrected as well.
      13. Since, the primary key could be owned by one processor and the secondary key by another. Only the processor which owns the octant that generated
@@ -1070,13 +1103,13 @@ for ( unsigned int j=0; j<8; j++) {
   // Now do an All2All to get inumKeysRecv
   PROF_BUILD_NLIST_COMM_BEGIN
 
-    par::Mpi_Alltoall<int>(numKeysSendP, numKeysRecvP, 1, m_mpiCommActive);
+  par::Mpi_Alltoall<int>(numKeysSendP, numKeysRecvP, 1, m_mpiCommActive);
   par::Mpi_Alltoall<int>(numKeysSendS, numKeysRecvS, 1, m_mpiCommActive);
 
   PROF_BUILD_NLIST_COMM_END
 
     // Now create sendK
-    int *sendOffsetsP = new int[m_iNpesActive]; sendOffsetsP[0] = 0;
+  int *sendOffsetsP = new int[m_iNpesActive]; sendOffsetsP[0] = 0;
   int *recvOffsetsP = new int[m_iNpesActive]; recvOffsetsP[0] = 0;
   int *numKeysTmpP = new int[m_iNpesActive]; numKeysTmpP[0] = 0; 
 
@@ -1158,7 +1191,7 @@ for ( unsigned int j=0; j<8; j++) {
 
   PROF_BUILD_NLIST_COMM_BEGIN
 
-    par::Mpi_Alltoallv_sparse<ot::TreeNode>( sendKpPtr, numKeysSendP, sendOffsetsP,
+  par::Mpi_Alltoallv_sparse<ot::TreeNode>( sendKpPtr, numKeysSendP, sendOffsetsP,
         recvKpPtr, numKeysRecvP, recvOffsetsP, m_mpiCommActive);
 
   par::Mpi_Alltoallv_sparse<ot::TreeNode>( sendKsPtr, numKeysSendS, sendOffsetsS,
@@ -1370,7 +1403,7 @@ for ( unsigned int j=0; j<8; j++) {
   // Now do an All2All to get inumKeysRecv
   PROF_BUILD_NLIST_COMM_BEGIN
 
-    par::Mpi_Alltoall<int>(numKeysSendP, numKeysRecvP, 1, m_mpiCommActive);
+  par::Mpi_Alltoall<int>(numKeysSendP, numKeysRecvP, 1, m_mpiCommActive);
   par::Mpi_Alltoall<int>(numKeysSendS, numKeysRecvS, 1, m_mpiCommActive);    
 
   PROF_BUILD_NLIST_COMM_END
@@ -1514,6 +1547,8 @@ for ( unsigned int j=0; j<8; j++) {
   }
   std::vector<seq::IndexHolder<ot::TreeNode> > extraIndices (extraAtEnd.size());
 
+
+
   for (unsigned int i = 0; i < extraAtEnd.size(); i++) {
     unsigned int idx;    
     bool found = seq::maxLowerBound<ot::TreeNode >(recvKp, primaryKeys[i], idx, NULL, NULL);
@@ -1546,16 +1581,22 @@ for ( unsigned int j=0; j<8; j++) {
       assert(false);
     }
 
+
     if (!found) {
       unsigned int idx;    
       found = seq::maxLowerBound<ot::TreeNode >(recvKs, secondaryKeys[i], idx, NULL, NULL);
 
-#ifdef __DEBUG_DA_NLIST__
+//#ifdef __DEBUG_DA_NLIST__
       assert( found );
       assert( recvKs[idx] != rootNode );
       assert( recvKs[idx].getFlag() & ot::TreeNode::NODE );
-      assert( recvKs[idx].getAnchor() == secondaryKeys[i].getAnchor() );
-#endif
+       if(recvKs[idx].getAnchor() != secondaryKeys[i].getAnchor()) {
+           std::cout << "recvKs[idx]:" << recvKs[idx] << "\t secondaryKeys[i]:" << secondaryKeys[i] << std::endl;
+           std::cout << "rec is ancesstor of secondary:"<<recvKs[idx].isAncestor(secondaryKeys[i])<<std::endl;
+       }
+      assert( recvKs[idx].getAnchor() == secondaryKeys[i].getAnchor());
+
+//#endif
       /*
          Handle Special Case: When a pre-ghost element did not find its primary key in the local search, the secondary key is never searched for. In such situations, when the primary result is not usable and we must pick the secondary result got from the explicit parallel search, we must first check if this secondary result is already present in the local buffer (either own or elements got through a-priori comm.) If so, we must use the one that is already present and discard the one got through the parallel search. This must be done in order to avoid duplicate octants in the local buffer.
          */
@@ -1702,40 +1743,40 @@ for ( unsigned int j=0; j<8; j++) {
 
   for (unsigned int i=0;i<sortedUniqueExtras.size();i++) {
 
-    /*
-       if (pickPrimary[i]) {
-#ifdef __DEBUG_DA_NLIST__
-assert( recvKp[oldToNewIdx[oldIndex[i]]] == sortedUniqueExtras[i] );
-assert( recvKp[oldToNewIdx[oldIndex[i]]] != rootNode );
-#endif
-in.push_back(recvKp[oldToNewIdx[oldIndex[i]]]);        
-recvCntsExtras[recvKp[oldToNewIdx[oldIndex[i]]].getWeight()]++;
-pickingP[kp2ActualKp[oldToNewIdx[oldIndex[i]]]] = 1;
-} else {
-#ifdef __DEBUG_DA_NLIST__
-assert( recvKs[oldToNewIdx[oldIndex[i]]] == sortedUniqueExtras[i] );
-assert( recvKs[oldToNewIdx[oldIndex[i]]] != rootNode );
-#endif
-in.push_back(recvKs[oldToNewIdx[oldIndex[i]]]);        
-recvCntsExtras[recvKs[oldToNewIdx[oldIndex[i]]].getWeight()]++;
-pickingS[ks2ActualKs[oldToNewIdx[oldIndex[i]]]] = 1;
-}
 
-for (unsigned int j =0;j < indicesIntoLUT[i].size(); j++) {
-for (unsigned int k=0; k < 8; k++) {
-for (unsigned int l = 0;l < indicesIntoOld[i].size(); l++) {
-if (nlist[8*(indicesIntoLUT[i][j])+k] == (m_uiLocalBufferSize + indicesIntoOld[i][l])) {
-std::vector<unsigned int> ringCorrectionsTuple(3);
-ringCorrectionsTuple[0] = indicesIntoLUT[i][j];
-ringCorrectionsTuple[1] = k;
-ringCorrectionsTuple[2] = (in.size()-1);
-secondRingCorrections.push_back(ringCorrectionsTuple);
-break;
-} // if 
-} // for l                   
-}  // for k     
-} // for j
-*/
+///*       if (pickPrimary[i]) {
+//#ifdef __DEBUG_DA_NLIST__
+//assert( recvKp[oldToNewIdx[oldIndex[i]]] == sortedUniqueExtras[i] );
+//assert( recvKp[oldToNewIdx[oldIndex[i]]] != rootNode );
+//#endif
+//in.push_back(recvKp[oldToNewIdx[oldIndex[i]]]);
+//recvCntsExtras[recvKp[oldToNewIdx[oldIndex[i]]].getWeight()]++;
+//pickingP[kp2ActualKp[oldToNewIdx[oldIndex[i]]]] = 1;
+//} else {
+//#ifdef __DEBUG_DA_NLIST__
+//assert( recvKs[oldToNewIdx[oldIndex[i]]] == sortedUniqueExtras[i] );
+//assert( recvKs[oldToNewIdx[oldIndex[i]]] != rootNode );
+//#endif
+//in.push_back(recvKs[oldToNewIdx[oldIndex[i]]]);
+//recvCntsExtras[recvKs[oldToNewIdx[oldIndex[i]]].getWeight()]++;
+//pickingS[ks2ActualKs[oldToNewIdx[oldIndex[i]]]] = 1;
+//}
+//
+//for (unsigned int j =0;j < indicesIntoLUT[i].size(); j++) {
+//for (unsigned int k=0; k < 8; k++) {
+//for (unsigned int l = 0;l < indicesIntoOld[i].size(); l++) {
+//if (nlist[8*(indicesIntoLUT[i][j])+k] == (m_uiLocalBufferSize + indicesIntoOld[i][l])) {
+//std::vector<unsigned int> ringCorrectionsTuple(3);
+//ringCorrectionsTuple[0] = indicesIntoLUT[i][j];
+//ringCorrectionsTuple[1] = k;
+//ringCorrectionsTuple[2] = (in.size()-1);
+//secondRingCorrections.push_back(ringCorrectionsTuple);
+//break;
+//} // if
+//} // for l
+//}  // for k
+//} // for j*/
+
 
   if (fromPrimary[chosenIndexIntoOld[i]]) {
 #ifdef __DEBUG_DA_NLIST__
@@ -2263,7 +2304,7 @@ MPI_Barrier(m_mpiCommActive);
 //Reset Counters...
 // PreGhosts ....
 m_uiPreGhostElementSize = 0;
-while( (m_uiPreGhostElementSize < in.size()) && (in[m_uiPreGhostElementSize] < myFirstOctant) ) {
+while( (m_uiPreGhostElementSize < in.size()) && (in[m_uiPreGhostElementSize] < myFirstOctant ) ) {
   if ( !(in[m_uiPreGhostElementSize].getFlag() & ot::TreeNode::BOUNDARY) ) {
     m_uiPreGhostElementSize++;
   }else {
@@ -2273,7 +2314,7 @@ while( (m_uiPreGhostElementSize < in.size()) && (in[m_uiPreGhostElementSize] < m
 
 if(nelem != (m_uiPreGhostElementSize + m_uiElementSize) ) {
   std::cout<<"Processor "<<m_iRankAll<<" failing: nelem = "<<nelem
-    <<" pgElemSz = "<<m_uiPreGhostElementSize<<" elemSz = "<<m_uiElementSize<<std::endl;
+    <<" pgElemSz = "<<m_uiPreGhostElementSize<<" elemSz = "<<m_uiElementSize<<"  Diff:"<<(nelem-m_uiPreGhostElementSize-m_uiElementSize)<<std::endl;
 }
 assert( nelem == (m_uiPreGhostElementSize + m_uiElementSize) );
 #ifdef __DEBUG_DA_NLIST__
@@ -3153,6 +3194,15 @@ for (unsigned int i = 0; i < nelem; i++) {
 
 } // for i
 
+
+//#ifdef __DEBUG_DA_NLIST__
+//
+//#endif
+
+
+
+
+
 //Store Nlist if you are not compressing...
 if(!m_bCompressLut) {
   m_uiNlist = nlist; 
@@ -3171,6 +3221,13 @@ MPI_Barrier(m_mpiCommActive);
 std::cout << m_iRankActive << ": Leaving " << __func__ << std::endl;
 MPI_Barrier(m_mpiCommActive);
 #endif
+
+
+
+
+
+
+
 
 PROF_BUILD_NLIST_END
 
