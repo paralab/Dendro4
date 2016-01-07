@@ -497,7 +497,7 @@ switch (ch_num) {
   /* All other cNums are anchored at the parent+(2*sz,0,0).*/\
   sKey = parNodeLocations[j];\
   lastLevel = d-1;\
-  /*foundKey = seq::maxLowerBound<ot::TreeNode>(in, sKey, idx,&i,NULL);*/\
+ /* foundKey = seq::maxLowerBound<ot::TreeNode>(in, sKey, idx,&i,NULL);*/\
   foundKey = seq::maxLowerBound<ot::TreeNode>(in, sKey, idx,NULL,NULL);\
   /*DEBUG_CHECK_FAST_MAX_LOWER_BOUND(in, sKey,idx, foundKey)*/ \
   if ( foundKey && !((in[idx].getAnchor()==sKey.getAnchor()) && (in[idx].getFlag()&ot::TreeNode::NODE))) {\
@@ -583,6 +583,10 @@ switch (ch_num) {
 
 // find the eight vertices ...
 //Only 0 is a special case.
+
+ot::TreeNode tmp(1,0,96,0,4,3,9);
+
+
 for (unsigned int j = 0; j < 8; j++) {
   if(found[j]) {
     continue;
@@ -594,6 +598,7 @@ for (unsigned int j = 0; j < 8; j++) {
   ot::TreeNode sKey(m_uiDimension, m_uiMaxDepth);
 
   switch (j) {
+
     case 0: {
               nodeLocations[j] =
                 ot::TreeNode(x, y, z, m_uiMaxDepth, m_uiDimension, m_uiMaxDepth);
@@ -633,12 +638,10 @@ for (unsigned int j = 0; j < 8; j++) {
 
                   nlist[8*i+j] = i;
                 } else {
-
                   nlist[8*i+j] = idx;
                 }
               } else {
-
-                nlist[8*i+j] = i;
+                  nlist[8*i+j] = i;
               }
               break;
             }
@@ -655,7 +658,13 @@ for (unsigned int j = 0; j < 8; j++) {
                 ot::TreeNode(x, y+sz, z, m_uiMaxDepth, m_uiDimension, m_uiMaxDepth);
               parNodeLocations[j] = 
                 ot::TreeNode(parX, parY+(sz<<1u), parZ, m_uiMaxDepth, m_uiDimension, m_uiMaxDepth);
-              POS_SEARCH_BLOCK(2,5) 
+              POS_SEARCH_BLOCK(2,5)
+//        if(in[i]==tmp)
+//        {
+//            std::cout<<"Searching for Node :"<<in[i]<<"Node location:"<<sKey<<std::endl;
+//            std::cout<<"i:"<<i<<"Found key :"<<foundKey<<" Found Node"<<in[idx]<<std::endl;
+//            std::cout<<"Node List Pointing Node:"<<in[nlist[8*i+j]]<<std::endl;
+//        }
                 break;
             }
     case 3: {
@@ -664,7 +673,7 @@ for (unsigned int j = 0; j < 8; j++) {
               parNodeLocations[j] = 
                 ot::TreeNode(parX+(sz<<1u), parY+(sz<<1u), parZ, m_uiMaxDepth, m_uiDimension, m_uiMaxDepth);
               POS_SEARCH_BLOCK(3,4) 
-                break;
+              break;
             }
     case 4: {
               nodeLocations[j] = 
@@ -713,7 +722,6 @@ for (unsigned int j = 0; j < 8; j++) {
 #undef POS_SEARCH_DEBUG_BLOCK3
 
 
-
 // FINISHED Searching for Node Indices ...
 
 //Ensure that the anchor of the local element is not pointing to ghost.
@@ -738,27 +746,55 @@ if ( (i >= m_uiElementBegin) && (i < m_uiElementEnd) &&
   if( nlist[8*i] < in.size() ) {
     std::cout<<m_iRankActive<<" failingOct's anchor is actually mapped to: "<<in[nlist[8*i]]<<std::endl;
   }
-  //assert(false);
+  assert(false);
 }
 //#endif
 
-#ifdef __DEBUG_DA_NLIST__
+//#ifdef __DEBUG_DA_NLIST__
 //Check if you sent yourself apriori (Second Ring).
-if( (i >= m_uiElementBegin) && (i < m_uiPostGhostBegin) ) {
-  for(unsigned int j=0; j< 8; j++) {
-    if(nlist[8*i + j] < m_uiElementBegin) {
-      std::cout<<m_iRankActive<<" Trying to send yourself as a Post Ghost ELEMENT for  i = "
-        <<i<<" j = "<<j<<std::endl;
-      assert(false);
-    }
-    if( (nlist[8*i+j] >= m_uiPostGhostBegin) && (nlist[8*i+j] < m_uiLocalBufferSize) ) {
-      TreeNode tmpToSend = in[nlist[8*i+j]];
-      tmpToSend.setWeight(i);
-      checkSecondRing.push_back(tmpToSend);
-    }
-  }//end for j
-}
-#endif
+//if( (i >= m_uiElementBegin) && (i < m_uiPostGhostBegin) ) {
+//  assert(numFullLoopCtr);
+//  for(unsigned int j=0; j< 8; j++) {
+//
+//    if(nlist[8*i + j] < m_uiElementBegin) {
+//      std::cout<<m_iRankActive<<" Trying to send yourself as a Post Ghost ELEMENT for  i = "
+//        <<i<<" j = "<<j<<std::endl;
+//
+//        //std::cout<<"myBegin:"<<m_uiElementBegin<<" my end:"<<m_uiElementEnd<<" PostGbegin:"<<m_uiPostGhostBegin<<" PostGEnd:"<<nelem<<std::endl;
+//        std::cout<<m_iRankActive<<": preElemSz: "<<m_uiPreGhostElementSize
+//        <<" elemBeg: "<<m_uiElementBegin<<" elemEnd: "<<m_uiElementEnd
+//        <<" postGhostBegin: "<<m_uiPostGhostBegin
+//        <<" locBufferSz: "<<m_uiLocalBufferSize
+//        <<" nelem: "<<nelem
+//        <<" iLoopSt: "<<iLoopSt
+//        <<" iLoopEnd: "<<iLoopEnd<<std::endl;
+//
+//        debugNode.clear();
+//        debugKeys.clear();
+//
+//        debugNode.push_back(in[i]);
+//        for(int w=0;w<8;w++)
+//            debugKeys.push_back(in[nlist[8*i+w]]);
+//
+//        if(m_iRankActive==0) {
+//            treeNodesTovtk(debugNode, i, "debugNode_0");
+//            treeNodesTovtk(debugKeys, i, "debugKeys_0");
+//        }else
+//        {
+//            treeNodesTovtk(debugNode, i, "debugNode_1");
+//            treeNodesTovtk(debugKeys, i, "debugKeys_1");
+//        }
+//
+//      assert(false);
+//    }
+//    if( (nlist[8*i+j] >= m_uiPostGhostBegin) && (nlist[8*i+j] < m_uiLocalBufferSize) ) {
+//      TreeNode tmpToSend = in[nlist[8*i+j]];
+//      tmpToSend.setWeight(i);
+//      checkSecondRing.push_back(tmpToSend);
+//    }
+//  }//end for j
+//}
+//#endif
 
 // compute the hanging node mask for this element ...
 unsigned char _mask=0;
@@ -780,7 +816,7 @@ for ( unsigned int j=0; j<8; j++) {
   _z = in[nlist[8*i+j]].getZ(); 
   _d = in[nlist[8*i+j]].getLevel();
   if ( !(in[nlist[8*i+j]].getFlag() & ot::TreeNode::NODE ) ) {
-    // std::cout << "For i=" << i << " looking at parent" << std::endl;
+     //std::cout << "For i=" << i << " looking at parent" << std::endl;
     _x  = ( ( _x >> ( m_uiMaxDepth - _d + 1 ) ) << ( m_uiMaxDepth - _d + 1 ) ); 
     _y  = ( ( _y >> ( m_uiMaxDepth - _d + 1 ) ) << ( m_uiMaxDepth - _d + 1 ) );
     _z  = ( ( _z >> ( m_uiMaxDepth - _d + 1 ) ) << ( m_uiMaxDepth - _d + 1 ) );
@@ -865,7 +901,7 @@ for ( unsigned int j=0; j<8; j++) {
   //be hanging). Hence, A is singular
   for (int j=0; j<8; j++) {
     if (nlist[8*i+j] >= m_uiLocalBufferSize) {
-      if (_mask != ot::DA_FLAGS::FOREIGN) {
+        if (_mask != ot::DA_FLAGS::FOREIGN) {
 #ifdef __DEBUG_DA_NLIST__
         assert(j);
 #endif
@@ -886,6 +922,8 @@ for ( unsigned int j=0; j<8; j++) {
   // Store the hanging node mask
   m_ucpLutMasks[2*i+1] = _mask;
   } // end for i: All elements in this set 
+
+
 
 #ifdef __DEBUG_DA_NLIST__
   MPI_Barrier(m_mpiCommActive);
@@ -969,7 +1007,7 @@ for ( unsigned int j=0; j<8; j++) {
      NOW, The Ugly Parallel Book-keeping and Corrections for the Missing Entries in the Previous Step...
      */
 
-  // ~~~~~~~~~~~~~~~~~~ SECONDARY ~~~~~~~~~~~~~~~~~~~~~~~
+      // ~~~~~~~~~~~~~~~~~~ SECONDARY ~~~~~~~~~~~~~~~~~~~~~~~
   std::vector<unsigned int>               ScndScatterMap;
 
   std::vector<unsigned int>               ScndSendProcs;
@@ -1110,6 +1148,7 @@ for ( unsigned int j=0; j<8; j++) {
 
     // Now create sendK
   int *sendOffsetsP = new int[m_iNpesActive]; sendOffsetsP[0] = 0;
+
   int *recvOffsetsP = new int[m_iNpesActive]; recvOffsetsP[0] = 0;
   int *numKeysTmpP = new int[m_iNpesActive]; numKeysTmpP[0] = 0; 
 
@@ -2120,7 +2159,7 @@ delete [] numKeysRecvS;
 numKeysRecvS = NULL;
 
 pickedP.clear();
-pickedS.clear();   
+pickedS.clear();
 
 #ifdef __DEBUG_DA_NLIST__
 MPI_Barrier(m_mpiCommActive);
@@ -2348,6 +2387,7 @@ if(!m_iRankActive) {
 MPI_Barrier(m_mpiCommActive);
 #endif
 
+
 std::vector<unsigned int> nlistNew(8*nelem);
 std::vector<unsigned char> hnMaskNew(nelem);
 
@@ -2401,6 +2441,9 @@ for (unsigned int i = 0; i < iLoopEnd; i++) {
     nlistNew[iiNew + j] = oldToNew[ nlist[iiOld + j] ];
   }//end for j
 }//end for i
+
+
+
 
 #ifdef __DEBUG_DA_NLIST__
 MPI_Barrier(m_mpiCommActive);
@@ -2604,6 +2647,7 @@ while( (primaryCnt < m_uipSendProcs.size()) && (secondaryCnt < ScndSendProcs.siz
   }//end if-else
 }//end while
 
+
 #ifdef __DEBUG_DA_NLIST__
 //ScatterMaps and Procs must finish together.
 if( primarySz < m_uipScatterMap.size() ) {
@@ -2720,6 +2764,9 @@ assert( tmpScatterMap.size() == (m_uipScatterMap.size() + ScndScatterMap.size())
 MPI_Barrier(m_mpiCommActive);
 #endif
 
+
+
+
 oldToNew.clear();
 
 primaryCnt = 0;
@@ -2805,7 +2852,9 @@ if(!m_iRankActive) {
 MPI_Barrier(m_mpiCommActive);
 #endif
 
-}//end for numFullLoopCtr
+
+
+}//end for numFullLoopCtr ////////////////////////////////////////////////////////////////////////////////////////MAIN LOOP END
 
 // Compute and store the new offsets ...
 m_uipSendOffsets.resize(m_uipSendCounts.size());
@@ -2866,6 +2915,7 @@ for(unsigned int i = 0; i < m_uipSendProcs.size(); i++) {
   }
 }//end for i
 
+
 m_uipElemRecvOffsets.clear();
 m_uipElemRecvProcs.clear();
 m_uipElemRecvCounts.clear();
@@ -2921,6 +2971,7 @@ for ( unsigned int i = 0; i < m_uipScatterMap.size(); i++) {
     }
   }
 }//end for i
+
 
 #ifdef __DEBUG_DA_NLIST__
 MPI_Barrier(m_mpiCommActive);
@@ -3063,134 +3114,139 @@ if(m_bCompressLut) {
 bool foundBeg = false;
 bool foundEnd = false;
 
+
+
+
 m_uiIndependentElementSize = 0;
 for (unsigned int i = 0; i < nelem; i++) {
-  // get basic info ...
-  unsigned int ii = 8*i;
+    // get basic info ...
+    unsigned int ii = 8 * i;
 
-  unsigned int x = in[i].getX();
-  unsigned int y = in[i].getY();
-  unsigned int z = in[i].getZ();
+    unsigned int x = in[i].getX();
+    unsigned int y = in[i].getY();
+    unsigned int z = in[i].getZ();
 
-  if(m_bCompressLut) {
-    unsigned int d   = in[i].getLevel();
-    unsigned int sz = 1u << (m_uiMaxDepth - d);
-    //compute and store the sort order for the non-hanging case.
-    if(!(m_ucpLutMasks[2*i+1])){
-      unsigned int xp = x + sz;
-      unsigned int yp = y + sz;
-      unsigned int zp = z + sz;
+    if (m_bCompressLut) {
+        unsigned int d = in[i].getLevel();
+        unsigned int sz = 1u << (m_uiMaxDepth - d);
+        //compute and store the sort order for the non-hanging case.
+        if (!(m_ucpLutMasks[2 * i + 1])) {
+            unsigned int xp = x + sz;
+            unsigned int yp = y + sz;
+            unsigned int zp = z + sz;
 
-      unsigned int _x = x^xp;
-      unsigned int _y = y^yp;
-      unsigned int _z = z^zp;
+            unsigned int _x = x ^xp;
+            unsigned int _y = y ^yp;
+            unsigned int _z = z ^zp;
 
-      if (_x > _y) {
-        if ( _y > _z) {
-          m_ucpSortOrders[i] = ot::DA_FLAGS::ZYX;
-        } else if ( _x > _z ) {
-          m_ucpSortOrders[i] = ot::DA_FLAGS::YZX;
+            if (_x > _y) {
+                if (_y > _z) {
+                    m_ucpSortOrders[i] = ot::DA_FLAGS::ZYX;
+                } else if (_x > _z) {
+                    m_ucpSortOrders[i] = ot::DA_FLAGS::YZX;
+                } else {
+                    m_ucpSortOrders[i] = ot::DA_FLAGS::YXZ;
+                }
+            } else {
+                if (_x > _z) {
+                    m_ucpSortOrders[i] = ot::DA_FLAGS::ZXY;
+                } else if (_y > _z) {
+                    m_ucpSortOrders[i] = ot::DA_FLAGS::XZY;
+                } else {
+                    m_ucpSortOrders[i] = ot::DA_FLAGS::XYZ;
+                }
+            }
         } else {
-          m_ucpSortOrders[i] = ot::DA_FLAGS::YXZ;
-        }
-      } else {
-        if ( _x > _z) {
-          m_ucpSortOrders[i] = ot::DA_FLAGS::ZXY;
-        } else if ( _y > _z ) {
-          m_ucpSortOrders[i] = ot::DA_FLAGS::XZY;
-        } else {
-          m_ucpSortOrders[i] = ot::DA_FLAGS::XYZ;
-        }
-      }
-    }else {
-      //store the childnumber instead for the hanging cases.
-      unsigned int len_par = (unsigned int)(1u << ( m_uiMaxDepth  - d +1 ) );
+            //store the childnumber instead for the hanging cases.
+            unsigned int len_par = (unsigned int) (1u << (m_uiMaxDepth - d + 1));
 
-      unsigned int a = x % len_par;
-      unsigned int b = y % len_par;
-      unsigned int c = z % len_par;
+            unsigned int a = x % len_par;
+            unsigned int b = y % len_par;
+            unsigned int c = z % len_par;
 
-      a /= sz;
-      b /= sz;
-      c /= sz;
+            a /= sz;
+            b /= sz;
+            c /= sz;
 
-      m_ucpSortOrders[i]  = (4*c + 2*b + a);
-    }//end sortOrderRegular block
-  }//end if Lut compressed
+            m_ucpSortOrders[i] = (4 * c + 2 * b + a);
+        }//end sortOrderRegular block
+    }//end if Lut compressed
 
-  // use this loop to also detect the begining and end of dependent.
-  if ( !foundBeg && !(in[i].getFlag() & ot::DA_FLAGS::DEP_ELEM)
-      && (m_ucpLutMasks[2*i+1] != ot::DA_FLAGS::FOREIGN) ) {
-    //std::cout << GRN"FOUND BEGINING OF INDEPENDENT "NRM << i << std::endl;
-    foundBeg = true;
-    m_uiIndependentElementBegin = i;
-    m_ptIndependentOffset = Point(x,y,z);
-  }
-
-  // reverse loop to find end ...
-  if ( !foundEnd && !(in[nelem-i-1].getFlag() & ot::DA_FLAGS::DEP_ELEM)
-      && (m_ucpLutMasks[2*(nelem-i-1)+1] != ot::DA_FLAGS::FOREIGN) ) {
-    //std::cout << GRN"FOUND END OF INDEPENDENT "NRM << nelem - i << std::endl;
-    foundEnd = true;
-    m_uiIndependentElementEnd = nelem - i;
-  }
-
-  //Actual number of Independent elements. In between IndependentElementBegin
-  //and IndependentElementEnd, we can also have dependent elements and so
-  //simply taking the difference of end and begin will not work
-  if( (!(in[i].getFlag() & ot::DA_FLAGS::DEP_ELEM)) &&
-      (m_ucpLutMasks[2*i+1] != ot::DA_FLAGS::FOREIGN) ) {
-    m_uiIndependentElementSize++;
-  }
-
-  if ( i == m_uiElementBegin ) {
-    m_uiElementQuotient = static_cast<unsigned int>(m_uspLutQuotients.size());
-  }
-
-  if ( i == m_uiIndependentElementBegin ) {
-    m_uiIndependentElementQuotient = static_cast<unsigned int>(m_uspLutQuotients.size());
-  }
-
-  //First initialize Masks...
-  m_ucpLutMasks[2*i] = 0;
-
-  // locally sort ...
-  if(m_bCompressLut) {
-    // Perform Golomb-Rice encoding
-    //Assumes that the highest 8 bits in offset are not significant, i.e. they will be all 0.
-    //This means offset can not be more than (2^24-1) = 16,777,215.
-    //Since the number of octants on a processor will not be more than 16M,
-    //this does not pose any kind of difficulty.
-
-    unsigned short q;
-    unsigned int offset;
-    std::vector<unsigned int> nl(8);
-    for (unsigned int ij = 0; ij < 8; ij++) {
-      nl[ij] = nlist[ii+ij];
-    }
-    std::sort(nl.begin(), nl.end());
-
-    // 0 is special, it computes the offset wrt i.
-    // 0, we have a negative offset .. or 0
-    offset = i - nl[0];
-    q = (offset >> 8);
-    m_ucpLutRemainders[8*i] = (offset%256);
-    if (q) {
-      m_ucpLutMasks[2*i] |= 1;
-      m_uspLutQuotients.push_back(q);
+    // use this loop to also detect the begining and end of dependent.
+    if (!foundBeg && !(in[i].getFlag() & ot::DA_FLAGS::DEP_ELEM)
+        && (m_ucpLutMasks[2 * i + 1] != ot::DA_FLAGS::FOREIGN)) {
+        //std::cout << GRN"FOUND BEGINING OF INDEPENDENT "NRM << i << std::endl;
+        foundBeg = true;
+        m_uiIndependentElementBegin = i;
+        m_ptIndependentOffset = Point(x, y, z);
     }
 
-    for (unsigned int j = 1; j < 8; j++) {
-      offset =  nl[j] - nl[j-1];
-      q = (offset >> 8);
-      m_ucpLutRemainders[8*i + j] = (offset%256);
-      if (q) {
-        m_ucpLutMasks[2*i] |= (1 << j);
-        m_uspLutQuotients.push_back(q);
-      }
-    } // for j ...
-    nl.clear();
-  }//end if compress
+    // reverse loop to find end ...
+    if (!foundEnd && !(in[nelem - i - 1].getFlag() & ot::DA_FLAGS::DEP_ELEM)
+        && (m_ucpLutMasks[2 * (nelem - i - 1) + 1] != ot::DA_FLAGS::FOREIGN)) {
+        //std::cout << GRN"FOUND END OF INDEPENDENT "NRM << nelem - i << std::endl;
+        foundEnd = true;
+        m_uiIndependentElementEnd = nelem - i;
+    }
+
+    //Actual number of Independent elements. In between IndependentElementBegin
+    //and IndependentElementEnd, we can also have dependent elements and so
+    //simply taking the difference of end and begin will not work
+    if ((!(in[i].getFlag() & ot::DA_FLAGS::DEP_ELEM)) &&
+        (m_ucpLutMasks[2 * i + 1] != ot::DA_FLAGS::FOREIGN)) {
+        m_uiIndependentElementSize++;
+    }
+
+    if (i == m_uiElementBegin) {
+        m_uiElementQuotient = static_cast<unsigned int>(m_uspLutQuotients.size());
+    }
+
+    if (i == m_uiIndependentElementBegin) {
+        m_uiIndependentElementQuotient = static_cast<unsigned int>(m_uspLutQuotients.size());
+    }
+
+    //First initialize Masks...
+    m_ucpLutMasks[2 * i] = 0;
+
+
+
+    // locally sort ...
+    if (m_bCompressLut) {
+        // Perform Golomb-Rice encoding
+        //Assumes that the highest 8 bits in offset are not significant, i.e. they will be all 0.
+        //This means offset can not be more than (2^24-1) = 16,777,215.
+        //Since the number of octants on a processor will not be more than 16M,
+        //this does not pose any kind of difficulty.
+
+        unsigned short q;
+        unsigned int offset;
+        std::vector<unsigned int> nl(8);
+        for (unsigned int ij = 0; ij < 8; ij++) {
+            nl[ij] = nlist[ii + ij];
+        }
+        std::sort(nl.begin(), nl.end());
+
+        // 0 is special, it computes the offset wrt i.
+        // 0, we have a negative offset .. or 0
+        offset = i - nl[0];
+        q = (offset >> 8);
+        m_ucpLutRemainders[8 * i] = (offset % 256);
+        if (q) {
+            m_ucpLutMasks[2 * i] |= 1;
+            m_uspLutQuotients.push_back(q);
+        }
+
+        for (unsigned int j = 1; j < 8; j++) {
+            offset = nl[j] - nl[j - 1];
+            q = (offset >> 8);
+            m_ucpLutRemainders[8 * i + j] = (offset % 256);
+            if (q) {
+                m_ucpLutMasks[2 * i] |= (1 << j);
+                m_uspLutQuotients.push_back(q);
+            }
+        } // for j ...
+        nl.clear();
+    }//end if compress
 
 } // for i
 
@@ -3201,12 +3257,146 @@ for (unsigned int i = 0; i < nelem; i++) {
 
 
 
-
-
 //Store Nlist if you are not compressing...
 if(!m_bCompressLut) {
-  m_uiNlist = nlist; 
+  m_uiNlist = nlist;
+
 }
+
+
+for(int i=m_uiElementBegin;i<m_uiElementEnd;i++)
+{
+
+
+    for(int j=0;j<8;j++)
+    {
+        assert(nlist[8*i+j]<m_uiLocalBufferSize);
+        ot::TreeNode node=in[i];
+        ot::TreeNode parNode=in[i].getParent();
+
+        unsigned int x,y,z;
+        unsigned int mySize;
+        x=node.getX();
+        y=node.getY();
+        z=node.getZ();
+        mySize=1u<<(node.getMaxDepth()-node.getLevel());
+        Point p;
+
+        switch (j)
+        {
+            case 0: p=Point(x,y,z);
+                break;
+            case 1: p=Point(x+mySize,y,z);
+                break;
+            case 2: p=Point(x,y+mySize,z);
+                break;
+            case 3: p=Point(x+mySize,y+mySize,z);
+                break;
+            case 4: p=Point(x,y,z+mySize);
+                break;
+            case 5: p=Point(x+mySize,y,z+mySize);
+                break;
+            case 6: p=Point(x,y+mySize,z+mySize);
+                break;
+            case 7: p=Point(x+mySize,y+mySize,z+mySize);
+                break;
+            default:std::cout<<"Child Index Error"<<std::endl;
+                break;
+        }
+
+        if(in[nlist[8*i+j]].getAnchor()!=p)
+        {
+
+            x=parNode.getX();
+            y=parNode.getY();
+            z=parNode.getZ();
+            mySize=1u<<(parNode.getMaxDepth()-parNode.getLevel());
+
+            switch (j)
+            {
+                case 0: p=Point(x,y,z);
+                    break;
+                case 1: p=Point(x+mySize,y,z);
+                    break;
+                case 2: p=Point(x,y+mySize,z);
+                    break;
+                case 3: p=Point(x+mySize,y+mySize,z);
+                    break;
+                case 4: p=Point(x,y,z+mySize);
+                    break;
+                case 5: p=Point(x+mySize,y,z+mySize);
+                    break;
+                case 6: p=Point(x,y+mySize,z+mySize);
+                    break;
+                case 7: p=Point(x+mySize,y+mySize,z+mySize);
+                    break;
+                default:std::cout<<"Child Index Error"<<std::endl;
+                    break;
+            }
+            if(in[nlist[8*i+j]].getAnchor()!=p)
+            {
+                debugKeys.clear();
+                debugNode.clear();
+
+                debugNode.push_back(in[i]);
+                for(int w=0;w<8;w++)
+                {
+                    if(nlist[8*i+w]<in.size())
+                    {
+                        debugKeys.push_back(in[nlist[8*i+w]]);
+                    }else
+                    {
+                        std::cout<<"Index out of bound for Tree node :"<<i<<std::endl;
+                    }
+                }
+
+
+
+                if(!m_iRankActive)
+                {
+                    if(!debugNode.empty())
+                    {
+                        treeNodesTovtk(debugNode,i,"debugNode_0_");
+                        treeNodesTovtk(debugKeys,i,"debugKeys_0_");
+
+                    }
+
+                }else
+                {
+                    if(!debugNode.empty())
+                    {
+                        treeNodesTovtk(debugNode,i,"debugNode_1_");
+                        treeNodesTovtk(debugKeys,i,"debugKeys_1_");
+
+                    }
+
+                }
+
+
+
+
+                assert(false);
+
+            }
+
+        }
+
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // free up
 nlist.clear();
@@ -3232,6 +3422,7 @@ MPI_Barrier(m_mpiCommActive);
 PROF_BUILD_NLIST_END
 
 }//end 4-way BuildNode List
+
 }//end namespace ot
 
 

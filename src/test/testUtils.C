@@ -882,71 +882,112 @@ namespace oda
 {
     namespace test
     {
-        bool odaTest( std::vector<unsigned int> &nlist, std::vector<ot::TreeNode> &balOctree, MPI_Comm comm)
+        bool odaTest(std::vector<ot::TreeNode>& in, ot::DA& da,MPI_Comm comm)
         {
+
 
           int rank,size;
           MPI_Comm_rank(comm,&rank);
           MPI_Comm_size(comm,&size);
+          std::vector<ot::TreeNode> DNodes;
+          std::vector<ot::TreeNode> DKeys;
 
-          int gb_lowerBound;
-          int local_sz=balOctree.size();
+          if(!rank)
+            std::cout<<"============ODA TEST START=============="<<std::endl;
 
-          MPI_Scan(&local_sz,&gb_lowerBound,1,MPI_INT,MPI_SUM,comm);
-
-          unsigned int x,y,z,mySize;
-
-
-          for(int i=0;i<balOctree.size();i++)
-          {
-
-            x=balOctree[i].getX();
-            y=balOctree[i].getY();
-            z=balOctree[i].getZ();
-            mySize=1u<<(balOctree[i].getMaxDepth()-balOctree[i].getLevel());
-            for(int j=0;j<8;j++)
+          if(da.iAmActive()){
+            std::vector<unsigned int> nodeIdx;
+            unsigned  int * nodeIdx_ptr;
+            std::vector<unsigned int > nlist;
+            nlist=da.getCompleteNodeList();
+            for(da.init<ot::DA_FLAGS::ALL>();da.curr()<da.end<ot::DA_FLAGS::ALL>();da.next<ot::DA_FLAGS::ALL>())
             {
-              // Trivial Case Test.
+              nodeIdx.resize(8);
+              nodeIdx_ptr=&(*nodeIdx.begin());
+              da.getNodeIndices(nodeIdx_ptr);
 
-              if(gb_lowerBound<=nlist[8*i+j] && nlist[8*i+j]<balOctree.size())
+              for(int j=0;j<nodeIdx.size();j++)
               {
 
-                Point p;
-                switch (j)
+                if(nodeIdx[j]>=da.getLocalBufferSize())
                 {
-                  case 0: p=Point(x,y,z);
-                        break;
-                  case 1: p=Point(x+mySize,y,z);
-                        break;
-                  case 2: p=Point(x,y+mySize,z);
-                        break;
-                  case 3: p=Point(x+mySize,y+mySize,z);
-                        break;
-                  case 4: p=Point(x,y,z+mySize);
-                        break;
-                  case 5: p=Point(x+mySize,y,z+mySize);
-                        break;
-                  case 6: p=Point(x,y+mySize,z+mySize);
-                        break;
-                  case 7: p=Point(x+mySize,y+mySize,z+mySize);
-                        break;
-                  default:std::cout<<"Invalid Child Number "<<std::endl;
-                        break;
-                }
-                if(balOctree[nlist[8*i+j]].getAnchor()!=p)
-                {
-                  std::cout<<"Node List mismatch (Basic Case) balOctree:"<<balOctree[nlist[8*i+j]]<<" p:"<<p.x()<<","<<p.y()<<","<<p.z()<<std::endl;
+                  std::cout<<"For rank:"<<rank<<" node list points out ot range error. Total Size:"<<da.getLocalBufferSize()<<" invalid index:"<<nodeIdx[j]<<" for "<<j<<"th child"<<std::endl;
                   return false;
+                }else if( !da.isHanging(da.curr())) {
+                  Point p;
+                  unsigned int x,y,z;
+                  unsigned int mySize=1u<<(in[da.curr()].getMaxDepth()-in[da.curr()].getLevel());
+                  x=in[da.curr()].getX();
+                  y=in[da.curr()].getY();
+                  z=in[da.curr()].getZ();
+
+                  switch (j)
+                  {
+                    case 0: p=Point(x,y,z);
+                            break;
+                    case 1: p=Point(x+mySize,y,z);
+                            break;
+                    case 2: p=Point(x,y+mySize,z);
+                            break;
+                    case 3: p=Point(x+mySize,y+mySize,z);
+                            break;
+                    case 4: p=Point(x,y,z+mySize);
+                            break;
+                    case 5: p=Point(x+mySize,y,z+mySize);
+                            break;
+                    case 6: p=Point(x,y+mySize,z+mySize);
+                            break;
+                    case 7: p=Point(x+mySize,y+mySize,z+mySize);
+                            break;
+                    default:std::cout<<"Child Index Error"<<std::endl;
+                            break;
+                  }
+                  if(in[nlist[8*da.curr()+j]].getAnchor()!= p)
+                  {
+
+                    std::cout<< "Rank:"<<rank<<"oda test failed for"<<da.curr()<< " non hanging Node : "<<in[da.curr()]<<"for j:"<<j<<"child points to "<<in[nodeIdx[j]]<<std::endl;
+                   // std::cout<<"Node List:"<<
+//                    DNodes.push_back(in[da.curr()]);
+//                    for(int w=0;w<nodeIdx.size();w++)
+//                      DKeys.push_back(in[nodeIdx[w]]);
+//
+//                    char fileNameNodes[80];
+//                    char fileNameKeys[80];
+//                    sprintf(fileNameNodes,"%s_index%d_","DNODES",da.curr());
+//                    sprintf(fileNameKeys,"%s_index%d_","DKeys",da.curr());
+//                    treeNodesTovtk(DNodes,rank,fileNameNodes);
+//                    treeNodesTovtk(DKeys,rank,fileNameKeys);
+//                    DNodes.clear();
+//                    DKeys.clear();
+
+
+                  }
+
+                  assert( in[nodeIdx[j]].getAnchor()== p);
                 }
 
+//                }else
+//                {
+//                  assert()
+//                }
+
+
+
+
               }
+
+              nodeIdx.clear();
+
 
             }
 
           }
 
-        }
 
+
+
+
+        }
     }
 
 }

@@ -10,6 +10,7 @@
 
 #include <mpi.h>
 #include <vector>
+#include "oda.h"
 
 namespace seq {
 
@@ -121,7 +122,7 @@ namespace oda
 
     namespace test
     {
-        bool odaTest( std::vector<unsigned int> &nlist, std::vector<ot::TreeNode> &balOctree, MPI_Comm comm);
+        bool odaTest(std::vector<ot::TreeNode>& in, ot::DA& da,MPI_Comm comm);
 
     }
 

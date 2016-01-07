@@ -162,6 +162,7 @@ void DA::DA_FactoryPart1(std::vector<ot::TreeNode>& in) {
   addBoundaryNodesType1(in, positiveBoundaryOctants, m_uiDimension, m_uiMaxDepth);
   //@hari: After Boundary nodes calculation the in won't be sorted due to embedding the current octree in one level higher. Hence we need to sort it using sample sort. This is a must.
 
+
 #ifdef HILBERT_ORDERING
   std::vector<ot::TreeNode> tmpTN;
   par::sampleSort(in,tmpTN,m_mpiCommActive);
@@ -188,15 +189,25 @@ void DA::DA_FactoryPart1(std::vector<ot::TreeNode>& in) {
     positiveBoundaryOctants = tmpVecTN;
     tmpVecTN.clear();
 
-  }
+//#ifdef  __DEBUG_DA__
+    for(int i=0;i<in.size();i++)
+    {
+        if(in[i]>=positiveBoundaryOctants[0])
+        {
+          std::cout<<"Input octnat is larger than : "<<in[i]<<" postiveBoundary:"<<positiveBoundaryOctants[0]<<std::endl;
+          assert(false);
+        }
+    }
+//#endif
+ }
 
   assert(par::test::isUniqueAndSorted(positiveBoundaryOctants,m_mpiCommActive));
-
   par::concatenate<ot::TreeNode>(in, positiveBoundaryOctants, m_mpiCommActive);
   positiveBoundaryOctants.clear();
   assert(par::test::isUniqueAndSorted(in,m_mpiCommActive));
 
   PROF_BUILD_DA_STAGE1_END
+
 }//end function
 
 void DA::DA_FactoryPart2(std::vector<ot::TreeNode>& in) {
@@ -296,8 +307,9 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
 
 
 
-
+    //treeNodesTovtk(in,m_iRankActive,"oda_in");
     ot::blockPartStage1(in, blocks, m_uiDimension, m_uiMaxDepth, m_mpiCommActive);
+    treeNodesTovtk(blocks,m_iRankActive,"oda_blocks_1");
 //    if(!m_iRankActive)
 //       std::cout<<GRN<<"ot::blockPartStage1 is completed."<<NRM<<std::endl;
 
@@ -306,7 +318,7 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
       PROF_DA_BPART2_BEGIN
 
     DA_blockPartStage2(in, blocks, m_uiDimension, m_uiMaxDepth, m_mpiCommActive);
-//    treeNodesTovtk(blocks,m_iRankActive,"oda_blocks");
+    treeNodesTovtk(blocks,m_iRankActive,"oda_blocks_2");
 //    if(!m_iRankActive)
 //      std::cout<<GRN<<"DA_blockPartStage2 is completed."<<NRM<<std::endl;
 
@@ -318,7 +330,7 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
   PROF_DA_BPART3_BEGIN
 
     DA_blockPartStage3(in, blocks, m_tnMinAllBlocks, m_uiDimension, m_uiMaxDepth, m_mpiCommActive);
-
+    //treeNodesTovtk(blocks,m_iRankActive,"oda_blocks_3");
 //  if(!m_iRankActive)
 //      std::cout<<GRN<<"DA_blockPartStage3 is completed."<<NRM<<std::endl;
   PROF_DA_BPART3_END
@@ -690,6 +702,10 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
   in.clear();
   recvK.clear();
 
+
+
+
+
   m_uiLocalBufferSize = static_cast<unsigned int>(localOcts.size());
 
 //
@@ -723,27 +739,10 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
 #endif
 
 
+  //treeNodesTovtk(localOcts,rank,"localOct");
+  //@hari @milinda quick fix for the test;
 
-//@milinda: Remove this later
-//  assert(localOcts.size()!=0);
-//  treeNodesTovtk(localOcts,rank,"localOct");
-//  char fileName[256];
-//  sprintf(fileName, "%s%d_%d.pts", "localOctants_Hilbert", rank, size);
-//
-//
-//#ifdef HILBERT_ORDERING
-//  writeNodesToFile_binary(fileName,localOcts);
-//#else
-//  std::vector<ot::TreeNode> oct;
-//  std::vector<ot::TreeNode> tmpOct;
-//  readNodesFromFile_binary(fileName,oct);
-//  assert(oct.size()!=0);
-//  par::sampleSort(oct,tmpOct,MPI_COMM_WORLD);
-//  localOcts=tmpOct;
-//  assert(localOcts.size()!=0);
-//#endif
-
- // treeNodesTovtk(localOcts,rank,"localOct");
+  m_localOctants=localOcts;
   buildNodeList(localOcts);
 
 

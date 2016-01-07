@@ -569,8 +569,14 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
 #endif
   startTime = MPI_Wtime();
   assert(!(balOct.empty()));
+
   ot::DA da(balOct, MPI_COMM_WORLD, MPI_COMM_WORLD, compressLut);
   endTime = MPI_Wtime();
+  //assert(!(balOct.empty()));
+
+  balOct = da.getLocalOctants();
+  treeNodesTovtk(balOct,rank,"oda_octree");
+  //assert(oda::test::odaTest(balOct,da,MPI_COMM_WORLD));
 #ifdef PETSC_USE_LOG
   PetscLogStagePop();
 #endif
@@ -620,13 +626,16 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
   }
 
 
+
+
+
   ot::DA_Finalize();
   PetscFinalize();
   delete[] rotations;
   delete [] HILBERT_TABLE;
 
 
-  //assert(oda::test::odaTest(nodelist,balOct,MPI_COMM_WORLD));
+
 
 
 

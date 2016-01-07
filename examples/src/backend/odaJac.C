@@ -158,8 +158,8 @@ PetscErrorCode MassMatDestroy(Mat J) {
 }
 
 PetscErrorCode Jacobian1MatGetDiagonal(Mat J, Vec diag) {
-  PetscFunctionBegin;
 
+  PetscFunctionBegin;
   PetscLogEventBegin(Jac1DiagEvent,diag,0,0,0);
   Jac1MFreeData *data;
   iC(MatShellGetContext(J, (void **)&data));

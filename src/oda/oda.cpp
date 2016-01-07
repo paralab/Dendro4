@@ -191,12 +191,12 @@ namespace ot {
       DA_FactoryPart1(in);
       DA_FactoryPart2(in);
 
-#ifdef HILBERT_ORDERING
-        std::vector<ot::TreeNode> tmpIn;
-        par::sampleSort(in,tmpIn,activeInputComm);
-        in=tmpIn;
-        tmpIn.clear();
-#endif
+//#ifdef HILBERT_ORDERING
+//        std::vector<ot::TreeNode> tmpIn;
+//        par::sampleSort(in,tmpIn,activeInputComm);
+//        in=tmpIn;
+//        tmpIn.clear();
+//#endif
 
       DA_FactoryPart3(in, comm, compressLut, blocksPtr, iAmActive);
 
@@ -206,6 +206,7 @@ namespace ot {
     }
 
     PROF_BUILD_DA_END
+
   }//end constructor
 
   DA::DA(unsigned int dummy, std::vector<ot::TreeNode> &in, MPI_Comm comm,

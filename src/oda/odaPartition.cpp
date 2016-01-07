@@ -207,9 +207,9 @@ namespace ot {
     //Naive Logic:
     for (unsigned int i = 0; i < globalCoarse.size(); i++) {
       for (int p = 0; p < npesActive; p++) {
-        //if ( (globalCoarse[i].isAncestor(_mins_maxs[2*p])) || ( (globalCoarse[i] >= _mins_maxs[2*p]) && (globalCoarse[i] <=_mins_maxs[(2*p)+1]) ) ) {
+        if ( (globalCoarse[i].isAncestor(_mins_maxs[2*p])) || ( (globalCoarse[i] >= _mins_maxs[2*p]) && (globalCoarse[i] <=_mins_maxs[(2*p)+1]) ) ) {
         //@Hari @Milinda We did this fix to Blockpart2
-        if((globalCoarse[i].isAncestor(_mins_maxs[2*p])) || ( (globalCoarse[i] >= _mins_maxs[2*p]) && (globalCoarse[i] <=_mins_maxs[(2*p)+1]) ) || (globalCoarse[i].isAncestor(_mins_maxs[2*p+1]))){
+        //if((globalCoarse[i].isAncestor(_mins_maxs[2*p])) || ( (globalCoarse[i] >= _mins_maxs[2*p]) && (globalCoarse[i] <=_mins_maxs[(2*p)+1]) ) || (globalCoarse[i].isAncestor(_mins_maxs[2*p+1]))){
           sendNodes[p].push_back(globalCoarse[i]);
           // save keymap so that we can assign weights back to globalCoarse.
           keymap[p].push_back(i);    
@@ -445,6 +445,7 @@ namespace ot {
       assert(par::test::isUniqueAndSorted(globalCoarse,MPI_COMM_WORLD));
 
       unsigned int lastIdxFound = (globalCoarse.size() -1);
+
       for(int singCnt = (allSingular.size()-1); singCnt >= 0; singCnt--) {
         unsigned int idxMLB;
           //@hari. Perform the full binary search to make things sure.
@@ -453,8 +454,8 @@ namespace ot {
 //          bool foundMLB = seq::maxLowerBound<ot::TreeNode>(globalCoarse,
 //                                                           allSingular[singCnt], idxMLB, NULL, NULL);
         if(foundMLB) {
-          ot::TreeNode requiredOct = allSingular[singCnt].getParent().getDFD().
-            getAncestor(allSingular[singCnt].getLevel());
+          ot::TreeNode requiredOct = allSingular[singCnt].getParent().getFirstChild();
+                 // .getDFD().getAncestor(allSingular[singCnt].getLevel());
           while(globalCoarse[idxMLB] > requiredOct) {
             globalCoarse[idxMLB].setWeight(0);
             if(idxMLB > 0) {
