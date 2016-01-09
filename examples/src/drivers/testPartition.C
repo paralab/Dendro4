@@ -572,11 +572,9 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
 
   ot::DA da(balOct, MPI_COMM_WORLD, MPI_COMM_WORLD, compressLut);
   endTime = MPI_Wtime();
-  //assert(!(balOct.empty()));
-
   balOct = da.getLocalOctants();
   treeNodesTovtk(balOct,rank,"oda_octree");
-  //assert(oda::test::odaTest(balOct,da,MPI_COMM_WORLD));
+
 #ifdef PETSC_USE_LOG
   PetscLogStagePop();
 #endif
@@ -591,6 +589,8 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
     std::cout << "Total # Vertices: " << totalSz << std::endl;
     std::cout << "Time to build ODA: " << totalTime << std::endl;
   }
+
+
 
   //! Quality of the partition ...
   DendroIntL maxNodeSize, minNodeSize,
@@ -621,16 +621,20 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
     std::cout << "Independent    \t(" << minIndepSize << ", " << maxIndepSize << ")" << std::endl;
   }
 
+
+
   if (!rank) {
     std::cout << GRN << "Finalizing ..." << NRM << std::endl;
   }
 
+  assert(oda::test::odaTest(balOct,da,MPI_COMM_WORLD));
 
 
 
 
   ot::DA_Finalize();
   PetscFinalize();
+
   delete[] rotations;
   delete [] HILBERT_TABLE;
 

@@ -181,6 +181,7 @@ namespace ot {
     PROF_BUILD_DA_BEGIN
 
       //@milinda
+
       int rank;
       MPI_Comm_rank(comm,&rank);
 
@@ -251,7 +252,8 @@ namespace ot {
   }
 
   /************** Domain Access ****************/
-  Point DA::getNextOffset(Point p, unsigned char d) {
+Point DA::getNextOffset(Point p, unsigned char d) {
+
 #ifdef __DEBUG_DA_PUBLIC__
     assert(m_bIamActive);
 #endif
@@ -262,29 +264,16 @@ namespace ot {
     unsigned int y1=P.yint();\
     unsigned int z1=P.zint();\
     R=0;\
-    unsigned int current_rot;\
+    unsigned int current_rot=0;\
     unsigned int mid_bit=m_uiMaxDepth; \
     unsigned int index1=0;\
-    for(int i=0; i<d;i++) {\
+    for(int i=0; i<D;i++) {\
       mid_bit=m_uiMaxDepth-i-1; \
       index1= (((z1&(1<<mid_bit))>>mid_bit)<<2)|( (((x1&(1<<mid_bit))>>mid_bit)^((z1&(1<<mid_bit))>>mid_bit)) <<1)|(((x1&(1<<mid_bit))>>mid_bit)^((y1&(1<<mid_bit))>>mid_bit)^((z1&(1<<mid_bit))>>mid_bit));\
       current_rot=HILBERT_TABLE[current_rot*num_children+index1];\
     }\
     R=current_rot;\
 }
-
-#define GET_HILBERT_CHILDNUMBER(P,D,I){\
-    unsigned int index1=0;\
-    unsigned int num_children=1u<<m_uiMaxDepth;\
-    unsigned int rot_offset=num_children<<1;\
-    unsigned mid_bit = m_uiMaxDepth - D;\
-    unsigned int x1,y1,z1;\
-    x1=P.xint(); y1=P.yint(); z1=P.zint();\
-    index1 = (((z1 & (1 << mid_bit)) >> mid_bit) << 2) | ((((x1 & (1 << mid_bit)) >> mid_bit) ^ ((z1 & (1 << mid_bit)) >> mid_bit)) << 1) | (((x1 & (1 << mid_bit)) >> mid_bit) ^ ((y1 & (1 << mid_bit)) >> mid_bit)^((z1 & (1 << mid_bit)) >> mid_bit));\
-    char rot_id = 0;\
-    CALCULATE_TREENODE_ROTATION(P,D,rot_id);\
-    I=rotations[rot_offset * rot_id + num_children + index1] - '0');\
- }
 
 #define GET_PARENT(P,PAR_LEV,PAR_P){\
     unsigned int parX, parY, parZ;\
@@ -293,12 +282,29 @@ namespace ot {
     parZ = ((P.zint() >> (m_uiMaxDepth - PAR_LEV)) << (m_uiMaxDepth - PAR_LEV));\
     PAR_P=Point(parX,parY,parZ);\
 }
+
+#define GET_HILBERT_CHILDNUMBER(P,D,I){\
+    unsigned int index1=0;\
+    unsigned int mid_bit = m_uiMaxDepth - D;\
+    unsigned int x1,y1,z1;\
+    x1=P.xint(); y1=P.yint(); z1=P.zint();\
+    index1 = (((z1 & (1 << mid_bit)) >> mid_bit) << 2) | ((((x1 & (1 << mid_bit)) >> mid_bit) ^ ((z1 & (1 << mid_bit)) >> mid_bit)) << 1) | (((x1 & (1 << mid_bit)) >> mid_bit) ^ ((y1 & (1 << mid_bit)) >> mid_bit)^((z1 & (1 << mid_bit)) >> mid_bit));\
+    char rot_id = 0;\
+    Point parP;\
+    unsigned int pLev=D-1;\
+    GET_PARENT(P,pLev,parP);\
+    CALCULATE_TREENODE_ROTATION(parP,pLev,rot_id);\
+    parRotID=rot_id;\
+    /*std::cout<<"Rotation:"<<(int)rotations[rot_offset * rot_id + num_children + index1]<<std::endl;*/\
+    I=(rotations[rot_offset * rot_id + num_children + index1]-'0');\
+ }
+
+
 #endif
 
 #ifdef HILBERT_ORDERING
     Point m = p;
     unsigned int mask = (1u << (m_uiMaxDepth - d));
-    int i;
     Point parent;
     unsigned int level=d;
     unsigned int next_limit=(1<<m_uiDimension)-1;
@@ -310,44 +316,55 @@ namespace ot {
     unsigned int num_children=1u<<m_uiDimension; // This is basically the hilbert table offset
     unsigned int rot_offset=num_children<<1;
     unsigned int parLev;
-    // std::cout<<"Get Next of TreeNode: "<<(*this)<<std::endl;
-    for (i =level; i >= 0; --i) {
+    unsigned int parRotID;
+    //std::cout<<"Get Next of TreeNode: "<<m.xint()<<","<<m.yint()<<","<<m.zint()<<" level"<<(int)d<<std::endl;
+    for (int k =level; k >= 0; --k) {
 
       // special case that next of the root node.We consider it as the first child of the root.
-      if(i==0)
+      if(k==0)
       {
-        //std::cout<<"Root achieved:"<<rank<<std::endl;
+        std::cout<<"Root achieved:"<<std::endl;
         //std::cout<<"While getting the next node of: "<<*this<<std::endl;
         assert(m.xint()==0 && m.yint()==0 && m.zint()==0);
-        unsigned int len=m_uiMaxDepth;
+        int len=(1u<<(m_uiMaxDepth))-1;
         m=Point(0,0,len);//TreeNode(1,0,0,len,1,m_uiDim,m_uiMaxDepth+1);
         break;
       }
-      parLev=i-1;
+
+      parLev=k-1;
       child_index=0;
-      GET_HILBERT_CHILDNUMBER(m,level,child_index);
+      //ot::TreeNode temp(1,m.xint(),m.yint(),m.zint(),k,m_uiDimension,m_uiMaxDepth);
+      GET_HILBERT_CHILDNUMBER(m,k,child_index);
+      //assert(child_index==temp.getChildNumber(true));
+      //assert(child_index<8);
+
       GET_PARENT(m,parLev,parent);
-      CALCULATE_TREENODE_ROTATION(parent,parLev,rotation_id);
+      //assert(parent.xint()==temp.getParent().getX() && parent.yint()==temp.getParent().getY() && parent.zint()==temp.getParent().getZ());
+      //std::cout<<"Parent:"<<parent.xint()<<","<<parent.yint()<<","<<parent.zint()<<std::endl;
+      //CALCULATE_TREENODE_ROTATION(parent,parLev,rotation_id);
+      //assert(rotation_id==temp.getParent().calculateTreeNodeRotation());
+      //assert(rotation_id==parRotID);
+      //std::cout<<"Parent Rotattion:"<<(int)rotation_id<<std::endl;
+      rotation_id=parRotID; // calculated from get ChildNumber
+
       par_x=parent.xint();
       par_y=parent.yint();
       par_z=parent.zint();
       par_level=parLev;
 
-      len=m_uiMaxDepth-i;//(m_uiMaxDepth-parent.getLevel()-1);
+      len=m_uiMaxDepth-k;//(m_uiMaxDepth-parent.getLevel()-1);
       if(child_index<next_limit)
       {
         // next octant is in the same level;
-
-        next_index= rotations[rot_offset*rotation_id+child_index+1]-'0'; //rotations[rotation_id].rot_perm[child_index+1];
-
+        next_index= rotations[rot_offset*rotation_id+child_index+1]-'0';
         // Note: Just calculation of x,y,x of a child octant for a given octant based on the child index. This is done to eliminate the branching.
-
         par_x=par_x +(( (( (next_index&4u)>>2u )&(!((next_index&2u)>>1u)))+( ((next_index&2u)>>1u) & (!((next_index&4u)>>2u))))<<len);
         par_y=par_y +((( (next_index&1u) & ( !((next_index&2u)>>1u)  ))+( ((next_index&2u)>>1u) & (!(next_index&1u)  )))<<len);
         par_z=par_z +(((next_index&4u)>>2u)<<len);
 
         // Tree node with updated coordinates.
         m=Point(par_x,par_y,par_z);
+        //std::cout<<"Get Next Returned: "<<m.xint()<<","<<m.yint()<<","<<m.zint()<<" par Lev:"<<(k-1)<<std::endl;
         break;
 
       }else {
@@ -356,13 +373,8 @@ namespace ot {
     }
 
 
-    //std::cout<<"Get Next Returned: "<<m<<std::endl;
+
     return m;
-
-
-
-
-
 
 #else
 
@@ -437,10 +449,23 @@ namespace ot {
 #ifdef HILBERT_ORDERING
 
     unsigned char d = (m_ucpOctLevels[m_uiCurrent] & ot::TreeNode::MAX_LEVEL );
+    unsigned char par_d=(m_ucpOctLevels[m_uiCurrent+1] & ot::TreeNode::MAX_LEVEL );
 
-    Point next;
-    next=getNextOffset(m_ptCurrentOffset,d);
-    m_ptCurrentOffset=next;
+    ot::TreeNode currentNode(1,m_ptCurrentOffset.xint(),m_ptCurrentOffset.yint(),m_ptCurrentOffset.zint(),d,m_uiDimension,m_uiMaxDepth);
+    ot::TreeNode nextNode=currentNode.getNext();
+
+    Point p =m_ptCurrentOffset;
+    Point nextP =getNextOffset(p,d);
+    m_ptCurrentOffset=nextP;
+
+//    assert(nextP.xint()==nextNode.getX() && nextP.yint()==nextNode.getY() && nextP.zint()==nextNode.getZ());
+//    if(nextNode.getLevel()!=par_d)
+//    {
+//        std::cout<<"par_d:"<<(int)par_d<<" Level:"<<(int)nextNode.getLevel()<<std::endl;
+//    }
+     // assert(nextNode.getLevel()==par_d);
+
+
 
 #else
     unsigned char d = (m_ucpOctLevels[m_uiCurrent] & ot::TreeNode::MAX_LEVEL );

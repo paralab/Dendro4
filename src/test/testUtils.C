@@ -9,6 +9,7 @@
 #include "parUtils.h"
 #include "seqUtils.h"
 #include <cstring>
+#include "hcurvedata.h"
 
 namespace ot {
   namespace test {
@@ -898,20 +899,18 @@ namespace oda
           if(da.iAmActive()){
             std::vector<unsigned int> nodeIdx;
             unsigned  int * nodeIdx_ptr;
-            std::vector<unsigned int > nlist;
-            nlist=da.getCompleteNodeList();
-            for(da.init<ot::DA_FLAGS::ALL>();da.curr()<da.end<ot::DA_FLAGS::ALL>();da.next<ot::DA_FLAGS::ALL>())
+            for(da.init<ot::DA_FLAGS::WRITABLE>();da.curr()<da.end<ot::DA_FLAGS::WRITABLE>();da.next<ot::DA_FLAGS::WRITABLE>())
             {
               nodeIdx.resize(8);
               nodeIdx_ptr=&(*nodeIdx.begin());
               da.getNodeIndices(nodeIdx_ptr);
-
+              //std::vector<unsigned int> nlist=da.getCompleteNodeList();
               for(int j=0;j<nodeIdx.size();j++)
               {
 
                 if(nodeIdx[j]>=da.getLocalBufferSize())
                 {
-                  std::cout<<"For rank:"<<rank<<" node list points out ot range error. Total Size:"<<da.getLocalBufferSize()<<" invalid index:"<<nodeIdx[j]<<" for "<<j<<"th child"<<std::endl;
+                  std::cout<<"For rank:"<<rank<<" node list points out ot range error. Total Size:"<<da.getLocalBufferSize()<<" invalid index:"<<nodeIdx[j]<<" for "<<j<<" child"<<std::endl;
                   return false;
                 }else if( !da.isHanging(da.curr())) {
                   Point p;
@@ -942,11 +941,44 @@ namespace oda
                     default:std::cout<<"Child Index Error"<<std::endl;
                             break;
                   }
-                  if(in[nlist[8*da.curr()+j]].getAnchor()!= p)
+                  if(in[nodeIdx[j]].getAnchor()!= p)
+                  //if(in[nlist[8*da.curr()+j]].getAnchor()!=p)
                   {
+                    std::cout << "Rank:" << rank << "oda test failed for" << da.curr() << " non hanging Node : " <<in[da.curr()] << " for j:" << j << "child points to " << in[nodeIdx[j]] << std::endl;
 
-                    std::cout<< "Rank:"<<rank<<"oda test failed for"<<da.curr()<< " non hanging Node : "<<in[da.curr()]<<"for j:"<<j<<"child points to "<<in[nodeIdx[j]]<<std::endl;
-                   // std::cout<<"Node List:"<<
+//                    ot::TreeNode parent=in[da.curr()].getParent();
+//                    x=parent.getX();
+//                    y=parent.getY();
+//                    z=parent.getZ();
+//                    mySize=1u<<(parent.getMaxDepth()-parent.getLevel());
+//
+//                    switch (j)
+//                    {
+//                      case 0: p=Point(x,y,z);
+//                            break;
+//                      case 1: p=Point(x+mySize,y,z);
+//                            break;
+//                      case 2: p=Point(x,y+mySize,z);
+//                            break;
+//                      case 3: p=Point(x+mySize,y+mySize,z);
+//                            break;
+//                      case 4: p=Point(x,y,z+mySize);
+//                            break;
+//                      case 5: p=Point(x+mySize,y,z+mySize);
+//                            break;
+//                      case 6: p=Point(x,y+mySize,z+mySize);
+//                            break;
+//                      case 7: p=Point(x+mySize,y+mySize,z+mySize);
+//                            break;
+//                      default:std::cout<<"Child Index Error"<<std::endl;
+//                            break;
+//                    }
+//
+//                    if(in[nodeIdx[j]].getAnchor()!=p) {
+//                      std::cout << "Rank:" << rank << "oda test failed for" << da.curr() << " non hanging Node : " <<in[da.curr()] << "for j:" << j << "child points to " << in[nodeIdx[j]] << std::endl;
+//                      assert(false);
+//                    }
+
 //                    DNodes.push_back(in[da.curr()]);
 //                    for(int w=0;w<nodeIdx.size();w++)
 //                      DKeys.push_back(in[nodeIdx[w]]);
@@ -960,31 +992,15 @@ namespace oda
 //                    DNodes.clear();
 //                    DKeys.clear();
 
-
                   }
-
-                  assert( in[nodeIdx[j]].getAnchor()== p);
+                      //assert(in[nlist[8*da.curr()+j]].getAnchor()==p);
+                      assert( in[nodeIdx[j]].getAnchor()== p);
                 }
-
-//                }else
-//                {
-//                  assert()
-//                }
-
-
-
-
-              }
-
+               }
               nodeIdx.clear();
-
+             }
 
             }
-
-          }
-
-
-
 
 
         }
