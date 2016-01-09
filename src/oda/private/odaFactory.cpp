@@ -788,6 +788,7 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
   // Finally compress the octree, clean up and we are all set.
 
   // we simply retain the oct levels ...
+  assert(seq::test::isUniqueAndSorted(localOcts));
   if(!localOcts.empty()) {
     m_ucpOctLevels = new unsigned char [localOcts.size()];
   } else {

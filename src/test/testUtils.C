@@ -879,131 +879,111 @@ bool isBalancedInternal(unsigned int dim, unsigned int maxDepth,char*failFileNam
 }//end namespace
 }//end namespace
 
-namespace oda
-{
-    namespace test
-    {
-        bool odaTest(std::vector<ot::TreeNode>& in, ot::DA& da,MPI_Comm comm)
-        {
+namespace oda {
+    namespace test {
 
+        bool odaTest(std::vector<ot::TreeNode> &in, ot::DA &da, MPI_Comm comm) {
 
-          int rank,size;
-          MPI_Comm_rank(comm,&rank);
-          MPI_Comm_size(comm,&size);
+          int rank, size;
+          MPI_Comm_rank(comm, &rank);
+          MPI_Comm_size(comm, &size);
           std::vector<ot::TreeNode> DNodes;
           std::vector<ot::TreeNode> DKeys;
 
-          if(!rank)
-            std::cout<<"============ODA TEST START=============="<<std::endl;
+          if (!rank)
+            std::cout << GRN << "============ODA TEST START==============" << NRM << std::endl;
 
-          if(da.iAmActive()){
+          if (da.iAmActive()) {
             std::vector<unsigned int> nodeIdx;
-            unsigned  int * nodeIdx_ptr;
-            for(da.init<ot::DA_FLAGS::WRITABLE>();da.curr()<da.end<ot::DA_FLAGS::WRITABLE>();da.next<ot::DA_FLAGS::WRITABLE>())
-            {
+            unsigned int *nodeIdx_ptr;
+            for (da.init<ot::DA_FLAGS::WRITABLE>(); da.curr() < (da.end<ot::DA_FLAGS::WRITABLE>() -
+                                                                da.getPreGhostElementSize()); da.next<ot::DA_FLAGS::WRITABLE>()) {
               nodeIdx.resize(8);
-              nodeIdx_ptr=&(*nodeIdx.begin());
+              nodeIdx_ptr = &(*nodeIdx.begin());
               da.getNodeIndices(nodeIdx_ptr);
-              //std::vector<unsigned int> nlist=da.getCompleteNodeList();
-              for(int j=0;j<nodeIdx.size();j++)
-              {
+              Point currentPoint;
+              currentPoint=da.getCurrentOffset();
+              unsigned int currentLev=da.getLevel(da.curr());
+              std::vector<ot::TreeNode> child;
 
-                if(nodeIdx[j]>=da.getLocalBufferSize())
-                {
-                  std::cout<<"For rank:"<<rank<<" node list points out ot range error. Total Size:"<<da.getLocalBufferSize()<<" invalid index:"<<nodeIdx[j]<<" for "<<j<<" child"<<std::endl;
-                  return false;
-                }else if( !da.isHanging(da.curr())) {
-                  Point p;
-                  unsigned int x,y,z;
-                  unsigned int mySize=1u<<(in[da.curr()].getMaxDepth()-in[da.curr()].getLevel());
-                  x=in[da.curr()].getX();
-                  y=in[da.curr()].getY();
-                  z=in[da.curr()].getZ();
+              ot::TreeNode currentNode(1,currentPoint.xint(),currentPoint.yint(),currentPoint.zint(),currentLev,da.getDimension(),da.getMaxDepth());
 
-                  switch (j)
+              if(!da.isHanging(da.curr())) {
+                currentNode.getParent().addChildrenMorton(child);
+                for (int j = 0; j < child.size(); j++) {
+//
+                  if(child[j].getAnchor()!=in[nodeIdx[j]].getAnchor())
                   {
-                    case 0: p=Point(x,y,z);
-                            break;
-                    case 1: p=Point(x+mySize,y,z);
-                            break;
-                    case 2: p=Point(x,y+mySize,z);
-                            break;
-                    case 3: p=Point(x+mySize,y+mySize,z);
-                            break;
-                    case 4: p=Point(x,y,z+mySize);
-                            break;
-                    case 5: p=Point(x+mySize,y,z+mySize);
-                            break;
-                    case 6: p=Point(x,y+mySize,z+mySize);
-                            break;
-                    case 7: p=Point(x+mySize,y+mySize,z+mySize);
-                            break;
-                    default:std::cout<<"Child Index Error"<<std::endl;
-                            break;
+                    std::cout<<"oda test failed for:"<<da.curr()<<"  "<<currentNode<<" child: "<<child[j]<<" vs: "<<in[nodeIdx[j]]<<std::endl;
+                    //assert(false);
                   }
-                  if(in[nodeIdx[j]].getAnchor()!= p)
-                  //if(in[nlist[8*da.curr()+j]].getAnchor()!=p)
-                  {
-                    std::cout << "Rank:" << rank << "oda test failed for" << da.curr() << " non hanging Node : " <<in[da.curr()] << " for j:" << j << "child points to " << in[nodeIdx[j]] << std::endl;
-
-//                    ot::TreeNode parent=in[da.curr()].getParent();
-//                    x=parent.getX();
-//                    y=parent.getY();
-//                    z=parent.getZ();
-//                    mySize=1u<<(parent.getMaxDepth()-parent.getLevel());
-//
-//                    switch (j)
-//                    {
-//                      case 0: p=Point(x,y,z);
-//                            break;
-//                      case 1: p=Point(x+mySize,y,z);
-//                            break;
-//                      case 2: p=Point(x,y+mySize,z);
-//                            break;
-//                      case 3: p=Point(x+mySize,y+mySize,z);
-//                            break;
-//                      case 4: p=Point(x,y,z+mySize);
-//                            break;
-//                      case 5: p=Point(x+mySize,y,z+mySize);
-//                            break;
-//                      case 6: p=Point(x,y+mySize,z+mySize);
-//                            break;
-//                      case 7: p=Point(x+mySize,y+mySize,z+mySize);
-//                            break;
-//                      default:std::cout<<"Child Index Error"<<std::endl;
-//                            break;
-//                    }
-//
-//                    if(in[nodeIdx[j]].getAnchor()!=p) {
-//                      std::cout << "Rank:" << rank << "oda test failed for" << da.curr() << " non hanging Node : " <<in[da.curr()] << "for j:" << j << "child points to " << in[nodeIdx[j]] << std::endl;
-//                      assert(false);
-//                    }
-
-//                    DNodes.push_back(in[da.curr()]);
-//                    for(int w=0;w<nodeIdx.size();w++)
-//                      DKeys.push_back(in[nodeIdx[w]]);
-//
-//                    char fileNameNodes[80];
-//                    char fileNameKeys[80];
-//                    sprintf(fileNameNodes,"%s_index%d_","DNODES",da.curr());
-//                    sprintf(fileNameKeys,"%s_index%d_","DKeys",da.curr());
-//                    treeNodesTovtk(DNodes,rank,fileNameNodes);
-//                    treeNodesTovtk(DKeys,rank,fileNameKeys);
-//                    DNodes.clear();
-//                    DKeys.clear();
-
-                  }
-                      //assert(in[nlist[8*da.curr()+j]].getAnchor()==p);
-                      assert( in[nodeIdx[j]].getAnchor()== p);
                 }
-               }
-              nodeIdx.clear();
-             }
+
+                nodeIdx.clear();
+                child.clear();
+
+              }
 
             }
 
 
+          }
         }
-    }
 
+        bool odaLoopTestAll(ot::DA& da, MPI_Comm comm)
+        {
+          std::vector<ot::TreeNode> allNodes;
+          ot::TreeNode tmp;
+          int rank,size;
+          MPI_Comm_rank(comm,&rank);
+          MPI_Comm_size(comm,&size);
+
+          for(da.init<ot::DA_FLAGS::ALL>();da.curr()<da.end<ot::DA_FLAGS::ALL>();da.next<ot::DA_FLAGS::ALL>())
+          {
+
+            Point p=da.getCurrentOffset();
+
+            tmp=ot::TreeNode(1,p.xint(),p.yint(),p.zint(),da.getLevel(da.curr()),da.getDimension(),da.getMaxDepth());
+            allNodes.push_back(tmp);
+
+          }
+
+          treeNodesTovtk(allNodes,rank,"oda_loop_all");
+          assert(seq::test::isUniqueAndSorted(allNodes));
+          return true;
+          // this won't be globally sorted since we have the ghost octants.
+
+        }
+
+
+
+        bool odaLoopTestWritable(ot::DA & da, MPI_Comm comm)
+        {
+          std::vector<ot::TreeNode> allWNodes;
+          ot::TreeNode tmp;
+          int rank,size;
+          MPI_Comm_rank(comm,&rank);
+          MPI_Comm_size(comm,&size);
+
+          for(da.init<ot::DA_FLAGS::WRITABLE>();da.curr()<da.end<ot::DA_FLAGS::WRITABLE>();da.next<ot::DA_FLAGS::WRITABLE>())
+          {
+
+            Point p=da.getCurrentOffset();
+
+            tmp=ot::TreeNode(1,p.xint(),p.yint(),p.zint(),da.getLevel(da.curr()),da.getDimension(),da.getMaxDepth());
+            allWNodes.push_back(tmp);
+
+          }
+
+          treeNodesTovtk(allWNodes,rank,"oda_loop_writable");
+          assert(seq::test::isUniqueAndSorted(allWNodes));
+
+          return true;
+          // this won't be globally sorted since we have the ghost octants.
+
+        }
+
+
+
+    }
 }

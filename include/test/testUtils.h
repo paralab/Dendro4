@@ -123,6 +123,8 @@ namespace oda
     namespace test
     {
         bool odaTest(std::vector<ot::TreeNode>& in, ot::DA& da,MPI_Comm comm);
+        bool odaLoopTestAll(ot::DA & da, MPI_Comm comm);
+        bool odaLoopTestWritable(ot::DA & da, MPI_Comm comm);
 
     }
 

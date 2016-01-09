@@ -627,8 +627,9 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
     std::cout << GRN << "Finalizing ..." << NRM << std::endl;
   }
 
-  assert(oda::test::odaTest(balOct,da,MPI_COMM_WORLD));
-
+  //assert(oda::test::odaTest(balOct,da,MPI_COMM_WORLD));
+  assert(oda::test::odaLoopTestAll(da,MPI_COMM_WORLD));
+  assert(oda::test::odaLoopTestWritable(da,MPI_COMM_WORLD));
 
 
 

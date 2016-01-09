@@ -449,21 +449,21 @@ Point DA::getNextOffset(Point p, unsigned char d) {
 #ifdef HILBERT_ORDERING
 
     unsigned char d = (m_ucpOctLevels[m_uiCurrent] & ot::TreeNode::MAX_LEVEL );
-    unsigned char par_d=(m_ucpOctLevels[m_uiCurrent+1] & ot::TreeNode::MAX_LEVEL );
-
-    ot::TreeNode currentNode(1,m_ptCurrentOffset.xint(),m_ptCurrentOffset.yint(),m_ptCurrentOffset.zint(),d,m_uiDimension,m_uiMaxDepth);
-    ot::TreeNode nextNode=currentNode.getNext();
 
     Point p =m_ptCurrentOffset;
     Point nextP =getNextOffset(p,d);
+//      if(!(m_localOctants[m_uiCurrent+1].getAnchor()==nextP))
+//      {
+//          std::cout<<RED<<"getNext failed for : "<<m_ptCurrentOffset.xint()<<","<<m_ptCurrentOffset.yint()<<","<<m_ptCurrentOffset.zint()<<" nextPt:"<<nextP.xint()<<","<<nextP.yint()<<","<<nextP.zint()<<" from local oct:"<<m_localOctants[m_uiCurrent+1]<<NRM<<std::endl;
+//
+//          //assert(false);
+//      }
+
     m_ptCurrentOffset=nextP;
 
-//    assert(nextP.xint()==nextNode.getX() && nextP.yint()==nextNode.getY() && nextP.zint()==nextNode.getZ());
-//    if(nextNode.getLevel()!=par_d)
-//    {
-//        std::cout<<"par_d:"<<(int)par_d<<" Level:"<<(int)nextNode.getLevel()<<std::endl;
-//    }
-     // assert(nextNode.getLevel()==par_d);
+
+
+
 
 
 
