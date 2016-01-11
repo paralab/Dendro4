@@ -179,6 +179,8 @@ PetscErrorCode Jacobian1MatGetDiagonal(Mat J, Vec diag) {
   unsigned int maxD;
   double hFac;
 
+  //std::cout<<"NUmber of Elements:"<<data->da->getGhostedElementSize()<<std::endl;
+
   PetscReal lapFac = 1.0;
   PetscReal massFac = 1.0;
   PetscBool optFound;
@@ -199,12 +201,14 @@ PetscErrorCode Jacobian1MatGetDiagonal(Mat J, Vec diag) {
       double fac1 = lapFac*h/2.0;
       double fac2 = massFac*h*h*h/8.0;
       unsigned int indices[8];
-      data->da->getNodeIndices(indices); 
-      unsigned char childNum = data->da->getChildNumber();
+      data->da->getNodeIndices(indices);
+      unsigned char childNum = data->da->getChildNumber();  // fix to get canonical child number irrespective of SFC
       unsigned char hnMask = data->da->getHangingNodeIndex(data->da->curr()); 
       unsigned char elemType = 0;
       GET_ETYPE_BLOCK(elemType,hnMask,childNum)
-        for(int k = 0;k < 8;k++) {
+
+      //std::cout << data->da->curr() << " cnum: "  <<(int) childNum << " elemType: " << (int)elemType << std::endl;
+      for(int k = 0;k < 8;k++) {
           diagArr[indices[k]] +=  ((fac1*(LaplacianType2Stencil[childNum][elemType][k][k])) +  
               (fac2*(MassType2Stencil[childNum][elemType][k][k])));
         }//end k

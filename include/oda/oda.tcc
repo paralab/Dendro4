@@ -1106,12 +1106,12 @@ namespace ot {
       unsigned int len = (unsigned int)(1u << ( m_uiMaxDepth - lev ) );
       unsigned int len_par = (unsigned int)(1u << ( m_uiMaxDepth  - lev +1 ) );
 
-#ifdef HILBERT_ORDERING
-
-        ot::TreeNode tmp(1,m_ptCurrentOffset.xint(),m_ptCurrentOffset.yint(),m_ptCurrentOffset.zint(),len,m_uiDimension,m_uiMaxDepth);
-        return tmp.getChildNumber(false);
-
-#else
+//#ifdef HILBERT_ORDERING
+//
+//        ot::TreeNode tmp(1,m_ptCurrentOffset.xint(),m_ptCurrentOffset.yint(),m_ptCurrentOffset.zint(),len,m_uiDimension,m_uiMaxDepth);
+//        return tmp.getChildNumber(true);
+//
+//#else
       unsigned int i = m_ptCurrentOffset.xint() % len_par;
       unsigned int j = m_ptCurrentOffset.yint() % len_par;
       unsigned int k = m_ptCurrentOffset.zint() % len_par;
@@ -1121,7 +1121,7 @@ namespace ot {
       k /= len;
 
       return static_cast<unsigned char>((k << 2) + (j << 1) + i); //4*k+2*j+i
-#endif
+//#endif
     }
   }
 

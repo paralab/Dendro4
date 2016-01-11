@@ -896,8 +896,9 @@ namespace oda {
           if (da.iAmActive()) {
             std::vector<unsigned int> nodeIdx;
             unsigned int *nodeIdx_ptr;
-            for (da.init<ot::DA_FLAGS::WRITABLE>(); da.curr() < (da.end<ot::DA_FLAGS::WRITABLE>() -
-                                                                da.getPreGhostElementSize()); da.next<ot::DA_FLAGS::WRITABLE>()) {
+            ot::DA da_cpy(da);
+
+            for (da.init<ot::DA_FLAGS::ALL>(); da.curr() < (da.end<ot::DA_FLAGS::ALL>());da.next<ot::DA_FLAGS::ALL>()) {
               nodeIdx.resize(8);
               nodeIdx_ptr = &(*nodeIdx.begin());
               da.getNodeIndices(nodeIdx_ptr);
@@ -911,12 +912,16 @@ namespace oda {
               if(!da.isHanging(da.curr())) {
                 currentNode.getParent().addChildrenMorton(child);
                 for (int j = 0; j < child.size(); j++) {
-//
-                  if(child[j].getAnchor()!=in[nodeIdx[j]].getAnchor())
+
+                  for(da_cpy.init<ot::DA_FLAGS::ALL>();da_cpy.curr()<da_cpy.end<ot::DA_FLAGS::ALL>();da_cpy.next<ot::DA_FLAGS::ALL>())
                   {
-                    std::cout<<"oda test failed for:"<<da.curr()<<"  "<<currentNode<<" child: "<<child[j]<<" vs: "<<in[nodeIdx[j]]<<std::endl;
-                    //assert(false);
+                    if(da_cpy.curr()==nodeIdx[j])
+                    {
+                      assert(da_cpy.getCurrentOffset()==currentNode.getAnchor());
+                      break;
+                    }
                   }
+
                 }
 
                 nodeIdx.clear();
