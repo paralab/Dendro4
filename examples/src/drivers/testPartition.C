@@ -190,8 +190,8 @@ int main(int argc, char **argv) {
   // unsigned int num_pseudo_proc=1;
 
 
-   signal(SIGSEGV, handler);   // install our handler
-   signal(SIGTERM, handler);   // install our handler
+   //signal(SIGSEGV, handler);   // install our handler
+   //signal(SIGTERM, handler);   // install our handler
 
 #ifdef PETSC_USE_LOG
   int stages[3];
@@ -486,63 +486,63 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
 
 
 
-    int totalOcts=0;
-    int localOcts=balOct.size();
-
-    MPI_Allreduce (&localOcts,&totalOcts,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
-
-    ot::TreeNode *balOctAll_ptr = NULL;
-    std::vector<ot::TreeNode> BalOctsAll;
-
-    ot::TreeNode* balOct_ptr=&(*(balOct.begin()));
-
-
-
-    int *recvcounts = new int[size];
-    int *displs = new int[size];
-
-    //par::Mpi_Gather (&localOcts, recvcounts, 1, 0, MPI_COMM_WORLD);
-    MPI_Allgather(&localOcts,1,MPI_INT,recvcounts,1,MPI_INT,MPI_COMM_WORLD);
-
-/*    for(int i=0;i<size;i++)
-      std::cout<<" "<<recvcounts[i]<<" ";
-      std::cout<<std::endl;*/
-
-    displs[0] = 0;
-    for (int i=1; i<size; ++i)
-      displs[i] = displs[i-1] + recvcounts[i-1]; // scan
-
-/*    for(int i=0;i<size;i++)
-      std::cout<<" "<<displs[i]<<" ";
-      std::cout<<std::endl;*/
-
-
-    if(!rank) {
-      BalOctsAll.resize(totalOcts);
-      balOctAll_ptr = &(*BalOctsAll.begin());
-    }
-
-    MPI_Gatherv(balOct_ptr,balOct.size(), par::Mpi_datatype<ot::TreeNode>::value(),
-                  balOctAll_ptr, recvcounts, displs, par::Mpi_datatype<ot::TreeNode>::value(),0,MPI_COMM_WORLD);
-
-
-
-    if(!rank) {
-      std::cout<<"Total Balanced Octants:"<<BalOctsAll.size()<<std::endl;
-      assert(BalOctsAll.size()==totalOcts);
-      assert(seq::test::isUniqueAndSorted(BalOctsAll));
-      assert(ot::test::isBalanced(3, maxDepth, "Balfail", BalOctsAll, incCorner, 1));
-      //ot::test::isBalanced(3, maxDepth, "Balfail", BalOctsAll, incCorner, 1);
-
-
-
-
-    }
-
-    // Clean up ...
-    delete [] displs;
-    delete [] recvcounts;
-    BalOctsAll.clear();
+//    int totalOcts=0;
+//    int localOcts=balOct.size();
+//
+//    MPI_Allreduce (&localOcts,&totalOcts,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+//
+//    ot::TreeNode *balOctAll_ptr = NULL;
+//    std::vector<ot::TreeNode> BalOctsAll;
+//
+//    ot::TreeNode* balOct_ptr=&(*(balOct.begin()));
+//
+//
+//
+//    int *recvcounts = new int[size];
+//    int *displs = new int[size];
+//
+//    //par::Mpi_Gather (&localOcts, recvcounts, 1, 0, MPI_COMM_WORLD);
+//    MPI_Allgather(&localOcts,1,MPI_INT,recvcounts,1,MPI_INT,MPI_COMM_WORLD);
+//
+///*    for(int i=0;i<size;i++)
+//      std::cout<<" "<<recvcounts[i]<<" ";
+//      std::cout<<std::endl;*/
+//
+//    displs[0] = 0;
+//    for (int i=1; i<size; ++i)
+//      displs[i] = displs[i-1] + recvcounts[i-1]; // scan
+//
+///*    for(int i=0;i<size;i++)
+//      std::cout<<" "<<displs[i]<<" ";
+//      std::cout<<std::endl;*/
+//
+//
+//    if(!rank) {
+//      BalOctsAll.resize(totalOcts);
+//      balOctAll_ptr = &(*BalOctsAll.begin());
+//    }
+//
+//    MPI_Gatherv(balOct_ptr,balOct.size(), par::Mpi_datatype<ot::TreeNode>::value(),
+//                  balOctAll_ptr, recvcounts, displs, par::Mpi_datatype<ot::TreeNode>::value(),0,MPI_COMM_WORLD);
+//
+//
+//
+//    if(!rank) {
+//      std::cout<<"Total Balanced Octants:"<<BalOctsAll.size()<<std::endl;
+//      assert(BalOctsAll.size()==totalOcts);
+//      assert(seq::test::isUniqueAndSorted(BalOctsAll));
+//      assert(ot::test::isBalanced(3, maxDepth, "Balfail", BalOctsAll, incCorner, 1));
+//      //ot::test::isBalanced(3, maxDepth, "Balfail", BalOctsAll, incCorner, 1);
+//
+//
+//
+//
+//    }
+//
+//    // Clean up ...
+//    delete [] displs;
+//    delete [] recvcounts;
+//    BalOctsAll.clear();
 
 
 
