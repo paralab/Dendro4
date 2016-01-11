@@ -945,11 +945,18 @@ namespace oda {
 
             tmp=ot::TreeNode(1,p.xint(),p.yint(),p.zint(),da.getLevel(da.curr()),da.getDimension(),da.getMaxDepth());
             allNodes.push_back(tmp);
+//            if(!rank)
+//              treeNodesTovtk(allNodes,da.curr(),"oda_loop_all0");
+//            else
+//              treeNodesTovtk(allNodes,da.curr(),"oda_loop_all1");
+//
+//            allNodes.clear();
 
           }
 
           treeNodesTovtk(allNodes,rank,"oda_loop_all");
           assert(seq::test::isUniqueAndSorted(allNodes));
+
           return true;
           // this won't be globally sorted since we have the ghost octants.
 
@@ -965,13 +972,21 @@ namespace oda {
           MPI_Comm_rank(comm,&rank);
           MPI_Comm_size(comm,&size);
 
-          for(da.init<ot::DA_FLAGS::WRITABLE>();da.curr()<da.end<ot::DA_FLAGS::WRITABLE>();da.next<ot::DA_FLAGS::WRITABLE>())
+          for(da.init<ot::DA_FLAGS::WRITABLE>();da.curr()<0.25*da.end<ot::DA_FLAGS::WRITABLE>();da.next<ot::DA_FLAGS::WRITABLE>())
           {
 
             Point p=da.getCurrentOffset();
 
             tmp=ot::TreeNode(1,p.xint(),p.yint(),p.zint(),da.getLevel(da.curr()),da.getDimension(),da.getMaxDepth());
             allWNodes.push_back(tmp);
+
+//            if(!rank)
+//              treeNodesTovtk(allWNodes,da.curr(),"oda_loop_W0");
+//            else
+//              treeNodesTovtk(allWNodes,da.curr(),"oda_loop_W1");
+//
+//            allWNodes.clear();
+
 
           }
 
