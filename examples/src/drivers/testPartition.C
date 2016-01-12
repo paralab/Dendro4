@@ -572,7 +572,7 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
 
   ot::DA da(balOct, MPI_COMM_WORLD, MPI_COMM_WORLD, compressLut);
   endTime = MPI_Wtime();
-  balOct = da.getLocalOctants();
+  
   treeNodesTovtk(balOct,rank,"oda_octree");
 
 #ifdef PETSC_USE_LOG

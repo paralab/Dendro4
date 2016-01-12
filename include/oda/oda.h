@@ -324,7 +324,7 @@ namespace ot {
         std::vector<ot::TreeNode>	   m_tnBlocks;
         std::vector<ot::TreeNode>	   m_tnMinAllBlocks;
         //@milinda
-        std::vector<ot::TreeNode>      m_localOctants; // stores the input for the build node list function. This contains pre-ghost, my octants and post octants.
+        //std::vector<ot::TreeNode>      m_localOctants; // stores the input for the build node list function. This contains pre-ghost, my octants and post octants.
         std::vector<unsigned int>          m_uiNlist;  
         unsigned int*                      m_uiNlistPtr;
         DendroIntL*                      m_dilpLocalToGlobal;

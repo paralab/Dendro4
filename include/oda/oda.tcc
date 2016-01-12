@@ -92,10 +92,10 @@ namespace ot {
     return m_uiMaxDepth;
   }
 
-  inline std::vector<ot::TreeNode> DA::getLocalOctants()
-  {
-      return m_localOctants;
-  }
+//  inline std::vector<ot::TreeNode> DA::getLocalOctants()
+//  {
+//      return m_localOctants;
+//  }
 
   inline std::vector<unsigned int> DA::getCompleteNodeList()
   {

@@ -309,7 +309,7 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
 
     //treeNodesTovtk(in,m_iRankActive,"oda_in");
     ot::blockPartStage1(in, blocks, m_uiDimension, m_uiMaxDepth, m_mpiCommActive);
-    treeNodesTovtk(blocks,m_iRankActive,"oda_blocks_1");
+    //treeNodesTovtk(blocks,m_iRankActive,"oda_blocks_1");
 //    if(!m_iRankActive)
 //       std::cout<<GRN<<"ot::blockPartStage1 is completed."<<NRM<<std::endl;
 
@@ -318,7 +318,7 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
       PROF_DA_BPART2_BEGIN
 
     DA_blockPartStage2(in, blocks, m_uiDimension, m_uiMaxDepth, m_mpiCommActive);
-    treeNodesTovtk(blocks,m_iRankActive,"oda_blocks_2");
+    //treeNodesTovtk(blocks,m_iRankActive,"oda_blocks_2");
 //    if(!m_iRankActive)
 //      std::cout<<GRN<<"DA_blockPartStage2 is completed."<<NRM<<std::endl;
 
@@ -742,7 +742,7 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
   //treeNodesTovtk(localOcts,rank,"localOct");
   //@hari @milinda quick fix for the test;
 
-  m_localOctants=localOcts;
+  //m_localOctants=localOcts;
   buildNodeList(localOcts);
 
 
