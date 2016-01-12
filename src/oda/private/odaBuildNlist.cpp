@@ -3263,126 +3263,126 @@ if(!m_bCompressLut) {
 
 }
 
-
-for(int i=m_uiElementBegin;i<m_uiElementEnd;i++)
-{
-
-
-    for(int j=0;j<8;j++)
-    {
-        assert(nlist[8*i+j]<m_uiLocalBufferSize);
-        ot::TreeNode node=in[i];
-        ot::TreeNode parNode=in[i].getParent();
-
-        unsigned int x,y,z;
-        unsigned int mySize;
-        x=node.getX();
-        y=node.getY();
-        z=node.getZ();
-        mySize=1u<<(node.getMaxDepth()-node.getLevel());
-        Point p;
-
-        switch (j)
-        {
-            case 0: p=Point(x,y,z);
-                break;
-            case 1: p=Point(x+mySize,y,z);
-                break;
-            case 2: p=Point(x,y+mySize,z);
-                break;
-            case 3: p=Point(x+mySize,y+mySize,z);
-                break;
-            case 4: p=Point(x,y,z+mySize);
-                break;
-            case 5: p=Point(x+mySize,y,z+mySize);
-                break;
-            case 6: p=Point(x,y+mySize,z+mySize);
-                break;
-            case 7: p=Point(x+mySize,y+mySize,z+mySize);
-                break;
-            default:std::cout<<"Child Index Error"<<std::endl;
-                break;
-        }
-
-        if(in[nlist[8*i+j]].getAnchor()!=p)
-        {
-
-            x=parNode.getX();
-            y=parNode.getY();
-            z=parNode.getZ();
-            mySize=1u<<(parNode.getMaxDepth()-parNode.getLevel());
-
-            switch (j)
-            {
-                case 0: p=Point(x,y,z);
-                    break;
-                case 1: p=Point(x+mySize,y,z);
-                    break;
-                case 2: p=Point(x,y+mySize,z);
-                    break;
-                case 3: p=Point(x+mySize,y+mySize,z);
-                    break;
-                case 4: p=Point(x,y,z+mySize);
-                    break;
-                case 5: p=Point(x+mySize,y,z+mySize);
-                    break;
-                case 6: p=Point(x,y+mySize,z+mySize);
-                    break;
-                case 7: p=Point(x+mySize,y+mySize,z+mySize);
-                    break;
-                default:std::cout<<"Child Index Error"<<std::endl;
-                    break;
-            }
-            if(in[nlist[8*i+j]].getAnchor()!=p)
-            {
-                debugKeys.clear();
-                debugNode.clear();
-
-                debugNode.push_back(in[i]);
-                for(int w=0;w<8;w++)
-                {
-                    if(nlist[8*i+w]<in.size())
-                    {
-                        debugKeys.push_back(in[nlist[8*i+w]]);
-                    }else
-                    {
-                        std::cout<<"Index out of bound for Tree node :"<<i<<std::endl;
-                    }
-                }
-
-
-
-                if(!m_iRankActive)
-                {
-                    if(!debugNode.empty())
-                    {
-                        treeNodesTovtk(debugNode,i,"debugNode_0_");
-                        treeNodesTovtk(debugKeys,i,"debugKeys_0_");
-
-                    }
-
-                }else
-                {
-                    if(!debugNode.empty())
-                    {
-                        treeNodesTovtk(debugNode,i,"debugNode_1_");
-                        treeNodesTovtk(debugKeys,i,"debugKeys_1_");
-
-                    }
-
-                }
-
-
-
-
-                assert(false);
-
-            }
-
-        }
-
-    }
-}
+//
+//for(int i=m_uiElementBegin;i<m_uiElementEnd;i++)
+//{
+//
+//
+//    for(int j=0;j<8;j++)
+//    {
+//        assert(nlist[8*i+j]<m_uiLocalBufferSize);
+//        ot::TreeNode node=in[i];
+//        ot::TreeNode parNode=in[i].getParent();
+//
+//        unsigned int x,y,z;
+//        unsigned int mySize;
+//        x=node.getX();
+//        y=node.getY();
+//        z=node.getZ();
+//        mySize=1u<<(node.getMaxDepth()-node.getLevel());
+//        Point p;
+//
+//        switch (j)
+//        {
+//            case 0: p=Point(x,y,z);
+//                break;
+//            case 1: p=Point(x+mySize,y,z);
+//                break;
+//            case 2: p=Point(x,y+mySize,z);
+//                break;
+//            case 3: p=Point(x+mySize,y+mySize,z);
+//                break;
+//            case 4: p=Point(x,y,z+mySize);
+//                break;
+//            case 5: p=Point(x+mySize,y,z+mySize);
+//                break;
+//            case 6: p=Point(x,y+mySize,z+mySize);
+//                break;
+//            case 7: p=Point(x+mySize,y+mySize,z+mySize);
+//                break;
+//            default:std::cout<<"Child Index Error"<<std::endl;
+//                break;
+//        }
+//
+//        if(in[nlist[8*i+j]].getAnchor()!=p)
+//        {
+//
+//            x=parNode.getX();
+//            y=parNode.getY();
+//            z=parNode.getZ();
+//            mySize=1u<<(parNode.getMaxDepth()-parNode.getLevel());
+//
+//            switch (j)
+//            {
+//                case 0: p=Point(x,y,z);
+//                    break;
+//                case 1: p=Point(x+mySize,y,z);
+//                    break;
+//                case 2: p=Point(x,y+mySize,z);
+//                    break;
+//                case 3: p=Point(x+mySize,y+mySize,z);
+//                    break;
+//                case 4: p=Point(x,y,z+mySize);
+//                    break;
+//                case 5: p=Point(x+mySize,y,z+mySize);
+//                    break;
+//                case 6: p=Point(x,y+mySize,z+mySize);
+//                    break;
+//                case 7: p=Point(x+mySize,y+mySize,z+mySize);
+//                    break;
+//                default:std::cout<<"Child Index Error"<<std::endl;
+//                    break;
+//            }
+//            if(in[nlist[8*i+j]].getAnchor()!=p)
+//            {
+//                debugKeys.clear();
+//                debugNode.clear();
+//
+//                debugNode.push_back(in[i]);
+//                for(int w=0;w<8;w++)
+//                {
+//                    if(nlist[8*i+w]<in.size())
+//                    {
+//                        debugKeys.push_back(in[nlist[8*i+w]]);
+//                    }else
+//                    {
+//                        std::cout<<"Index out of bound for Tree node :"<<i<<std::endl;
+//                    }
+//                }
+//
+//
+//
+//                if(!m_iRankActive)
+//                {
+//                    if(!debugNode.empty())
+//                    {
+//                        treeNodesTovtk(debugNode,i,"debugNode_0_");
+//                        treeNodesTovtk(debugKeys,i,"debugKeys_0_");
+//
+//                    }
+//
+//                }else
+//                {
+//                    if(!debugNode.empty())
+//                    {
+//                        treeNodesTovtk(debugNode,i,"debugNode_1_");
+//                        treeNodesTovtk(debugKeys,i,"debugKeys_1_");
+//
+//                    }
+//
+//                }
+//
+//
+//
+//
+//                assert(false);
+//
+//            }
+//
+//        }
+//
+//    }
+//}
 
 
 
