@@ -1003,7 +1003,7 @@ namespace ot {
 //        std::cout<<RED<<"In between current point and next point:"<<state_in_between<<std::endl;
 
         int found_pt=0;
-        found_pt=(std::lower_bound(&nodes[curr_pt], &nodes[next_pt], next_node, std::less<TreeNode>()) - &nodes[curr_pt]);
+        found_pt=(std::lower_bound(&nodes[curr_pt], &nodes[next_pt], next_node, std::less_equal<TreeNode>()) - &nodes[curr_pt]);
         next_pt = curr_pt + found_pt;
         leaves_lst.push_back(curr_node);
 
@@ -1017,7 +1017,7 @@ namespace ot {
       }
 
 
-      while (curr_node < last_node) {
+      while (curr_node <= last_node) {
         while (curr_node.getDLD() > last_node && curr_node.getLevel() < maxDepth)  curr_node = curr_node.getFirstChild();
 //        if(curr_node==*(leaves_lst.end()))
 //          std::cout<<"Duplicate Attemp to insert the current node:"<<curr_node<<"\t"<<*(leaves_lst.end())<<"\t"<<std::endl;
@@ -1025,7 +1025,6 @@ namespace ot {
 
         if (curr_node.getDLD() == last_node) break;
         curr_node = curr_node.getNext();
-
 
 
       }

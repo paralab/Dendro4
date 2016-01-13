@@ -200,7 +200,7 @@ namespace par {
       template <typename T>
       bool  isComplete (const std::vector<T>& nodes, MPI_Comm comm) {
 
-        int vol=0;
+        long long int vol=0;
 
         int rank;
         MPI_Comm_rank(comm, &rank);
@@ -218,6 +218,7 @@ namespace par {
           for (int i = 0; i < nodes.size(); i++) {
             len = 1u << (maxDepth - nodes[i].getLevel());
             if (i < (nodes.size() - 1) && (nodes[i].isAncestor(nodes[i + 1]))) {
+              std::cout<<"Rank:"<<rank<<" contains duplicate nodes."<<std::endl;
               return false;
             }
 
@@ -229,7 +230,7 @@ namespace par {
         }
 
 
-        int g_vol=0;
+        long long int g_vol=0;
         par::Mpi_Reduce(&vol,&g_vol,1,MPI_SUM,0,comm);
         MPI_Allreduce(&maxDepth,&maxDepth_g,1,MPI_INT,MPI_MAX,comm);
 
@@ -237,7 +238,7 @@ namespace par {
         {
           assert(maxDepth_g!=0);
           std::cout<<"MaxDepth of the Octree:"<<maxDepth_g<<std::endl;
-          int max_len=1u<<maxDepth_g;
+          long long int max_len=1u<<maxDepth_g;
           if(g_vol==(max_len*max_len*max_len))
           {
             return true;

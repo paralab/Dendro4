@@ -13,6 +13,7 @@
 #include <cstring>
 #include "externVars.h"
 #include "dendro.h"
+#include "genPts_par.h"
 
 //Don't want time to be synchronized. Need to check load imbalance.
 #ifdef MPI_WTIME_IS_GLOBAL
@@ -45,11 +46,13 @@ int main(int argc, char ** argv ) {
   unsigned int dim=3;
   unsigned int maxDepth=30;
   bool compressLut=true;
+  bool genPts=true;
   double localTime, totalTime;
   double startTime, endTime;
   DendroIntL locSz, totalSz;
   std::vector<ot::TreeNode> linOct, balOct;
   std::vector<double> pts;
+  DendroIntL TotalPts=10000;
 
   PetscInitialize(&argc,&argv,"options",NULL);
   ot::RegisterEvents();
@@ -74,7 +77,7 @@ int main(int argc, char ** argv ) {
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   if(argc < 3) {
     std::cerr << "Usage: " << argv[0] << "inpfile  maxDepth[30] solveU[0]\
-      writeB[0] dim[3] maxNumPtsPerOctant[1] incCorner[1] numLoops[100] compressLut[1] " << std::endl;
+      writeB[0] dim[3] maxNumPtsPerOctant[1] incCorner[1] numLoops[100] compressLut[1] genPts[1] totalPts[10000]" << std::endl;
     return -1;
   }
   if(argc > 2) {
@@ -92,16 +95,39 @@ int main(int argc, char ** argv ) {
   if(argc > 6) {
     maxNumPts = atoi(argv[6]);
   }
+
   if(argc > 7) { incCorner = (bool)(atoi(argv[7]));}
   if(argc > 8) { numLoops = atoi(argv[8]); }
   if(argc > 9) { compressLut = (bool)(atoi(argv[9]));}
+  if(argc > 10) { genPts = (bool)(atoi(argv[10]));}
+  if(argc >11 ) {TotalPts=atol(argv[11]);}
 
+  if(genPts)
+  {
+
+    long local_numPts=TotalPts/size;
+    long lc_size=0;
+    lc_size=((rank+1)*TotalPts)/size-(rank*TotalPts)/size;
+    genGauss(0.15,lc_size,dim,argv[1],MPI_COMM_WORLD);
+
+  }
 
 #ifdef HILBERT_ORDERING
   G_MAX_DEPTH = maxDepth;
   G_dim = dim;
   _InitializeHcurve();
 #endif
+
+  if (!rank) {
+    std::cout << BLU << "===============================================" << NRM << std::endl;
+    std::cout << " Input Parameters"  << std::endl;
+    std::cout << " Input File Prefix:"<<argv[1]  << std::endl;
+    std::cout << " Gen Pts files:: "<< genPts  << std::endl;
+    std::cout << " Total Number of Points:: "<<TotalPts<<std::endl;
+    std::cout << " Max Depth:"<<maxDepth<<std::endl;
+    //std::cout << " Number of psuedo Processors:: "<<num_pseudo_proc<<std::endl;
+    std::cout << BLU << "===============================================" << NRM << std::endl;
+  }
 
 
   strcpy(bFile,argv[1]);
@@ -225,8 +251,8 @@ int main(int argc, char ** argv ) {
 #ifdef PETSC_USE_LOG
   PetscLogStagePush(stages[2]);
 #endif
-  startTime = MPI_Wtime();
   assert(!(balOct.empty()));
+  startTime = MPI_Wtime();
   ot::DA da(balOct, MPI_COMM_WORLD, MPI_COMM_WORLD, compressLut);
   endTime = MPI_Wtime();
 #ifdef PETSC_USE_LOG
@@ -299,6 +325,46 @@ int main(int argc, char ** argv ) {
   if(!rank) {
     std::cout << "Destroyed stencils."<< std::endl;
   }
+
+
+  //! Quality of the partition ...
+
+
+  DendroIntL maxNodeSize, minNodeSize,
+          maxBdyNode, minBdyNode,
+          maxIndepSize, minIndepSize,
+          maxElementSize, minElementSize;
+
+  DendroIntL localSz;
+
+  localSz = da.getNodeSize();
+  par::Mpi_Reduce<DendroIntL>(&localSz, &maxNodeSize, 1, MPI_MAX, 0, MPI_COMM_WORLD);
+  par::Mpi_Reduce<DendroIntL>(&localSz, &minNodeSize, 1, MPI_MIN, 0, MPI_COMM_WORLD);
+
+  localSz = da.getBoundaryNodeSize();
+  par::Mpi_Reduce<DendroIntL>(&localSz, &maxBdyNode, 1, MPI_MAX, 0, MPI_COMM_WORLD);
+  par::Mpi_Reduce<DendroIntL>(&localSz, &minBdyNode, 1, MPI_MIN, 0, MPI_COMM_WORLD);
+
+  localSz = da.getElementSize();
+  par::Mpi_Reduce<DendroIntL>(&localSz, &maxElementSize, 1, MPI_MAX, 0, MPI_COMM_WORLD);
+  par::Mpi_Reduce<DendroIntL>(&localSz, &minElementSize, 1, MPI_MIN, 0, MPI_COMM_WORLD);
+
+  localSz = da.getIndependentSize();
+  par::Mpi_Reduce<DendroIntL>(&localSz, &maxIndepSize, 1, MPI_MAX, 0, MPI_COMM_WORLD);
+  par::Mpi_Reduce<DendroIntL>(&localSz, &minIndepSize, 1, MPI_MIN, 0, MPI_COMM_WORLD);
+
+  if (!rank) {
+
+    std::cout << RED<<"=====================QUALITY OF ODA========================================"<<NRM<<std::endl;
+    std::cout << "Nodes          \t(" << minNodeSize << ", " << maxNodeSize << ")" << std::endl;
+    std::cout << "Boundary Node  \t(" << minBdyNode << ", " << maxBdyNode << ")" << std::endl;
+    std::cout << "Element Size   \t(" << minElementSize << ", " << maxElementSize << ")" << std::endl;
+    std::cout << "Independent    \t(" << minIndepSize << ", " << maxIndepSize << ")" << std::endl;
+    std::cout << RED<<"==========================================================================="<<NRM<<std::endl;
+
+  }
+
+
 
 #ifdef PETSC_USE_LOG
   PetscLogStagePop();

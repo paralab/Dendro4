@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
   unsigned int ptsLen;
   unsigned int maxNumPts = 1;
   unsigned int dim = 3;
-  unsigned int maxDepth = 8 ;
+  unsigned int maxDepth = atoi(argv[6]);
   double gSize[3];
   //initializeHilbetTable(2);
 
@@ -171,7 +171,7 @@ int main(int argc, char **argv) {
 
 
   if (argc < 3) {
-    std::cerr << "Usage: " << argv[0] << " inpfile slack [0.0,1.0] genPts[0 or 1] numPts_total num_pseudo_proc" <<std::endl;
+    std::cerr << "Usage: " << argv[0] << " inpfile slack [0.0,1.0] genPts[0 or 1] numPts_total num_pseudo_proc max_depth" <<std::endl;
     return -1;
   }
 
@@ -213,6 +213,7 @@ int main(int argc, char **argv) {
     std::cout << " Slack Parameter::"<<slack  << std::endl;
     std::cout << " Gen Pts files:: "<< enable_pts_io  << std::endl;
     std::cout << " Total Number of Points:: "<<numlPts_g<<std::endl;
+    std::cout << " Max Depth:"<<maxDepth<<std::endl;
     std::cout << " Number of psuedo Processors:: "<<num_pseudo_proc<<std::endl;
     std::cout << BLU << "===============================================" << NRM << std::endl;
   }
@@ -263,8 +264,7 @@ int main(int argc, char **argv) {
   pts.clear();
 
   // treeNodesTovtk(tmpNodes, rank, "input_points");
-
-  // std::cout << rank << "removeDuplicates" << std::endl;
+ // std::cout << rank << "removeDuplicates" << std::endl;
   par::removeDuplicates<ot::TreeNode>(tmpNodes, false, MPI_COMM_WORLD);
 
   linOct = tmpNodes;
@@ -274,8 +274,7 @@ int main(int argc, char **argv) {
   assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
 
   // treeNodesTovtk(linOct,rank,"par_1");
-
-  treeNodesTovtk(linOct, rank, "ip");
+  // treeNodesTovtk(linOct, rank, "ip");
 
   // reduce and only print the total ...
   localSz = linOct.size();
@@ -313,9 +312,8 @@ int main(int argc, char **argv) {
   endTime = MPI_Wtime();
 
   MPI_Barrier(MPI_COMM_WORLD);
-//  treeNodesTovtk(linOct, rank, "bf_bal");
-
-
+  //treeNodesTovtk(linOct, rank, "bf_bal");
+  par::test::isComplete(linOct,MPI_COMM_WORLD);
 
 
 #ifdef PETSC_USE_LOG
@@ -382,7 +380,7 @@ int main(int argc, char **argv) {
   }
 
 assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
-//assert(ot::test::isComplete(linOct));
+
 //
 ////// ================================================================== Balancing BEGIN============================================================
   pts.clear();
@@ -404,8 +402,6 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
   startTime = MPI_Wtime();
   ot::balanceOctree(linOct, balOct, dim, maxDepth, incCorner, MPI_COMM_WORLD, NULL, NULL);
   endTime = MPI_Wtime();
-
-
 
 
 
@@ -444,9 +440,8 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
 #else
   sprintf(ptsFileName, "%s%d_%d.oct", "bal_out_M_", rank, size);
 #endif
-  ot::writeNodesToFile_binary(ptsFileName,balOct);
-
-  treeNodesTovtk(balOct, rank, "bal_output");
+//  ot::writeNodesToFile_binary(ptsFileName,balOct);
+//  treeNodesTovtk(balOct, rank, "bal_output");
 // double res=slack/2.0;
 //  while (slack < 0.5) {
 //
@@ -456,20 +451,8 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
 //    flexiblePartitionCalculation(balOct, slack, num_pseudo_proc, MPI_COMM_WORLD);
 //    slack=slack+res;
 //  }
-
-
-
   assert(par::test::isUniqueAndSorted(balOct,MPI_COMM_WORLD));
   assert(par::test::isComplete(balOct,MPI_COMM_WORLD));
-  assert(!balOct[0].isRoot());
-
-  for(int i=0;i<balOct.size();i++)
-  {
-    assert(!balOct[i].isRoot());
-  }
-
-
-
 
 // for(int i=0;i<balOct.size();i++)
 // {
@@ -481,10 +464,6 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
 //     }
 //   }
 // }
-
-
-
-
 
 //    int totalOcts=0;
 //    int localOcts=balOct.size();
@@ -568,12 +547,10 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
   PetscLogStagePush(stages[2]);
 #endif
   startTime = MPI_Wtime();
-  assert(!(balOct.empty()));
-
   ot::DA da(balOct, MPI_COMM_WORLD, MPI_COMM_WORLD, compressLut);
   endTime = MPI_Wtime();
 
-  treeNodesTovtk(balOct,rank,"oda_octree");
+  //treeNodesTovtk(balOct,rank,"oda_octree");
 
 #ifdef PETSC_USE_LOG
   PetscLogStagePop();
@@ -617,8 +594,10 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
   if (!rank) {
     std::cout << "Nodes          \t(" << minNodeSize << ", " << maxNodeSize << ")" << std::endl;
     std::cout << "Boundary Node  \t(" << minBdyNode << ", " << maxBdyNode << ")" << std::endl;
-    std::cout << "Element        \t(" << minElementSize << ", " << maxElementSize << ")" << std::endl;
+    std::cout << "Element Size   \t(" << minElementSize << ", " << maxElementSize << ")" << std::endl;
     std::cout << "Independent    \t(" << minIndepSize << ", " << maxIndepSize << ")" << std::endl;
+
+
   }
 
 
@@ -628,8 +607,8 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
   }
 
   //assert(oda::test::odaTest(balOct,da,MPI_COMM_WORLD));
-  assert(oda::test::odaLoopTestAll(da,MPI_COMM_WORLD));
-  assert(oda::test::odaLoopTestWritable(da,MPI_COMM_WORLD));
+  //assert(oda::test::odaLoopTestAll(da,MPI_COMM_WORLD));
+  //assert(oda::test::odaLoopTestWritable(da,MPI_COMM_WORLD));
 
 
 

@@ -418,7 +418,6 @@ namespace ot {
 
 #else
 
-
         TreeNode dfd(1, m_uiX, m_uiY, m_uiZ, m_uiMaxDepth, m_uiDim, m_uiMaxDepth);
         return dfd;
 
