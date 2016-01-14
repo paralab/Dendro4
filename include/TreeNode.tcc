@@ -588,11 +588,11 @@ namespace ot {
         //std::cout<<"rotation:"<<rotations[rot_offset*rot_id+0]<<rotations[rot_offset*rot_id+1]<<rotations[rot_offset*rot_id+2]<<rotations[rot_offset*rot_id+3]<<rotations[rot_offset*rot_id+4]<<rotations[rot_offset*rot_id+5]<<rotations[rot_offset*rot_id+6]<<rotations[rot_offset*rot_id+7]<<std::endl;
         //std::cout<<"node:"<<*this<<std::endl;
 
-         xf=m_uiX +(( (( (fchild&4u)>>2u )&(!((fchild&2u)>>1u)))+( ((fchild&2u)>>1u) & (!((fchild&4u)>>2u))))<<len1);
-         yf=m_uiY +((( (fchild&1u) & ( !((fchild&2u)>>1u)  ))+( ((fchild&2u)>>1u) & (!(fchild&1u)  )))<<len1);
-         zf=m_uiZ +(((fchild&4u)>>2u)<<len1);
+        xf=m_uiX +(( (( (fchild&4u)>>2u )&(!((fchild&2u)>>1u)))+( ((fchild&2u)>>1u) & (!((fchild&4u)>>2u))))<<len1);
+        yf=m_uiY +((( (fchild&1u) & ( !((fchild&2u)>>1u)  ))+( ((fchild&2u)>>1u) & (!(fchild&1u)  )))<<len1);
+        zf=m_uiZ +(((fchild&4u)>>2u)<<len1);
 
-         m=TreeNode(1,xf,yf,zf,(this->getLevel()+1),m_uiDim,m_uiMaxDepth);
+        m=TreeNode(1,xf,yf,zf,(this->getLevel()+1),m_uiDim,m_uiMaxDepth);
 
         return m;
 

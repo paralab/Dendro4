@@ -960,7 +960,7 @@ namespace oda {
           }
 
           treeNodesTovtk(allNodes,rank,"oda_loop_all");
-          assert(seq::test::isUniqueAndSorted(allNodes));
+          //assert(seq::test::isUniqueAndSorted(allNodes));
 
           return true;
           // this won't be globally sorted since we have the ghost octants.
