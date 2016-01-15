@@ -841,17 +841,13 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
 #ifdef HILBERT_ORDERING
 
   m_uiParRotID=new unsigned char[end<DA_FLAGS::ALL>()];
-
-  for(init<DA_FLAGS::ALL>();curr()<end<DA_FLAGS::ALL>();next<DA_FLAGS::ALL>())
-  {
-    m_uiParRotID[m_uiCurrent]=DEFAULT_ROT_ID;
-
-  }
+  m_uiParRotIDLev=new unsigned char[end<DA_FLAGS::ALL>()];
 
 
-
+  for(init<DA_FLAGS::ALL>();curr()<end<DA_FLAGS::ALL>();next<DA_FLAGS::ALL>());
 
 #endif
+
 
 
 

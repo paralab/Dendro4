@@ -188,7 +188,7 @@ namespace ot {
       MPI_Comm_rank(comm,&rank);
 
       DA_FactoryPart0(in, comm, activeInputComm, compressLut, iAmActive);
-
+      m_uiRotIDComputed=false;
 
     if(m_bIamActive) {
       DA_FactoryPart1(in);
@@ -201,8 +201,15 @@ namespace ot {
 //        tmpIn.clear();
 //#endif
 
+
       DA_FactoryPart3(in, comm, compressLut, blocksPtr, iAmActive);
 
+//      for(int i=0;i<end<DA_FLAGS::ALL>();i++)
+//      {
+//        std::cout<<"rotID:"<<(int)m_uiParRotID[i]<<std::endl;
+//        std::cout<<"Lev:"<<(int)m_uiParRotIDLev[i]<<std::endl;
+//      }
+      m_uiRotIDComputed=true;
 //       if(!rank)
 //           std::cout<<"ODA Part 3 completed"<<std::endl;
 
@@ -261,79 +268,97 @@ Point DA::getNextOffset(Point p, unsigned char d) {
 #endif
 
 #ifdef HILBERT_ORDERING
-    Point m = p;
+    Point m ;
+    m=p;
     Point parent;
-    unsigned int next_limit=(1u<<m_uiDimension)-1;
+    unsigned int next_limit = (1u << m_uiDimension) - 1;
     unsigned int rotation_id;
     char next_index;
     unsigned int child_index;
-    unsigned int par_x,par_y,par_z,par_level;
+    unsigned int par_x, par_y, par_z, par_level;
     unsigned int len;
-    unsigned int num_children=1u<<m_uiDimension; // This is basically the hilbert table offset
-    unsigned int rot_offset=num_children<<1;
+    unsigned int num_children = 1u << m_uiDimension; // This is basically the hilbert table offset
+    unsigned int rot_offset = num_children << 1;
     unsigned int parRotID;
-    unsigned int nextLev=getLevel(m_uiCurrent+1);
+    unsigned int nextLev = getLevel(m_uiCurrent + 1);
     unsigned int childRotID;
     unsigned int mid_bit;
-    for (int k =d; k >= 0; --k) {
-      // special case that next of the root node.We consider it as the first child of the root.
-      if(k==0)
-      {
-        //std::cout<<"Root achieved:"<<std::endl;
-        //std::cout<<"While getting the next node of: "<<*this<<std::endl;
-        assert(m.xint()==0 && m.yint()==0 && m.zint()==0);
-        int len=(1u<<(m_uiMaxDepth))-1;
-        m=Point(0,0,len);//TreeNode(1,0,0,len,1,m_uiDim,m_uiMaxDepth+1);
-        break;
-      }
-      par_level=k-1;
-      if(m_uiParRotID[m_uiCurrent]==DEFAULT_ROT_ID || k==d) {
-        GET_HILBERT_CHILDNUMBER(m, k, child_index);
-        m_uiParRotID[m_uiCurrent]=((child_index<<5)|(parRotID & ROT_ID_MASK));
 
-      }else
-      {
-        if(k==d) {
-          child_index = (m_uiParRotID[m_uiCurrent] & CHILD_INDEX_MASK);
-          parRotID = (m_uiParRotID[m_uiCurrent] & ROT_ID_MASK);
-        }else
-        {
-          GET_HILBERT_CHILDNUMBER(m, k, child_index);
-//          mid_bit=m_uiMaxDepth-k-1;
-//          par_z=m.zint(); par_x=m.xint(); par_y=m.yint();
-//          next_index= (((par_z&(1<<mid_bit))>>mid_bit)<<2)|( (((par_x&(1<<mid_bit))>>mid_bit)^((par_z&(1<<mid_bit))>>mid_bit)) <<1)|(((par_x&(1<<mid_bit))>>mid_bit)^((par_y&(1<<mid_bit))>>mid_bit)^((par_z&(1<<mid_bit))>>mid_bit));
-//          parRotID=HILBERT_TABLE[parRotID*num_children+next_index];
-//          child_index=(rotations[rot_offset * parRotID + num_children + next_index]-'0');
+    if (!m_uiRotIDComputed) {
+
+      for (int k = d; k >= 0; --k) {
+        // special case that next of the root node.We consider it as the first child of the root.
+        if (k == 0) {
+          assert(m.xint() == 0 && m.yint() == 0 && m.zint() == 0);
+          int len = (1u << (m_uiMaxDepth)) - 1;
+          m = Point(0, 0, len);//TreeNode(1,0,0,len,1,m_uiDim,m_uiMaxDepth+1);
+          break;
+        }
+        par_level = k - 1;
+        GET_HILBERT_CHILDNUMBER(m, k, child_index);
+        GET_PARENT(m, par_level, parent);
+        rotation_id = parRotID; // calculated from get ChildNumber
+        par_x = parent.xint();
+        par_y = parent.yint();
+        par_z = parent.zint();
+        len = m_uiMaxDepth - par_level - 1;//(m_uiMaxDepth-parent.getLevel()-1);
+        if (child_index < next_limit) {
+          assert(child_index<next_limit);
+          m_uiParRotID[m_uiCurrent] = ((child_index << 5) | (parRotID & ROT_ID_MASK));
+          m_uiParRotIDLev[m_uiCurrent]=par_level;
+
+          // next octant is in the same level;
+          next_index = rotations[rot_offset * rotation_id + child_index + 1] - '0';
+          // Note: Just calculation of x,y,x of a child octant for a given octant based on the child index. This is done to eliminate the branching.
+          par_x = par_x + (((((next_index & 4u) >> 2u) & (!((next_index & 2u) >> 1u))) +
+                            (((next_index & 2u) >> 1u) & (!((next_index & 4u) >> 2u)))) << len);
+          par_y = par_y + ((((next_index & 1u) & (!((next_index & 2u) >> 1u))) +
+                            (((next_index & 2u) >> 1u) & (!(next_index & 1u)))) << len);
+          par_z = par_z + (((next_index & 4u) >> 2u) << len);
+          m = Point(par_x, par_y, par_z);
+          childRotID = parRotID;
+          for (int q = k; q < nextLev; q++) {
+            childRotID = HILBERT_TABLE[childRotID * num_children + next_index];
+            GET_FIRST_CHILD(m, childRotID, q, m);
+            mid_bit = m_uiMaxDepth - q - 1;
+            par_z = m.zint();
+            par_x = m.xint();
+            par_y = m.yint();
+            next_index = (((par_z & (1 << mid_bit)) >> mid_bit) << 2) |
+                         ((((par_x & (1 << mid_bit)) >> mid_bit) ^ ((par_z & (1 << mid_bit)) >> mid_bit)) << 1) |
+                         (((par_x & (1 << mid_bit)) >> mid_bit) ^ ((par_y & (1 << mid_bit)) >> mid_bit) ^
+                          ((par_z & (1 << mid_bit)) >> mid_bit));
+          }
+          break;
+        } else {
+          m = parent;
         }
       }
+    }else
+    {
+      parRotID=(m_uiParRotID[m_uiCurrent] & ROT_ID_MASK);
+      child_index=(m_uiParRotID[m_uiCurrent] >>5);
+      par_level=m_uiParRotIDLev[m_uiCurrent];
+      GET_PARENT(m, par_level, parent);
+      next_index = (rotations[rot_offset * parRotID + child_index + 1] - '0');
+      par_x = parent.xint();
+      par_y = parent.yint();
+      par_z = parent.zint();
 
-      GET_PARENT(m,par_level,parent);
-      rotation_id=parRotID; // calculated from get ChildNumber
-      par_x=parent.xint();
-      par_y=parent.yint();
-      par_z=parent.zint();
-      len=m_uiMaxDepth-par_level-1;//(m_uiMaxDepth-parent.getLevel()-1);
-      if(child_index<next_limit)
-      {
-        // next octant is in the same level;
-        next_index= rotations[rot_offset*rotation_id+child_index+1]-'0';
-        // Note: Just calculation of x,y,x of a child octant for a given octant based on the child index. This is done to eliminate the branching.
-        par_x=par_x +(( (( (next_index&4u)>>2u )&(!((next_index&2u)>>1u)))+( ((next_index&2u)>>1u) & (!((next_index&4u)>>2u))))<<len);
-        par_y=par_y +((( (next_index&1u) & ( !((next_index&2u)>>1u)  ))+( ((next_index&2u)>>1u) & (!(next_index&1u)  )))<<len);
-        par_z=par_z +(((next_index&4u)>>2u)<<len);
-        m=Point(par_x,par_y,par_z);
-        childRotID=parRotID;
-        for (int q = k; q < nextLev; q++) {
-            childRotID=HILBERT_TABLE[childRotID*num_children+next_index];
-            GET_FIRST_CHILD(m,childRotID,q,m);
-            mid_bit=m_uiMaxDepth-q-1;
-            par_z=m.zint(); par_x=m.xint(); par_y=m.yint();
-            next_index= (((par_z&(1<<mid_bit))>>mid_bit)<<2)|( (((par_x&(1<<mid_bit))>>mid_bit)^((par_z&(1<<mid_bit))>>mid_bit)) <<1)|(((par_x&(1<<mid_bit))>>mid_bit)^((par_y&(1<<mid_bit))>>mid_bit)^((par_z&(1<<mid_bit))>>mid_bit));
-         }
-        break;
-      }else {
-        m=parent;
+      len = m_uiMaxDepth - par_level - 1;
+      par_x = par_x + (((((next_index & 4u) >> 2u) & (!((next_index & 2u) >> 1u))) +  (((next_index & 2u) >> 1u) & (!((next_index & 4u) >> 2u)))) << len);
+      par_y = par_y + ((((next_index & 1u) & (!((next_index & 2u) >> 1u))) +  (((next_index & 2u) >> 1u) & (!(next_index & 1u)))) << len);
+      par_z = par_z + (((next_index & 4u) >> 2u) << len);
+      m = Point(par_x, par_y, par_z);
+
+      //childRotID = parRotID;
+      for (int q = par_level+1; q < nextLev; q++) {
+        parRotID = HILBERT_TABLE[parRotID * num_children + next_index];
+        GET_FIRST_CHILD(m, parRotID, q, m);
+        mid_bit = m_uiMaxDepth - q - 1;
+        next_index = (((m.zint() & (1 << mid_bit)) >> mid_bit) << 2) |  ((((m.xint() & (1 << mid_bit)) >> mid_bit) ^ ((m.zint() & (1 << mid_bit)) >> mid_bit)) << 1) | (((m.xint() & (1 << mid_bit)) >> mid_bit) ^ ((m.yint() & (1 << mid_bit)) >> mid_bit) ^ ((m.zint() & (1 << mid_bit)) >> mid_bit));
       }
+
     }
     return m;
 

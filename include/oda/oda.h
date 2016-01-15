@@ -396,7 +396,8 @@ namespace ot {
         std::vector<unsigned int>          m_uiNlist;  
         unsigned int*                      m_uiNlistPtr;
         unsigned char*                     m_uiParRotID; // Stores the parent's rotation ID for each elemet. If it is not computed, rotation ID default set to ''
-        unsigned char*                     m_uiNCARotID;
+        unsigned char*                     m_uiParRotIDLev;
+        bool m_uiRotIDComputed=false; // default is false;
 
 
         DendroIntL*                      m_dilpLocalToGlobal;
