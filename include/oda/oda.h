@@ -268,7 +268,7 @@ return ;
     unsigned int xf,yf,zf;\
     int rot_id=ROT_ID;\
     unsigned int fchild;\
-    fchild = rotations[rot_offset*ROT_ID+0]-'0'; \
+    fchild = rotations[16*ROT_ID+0]-'0'; \
     unsigned int x1,y1,z1;\
     x1=P.xint();\
     y1=P.yint();\
@@ -695,6 +695,8 @@ namespace ot {
           @return the anchor of the next octant 
           */
         Point getNextOffset(Point p, unsigned char d);
+
+        Point getNextOffsetByRotation(Point p, unsigned char d);
 
         /**
           @author Hari Sundar

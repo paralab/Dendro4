@@ -843,7 +843,6 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
   m_uiParRotID=new unsigned char[end<DA_FLAGS::ALL>()];
   m_uiParRotIDLev=new unsigned char[end<DA_FLAGS::ALL>()];
 
-
   for(init<DA_FLAGS::ALL>();curr()<end<DA_FLAGS::ALL>();next<DA_FLAGS::ALL>());
 
 #endif

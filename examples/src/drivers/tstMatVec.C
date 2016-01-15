@@ -353,6 +353,36 @@ int main(int argc, char ** argv ) {
   par::Mpi_Reduce<DendroIntL>(&localSz, &maxIndepSize, 1, MPI_MAX, 0, MPI_COMM_WORLD);
   par::Mpi_Reduce<DendroIntL>(&localSz, &minIndepSize, 1, MPI_MIN, 0, MPI_COMM_WORLD);
 
+  unsigned int * nodeList=new unsigned int[8];
+  unsigned int diff,diff_min,diff_max,diff_mean;
+  unsigned int min,max;
+  for(da.init<ot::DA_FLAGS::ALL>();da.curr()<da.end<ot::DA_FLAGS::ALL>();da.next<ot::DA_FLAGS::ALL>())
+  {
+    da.getNodeIndices(nodeList);
+
+    min=nodeList[0];
+    max=nodeList[0];
+    for(int i=1;i<8;i++)
+    {
+      if(max<nodeList[i])
+        max=nodeList[i];
+
+      if(min>nodeList[i])
+        min=nodeList[i];
+
+
+    }
+    diff=max-min;
+  }
+
+//  par::Mpi_Reduce(&min,&min_g,1,MPI_MIN,0,MPI_COMM_WORLD);
+//  par::Mpi_Reduce(&max,&max_g,1,MPI_MAX,0,MPI_COMM_WORLD);
+  par::Mpi_Reduce(&diff,&diff_min,1,MPI_MIN,0,MPI_COMM_WORLD);
+  par::Mpi_Reduce(&diff,&diff_max,1,MPI_MAX,0,MPI_COMM_WORLD);
+  par::Mpi_Reduce(&diff,&diff_mean,1,MPI_SUM,0,MPI_COMM_WORLD);
+
+  diff_mean=diff_mean/size;
+
   if (!rank) {
 
     std::cout << RED<<"=====================QUALITY OF ODA========================================"<<NRM<<std::endl;
@@ -360,6 +390,10 @@ int main(int argc, char ** argv ) {
     std::cout << "Boundary Node  \t(" << minBdyNode << ", " << maxBdyNode << ")" << std::endl;
     std::cout << "Element Size   \t(" << minElementSize << ", " << maxElementSize << ")" << std::endl;
     std::cout << "Independent    \t(" << minIndepSize << ", " << maxIndepSize << ")" << std::endl;
+    std::cout << RED<<"=====================NODELIST STATISTICS========================================"<<NRM<<std::endl;
+    std::cout << RED<<"Diff Global Min:"<<diff_min<<NRM<<std::endl;
+    std::cout << RED<<"Diff Global Max:"<<diff_max<<NRM<<std::endl;
+    std::cout << RED<<"Diff Global Mean:"<<diff_mean<<NRM<<std::endl;
     std::cout << RED<<"==========================================================================="<<NRM<<std::endl;
 
   }

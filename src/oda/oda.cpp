@@ -253,6 +253,10 @@ namespace ot {
       m_dilpLocalToGlobalElems = NULL;
     }
 
+#ifdef HILBERT_ORDERING
+    delete[] m_uiParRotID;
+    delete[] m_uiParRotIDLev;
+#endif
     m_ucpLutRemainders.clear();
     m_uspLutQuotients.clear();
     m_ucpLutMasks.clear();
@@ -261,11 +265,9 @@ namespace ot {
   }
 
   /************** Domain Access ****************/
-Point DA::getNextOffset(Point p, unsigned char d) {
 
-#ifdef __DEBUG_DA_PUBLIC__
-    assert(m_bIamActive);
-#endif
+Point DA::getNextOffsetByRotation(Point p, unsigned char d)
+{
 
 #ifdef HILBERT_ORDERING
     Point m ;
@@ -284,7 +286,7 @@ Point DA::getNextOffset(Point p, unsigned char d) {
     unsigned int childRotID;
     unsigned int mid_bit;
 
-    if (!m_uiRotIDComputed) {
+//    if (!m_uiRotIDComputed) {
 
       for (int k = d; k >= 0; --k) {
         // special case that next of the root node.We consider it as the first child of the root.
@@ -334,33 +336,44 @@ Point DA::getNextOffset(Point p, unsigned char d) {
           m = parent;
         }
       }
-    }else
-    {
+      return m;
+//    }
+#endif
+
+
+}
+
+
+Point DA::getNextOffset(Point p, unsigned char d) {
+
+#ifdef __DEBUG_DA_PUBLIC__
+    assert(m_bIamActive);
+#endif
+
+#ifdef HILBERT_ORDERING
+
+      unsigned char parRotID;
+      unsigned char child_index;
+      unsigned char par_level;
+      unsigned char len;
+      Point m;
+      unsigned char nextLev=(m_ucpOctLevels[m_uiCurrent+1]& ot::TreeNode::MAX_LEVEL);
+      unsigned char mid_bit;
       parRotID=(m_uiParRotID[m_uiCurrent] & ROT_ID_MASK);
       child_index=(m_uiParRotID[m_uiCurrent] >>5);
       par_level=m_uiParRotIDLev[m_uiCurrent];
-      GET_PARENT(m, par_level, parent);
-      next_index = (rotations[rot_offset * parRotID + child_index + 1] - '0');
-      par_x = parent.xint();
-      par_y = parent.yint();
-      par_z = parent.zint();
-
+      GET_PARENT(p, par_level, m);
+      child_index = (rotations[16 * parRotID + child_index + 1] - '0');
       len = m_uiMaxDepth - par_level - 1;
-      par_x = par_x + (((((next_index & 4u) >> 2u) & (!((next_index & 2u) >> 1u))) +  (((next_index & 2u) >> 1u) & (!((next_index & 4u) >> 2u)))) << len);
-      par_y = par_y + ((((next_index & 1u) & (!((next_index & 2u) >> 1u))) +  (((next_index & 2u) >> 1u) & (!(next_index & 1u)))) << len);
-      par_z = par_z + (((next_index & 4u) >> 2u) << len);
-      m = Point(par_x, par_y, par_z);
-
+      m=Point((m.xint() + (((((child_index & 4u) >> 2u) & (!((child_index & 2u) >> 1u))) +  (((child_index & 2u) >> 1u) & (!((child_index & 4u) >> 2u)))) << len)),(m.yint() + ((((child_index & 1u) & (!((child_index & 2u) >> 1u))) +  (((child_index & 2u) >> 1u) & (!(child_index & 1u)))) << len)),(m.zint() + (((child_index & 4u) >> 2u) << len)));
       //childRotID = parRotID;
       for (int q = par_level+1; q < nextLev; q++) {
-        parRotID = HILBERT_TABLE[parRotID * num_children + next_index];
+        parRotID = HILBERT_TABLE[parRotID * 8 + child_index];
         GET_FIRST_CHILD(m, parRotID, q, m);
         mid_bit = m_uiMaxDepth - q - 1;
-        next_index = (((m.zint() & (1 << mid_bit)) >> mid_bit) << 2) |  ((((m.xint() & (1 << mid_bit)) >> mid_bit) ^ ((m.zint() & (1 << mid_bit)) >> mid_bit)) << 1) | (((m.xint() & (1 << mid_bit)) >> mid_bit) ^ ((m.yint() & (1 << mid_bit)) >> mid_bit) ^ ((m.zint() & (1 << mid_bit)) >> mid_bit));
+        child_index = (((m.zint() & (1 << mid_bit)) >> mid_bit) << 2) |  ((((m.xint() & (1 << mid_bit)) >> mid_bit) ^ ((m.zint() & (1 << mid_bit)) >> mid_bit)) << 1) | (((m.xint() & (1 << mid_bit)) >> mid_bit) ^ ((m.yint() & (1 << mid_bit)) >> mid_bit) ^ ((m.zint() & (1 << mid_bit)) >> mid_bit));
       }
-
-    }
-    return m;
+  return m;
 
 #else
 
@@ -436,7 +449,13 @@ Point DA::getNextOffset(Point p, unsigned char d) {
 
     unsigned int d = (m_ucpOctLevels[m_uiCurrent] & ot::TreeNode::MAX_LEVEL );
     Point p =m_ptCurrentOffset;
-    Point p2=getNextOffset(p,d);
+    Point p2;
+    if(!m_uiRotIDComputed) {
+      p2 = getNextOffsetByRotation(p, d);
+    }else
+    {
+      p2 = getNextOffset(p,d);
+    }
     m_ptCurrentOffset=p2;
 
 #else
