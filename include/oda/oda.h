@@ -22,7 +22,7 @@
 #include "petscvec.h"
 #include "petscmat.h"
 #include "dendro.h"
-
+#include <unordered_map>
 
 #ifndef iC
 #define iC(fun) {CHKERRQ(fun);}
@@ -214,6 +214,74 @@ return ;
 #define PROF_BUILD_DA_STAGE9_END 
 
 #endif
+#define DEFAULT_ROT_ID 248 // Because Hilbert curve has 24 differet rotation patterns. indexed from 0 -23 11111000
+#define CHILD_INDEX_MASK 224
+#define ROT_ID_MASK 31
+
+#ifdef HILBERT_ORDERING
+#define CALCULATE_TREENODE_ROTATION(P,D,R){ \
+    unsigned int x1=P.xint();\
+    unsigned int y1=P.yint();\
+    unsigned int z1=P.zint();\
+    R=0;\
+    unsigned int current_rot=0;\
+    unsigned int mid_bit=m_uiMaxDepth; \
+    unsigned int index1=0;\
+    for(int i=0; i<D;i++) {\
+      mid_bit=m_uiMaxDepth-i-1; \
+      index1= (((z1&(1<<mid_bit))>>mid_bit)<<2)|( (((x1&(1<<mid_bit))>>mid_bit)^((z1&(1<<mid_bit))>>mid_bit)) <<1)|(((x1&(1<<mid_bit))>>mid_bit)^((y1&(1<<mid_bit))>>mid_bit)^((z1&(1<<mid_bit))>>mid_bit));\
+      current_rot=HILBERT_TABLE[current_rot*num_children+index1];\
+    }\
+    R=current_rot;\
+}
+
+#define GET_PARENT(P,PAR_LEV,PAR_P){\
+    unsigned int parX, parY, parZ;\
+    parX = ((P.xint() >> (m_uiMaxDepth - PAR_LEV)) << (m_uiMaxDepth - PAR_LEV));\
+    parY = ((P.yint() >> (m_uiMaxDepth - PAR_LEV)) << (m_uiMaxDepth - PAR_LEV));\
+    parZ = ((P.zint() >> (m_uiMaxDepth - PAR_LEV)) << (m_uiMaxDepth - PAR_LEV));\
+    PAR_P=Point(parX,parY,parZ);\
+}
+
+#define GET_HILBERT_CHILDNUMBER(P,D,I){\
+    unsigned int index1=0,index2=0;\
+    unsigned int mid_bit = m_uiMaxDepth - D;\
+    unsigned int x1,y1,z1;\
+    x1=P.xint(); y1=P.yint(); z1=P.zint();\
+    index1 = (((z1 & (1 << mid_bit)) >> mid_bit) << 2) | ((((x1 & (1 << mid_bit)) >> mid_bit) ^ ((z1 & (1 << mid_bit)) >> mid_bit)) << 1) | (((x1 & (1 << mid_bit)) >> mid_bit) ^ ((y1 & (1 << mid_bit)) >> mid_bit)^((z1 & (1 << mid_bit)) >> mid_bit));\
+    char rot_id = 0;\
+    Point parP;\
+    unsigned int pLev=D-1;\
+    GET_PARENT(P,pLev,parP);\
+    CALCULATE_TREENODE_ROTATION(parP,pLev,rot_id);\
+    unsigned int xp,yp,zp;\
+    xp=parP.xint(); yp=parP.yint(); zp=parP.zint(); \
+    mid_bit=m_uiMaxDepth-pLev-1;\
+    index2 = (((zp & (1 << mid_bit)) >> mid_bit) << 2) | ((((xp & (1 << mid_bit)) >> mid_bit) ^ ((zp & (1 << mid_bit)) >> mid_bit)) << 1) | (((xp & (1 << mid_bit)) >> mid_bit) ^ ((yp & (1 << mid_bit)) >> mid_bit)^((zp & (1 << mid_bit)) >> mid_bit));\
+    parRotID=rot_id;\
+    /*std::cout<<"Rotation:"<<(int)rotations[rot_offset * rot_id + num_children + index1]<<std::endl;*/\
+    I=(rotations[rot_offset * rot_id + num_children + index1]-'0');\
+ }
+
+#define GET_FIRST_CHILD(P,ROT_ID,D,CHILD_P){\
+    unsigned int len1=((m_uiMaxDepth-D)-1);\
+    unsigned int xf,yf,zf;\
+    int rot_id=ROT_ID;\
+    unsigned int fchild;\
+    fchild = rotations[rot_offset*ROT_ID+0]-'0'; \
+    unsigned int x1,y1,z1;\
+    x1=P.xint();\
+    y1=P.yint();\
+    z1=P.zint();\
+    xf=x1 +(( (( (fchild&4u)>>2u )&(!((fchild&2u)>>1u)))+( ((fchild&2u)>>1u) & (!((fchild&4u)>>2u))))<<len1); \
+    yf=y1 +((( (fchild&1u) & ( !((fchild&2u)>>1u)  ))+( ((fchild&2u)>>1u) & (!(fchild&1u)  )))<<len1);\
+    zf=z1 +(((fchild&4u)>>2u)<<len1);\
+    CHILD_P=Point(xf,yf,zf);\
+ }
+
+
+#endif
+
 
 namespace ot {
 
@@ -327,6 +395,10 @@ namespace ot {
         //std::vector<ot::TreeNode>      m_localOctants; // stores the input for the build node list function. This contains pre-ghost, my octants and post octants.
         std::vector<unsigned int>          m_uiNlist;  
         unsigned int*                      m_uiNlistPtr;
+        unsigned char*                     m_uiParRotID; // Stores the parent's rotation ID for each elemet. If it is not computed, rotation ID default set to ''
+        unsigned char*                     m_uiNCARotID;
+
+
         DendroIntL*                      m_dilpLocalToGlobal;
         DendroIntL*                      m_dilpLocalToGlobalElems;
 

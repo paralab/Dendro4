@@ -32,72 +32,6 @@
 namespace ot {
 
 
-#ifdef HILBERT_ORDERING
-#define CALCULATE_TREENODE_ROTATION(P,D,R){ \
-    unsigned int x1=P.xint();\
-    unsigned int y1=P.yint();\
-    unsigned int z1=P.zint();\
-    R=0;\
-    unsigned int current_rot=0;\
-    unsigned int mid_bit=m_uiMaxDepth; \
-    unsigned int index1=0;\
-    for(int i=0; i<D;i++) {\
-      mid_bit=m_uiMaxDepth-i-1; \
-      index1= (((z1&(1<<mid_bit))>>mid_bit)<<2)|( (((x1&(1<<mid_bit))>>mid_bit)^((z1&(1<<mid_bit))>>mid_bit)) <<1)|(((x1&(1<<mid_bit))>>mid_bit)^((y1&(1<<mid_bit))>>mid_bit)^((z1&(1<<mid_bit))>>mid_bit));\
-      current_rot=HILBERT_TABLE[current_rot*num_children+index1];\
-    }\
-    R=current_rot;\
-}
-
-#define GET_PARENT(P,PAR_LEV,PAR_P){\
-    unsigned int parX, parY, parZ;\
-    parX = ((P.xint() >> (m_uiMaxDepth - PAR_LEV)) << (m_uiMaxDepth - PAR_LEV));\
-    parY = ((P.yint() >> (m_uiMaxDepth - PAR_LEV)) << (m_uiMaxDepth - PAR_LEV));\
-    parZ = ((P.zint() >> (m_uiMaxDepth - PAR_LEV)) << (m_uiMaxDepth - PAR_LEV));\
-    PAR_P=Point(parX,parY,parZ);\
-}
-
-#define GET_HILBERT_CHILDNUMBER(P,D,I){\
-    unsigned int index1=0,index2=0;\
-    unsigned int mid_bit = m_uiMaxDepth - D;\
-    unsigned int x1,y1,z1;\
-    x1=P.xint(); y1=P.yint(); z1=P.zint();\
-    index1 = (((z1 & (1 << mid_bit)) >> mid_bit) << 2) | ((((x1 & (1 << mid_bit)) >> mid_bit) ^ ((z1 & (1 << mid_bit)) >> mid_bit)) << 1) | (((x1 & (1 << mid_bit)) >> mid_bit) ^ ((y1 & (1 << mid_bit)) >> mid_bit)^((z1 & (1 << mid_bit)) >> mid_bit));\
-    char rot_id = 0;\
-    Point parP;\
-    unsigned int pLev=D-1;\
-    GET_PARENT(P,pLev,parP);\
-    CALCULATE_TREENODE_ROTATION(parP,pLev,rot_id);\
-    unsigned int xp,yp,zp;\
-    xp=parP.xint(); yp=parP.yint(); zp=parP.zint(); \
-    mid_bit=m_uiMaxDepth-pLev-1;\
-    index2 = (((zp & (1 << mid_bit)) >> mid_bit) << 2) | ((((xp & (1 << mid_bit)) >> mid_bit) ^ ((zp & (1 << mid_bit)) >> mid_bit)) << 1) | (((xp & (1 << mid_bit)) >> mid_bit) ^ ((yp & (1 << mid_bit)) >> mid_bit)^((zp & (1 << mid_bit)) >> mid_bit));\
-    parRotID=rot_id;\
-    /*std::cout<<"Rotation:"<<(int)rotations[rot_offset * rot_id + num_children + index1]<<std::endl;*/\
-    I=(rotations[rot_offset * rot_id + num_children + index1]-'0');\
- }
-
-#define GET_FIRST_CHILD(P,ROT_ID,D,CHILD_P){\
-    unsigned int len1=((m_uiMaxDepth-D)-1);\
-    unsigned int xf,yf,zf;\
-    int rot_id=ROT_ID;\
-    unsigned int fchild;\
-    fchild = rotations[rot_offset*ROT_ID+0]-'0'; \
-    unsigned int x1,y1,z1;\
-    x1=P.xint();\
-    y1=P.yint();\
-    z1=P.zint();\
-    xf=x1 +(( (( (fchild&4u)>>2u )&(!((fchild&2u)>>1u)))+( ((fchild&2u)>>1u) & (!((fchild&4u)>>2u))))<<len1); \
-    yf=y1 +((( (fchild&1u) & ( !((fchild&2u)>>1u)  ))+( ((fchild&2u)>>1u) & (!(fchild&1u)  )))<<len1);\
-    zf=z1 +(((fchild&4u)>>2u)<<len1);\
-    CHILD_P=Point(xf,yf,zf);\
- }
-
-
-#endif
-
-
-
 
   int DA::computeLocalToGlobalElemMappings() {
     DendroIntL localElemSize = getElementSize();
@@ -328,9 +262,7 @@ Point DA::getNextOffset(Point p, unsigned char d) {
 
 #ifdef HILBERT_ORDERING
     Point m = p;
-    unsigned int mask = (1u << (m_uiMaxDepth - d));
     Point parent;
-    unsigned int level=d;
     unsigned int next_limit=(1u<<m_uiDimension)-1;
     unsigned int rotation_id;
     char next_index;
@@ -339,45 +271,47 @@ Point DA::getNextOffset(Point p, unsigned char d) {
     unsigned int len;
     unsigned int num_children=1u<<m_uiDimension; // This is basically the hilbert table offset
     unsigned int rot_offset=num_children<<1;
-    unsigned int parLev;
     unsigned int parRotID;
-    bool state=false;
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     unsigned int nextLev=getLevel(m_uiCurrent+1);
     unsigned int childRotID;
-//    std::cout<<"Current Index:"<<m_uiCurrent<<"  Get Next of TreeNode: "<<m.xint()<<","<<m.yint()<<","<<m.zint()<<" level"<<(int)d<<std::endl;
-    for (int k =level; k >= 0; --k) {
+    unsigned int mid_bit;
+    for (int k =d; k >= 0; --k) {
       // special case that next of the root node.We consider it as the first child of the root.
       if(k==0)
       {
-        std::cout<<"Root achieved:"<<std::endl;
+        //std::cout<<"Root achieved:"<<std::endl;
         //std::cout<<"While getting the next node of: "<<*this<<std::endl;
         assert(m.xint()==0 && m.yint()==0 && m.zint()==0);
         int len=(1u<<(m_uiMaxDepth))-1;
         m=Point(0,0,len);//TreeNode(1,0,0,len,1,m_uiDim,m_uiMaxDepth+1);
         break;
       }
-      parLev=k-1;
-      child_index=0;
-      //ot::TreeNode temp(1,m.xint(),m.yint(),m.zint(),k,m_uiDimension,m_uiMaxDepth);
-      GET_HILBERT_CHILDNUMBER(m,k,child_index);
-      //assert(child_index==temp.getChildNumber(true));
-      assert(child_index<8);
-      GET_PARENT(m,parLev,parent);
-      //assert(parent.xint()==temp.getParent().getX() && parent.yint()==temp.getParent().getY() && parent.zint()==temp.getParent().getZ());
-      //std::cout<<"Parent:"<<parent.xint()<<","<<parent.yint()<<","<<parent.zint()<<std::endl;
-      //CALCULATE_TREENODE_ROTATION(parent,parLev,rotation_id);
-      //assert(rotation_id==temp.getParent().calculateTreeNodeRotation());
-      //assert(rotation_id==parRotID);
-      //std::cout<<"Parent Rotattion:"<<(int)rotation_id<<std::endl;
-      rotation_id=parRotID; // calculated from get ChildNumber
+      par_level=k-1;
+      if(m_uiParRotID[m_uiCurrent]==DEFAULT_ROT_ID || k==d) {
+        GET_HILBERT_CHILDNUMBER(m, k, child_index);
+        m_uiParRotID[m_uiCurrent]=((child_index<<5)|(parRotID & ROT_ID_MASK));
 
+      }else
+      {
+        if(k==d) {
+          child_index = (m_uiParRotID[m_uiCurrent] & CHILD_INDEX_MASK);
+          parRotID = (m_uiParRotID[m_uiCurrent] & ROT_ID_MASK);
+        }else
+        {
+          GET_HILBERT_CHILDNUMBER(m, k, child_index);
+//          mid_bit=m_uiMaxDepth-k-1;
+//          par_z=m.zint(); par_x=m.xint(); par_y=m.yint();
+//          next_index= (((par_z&(1<<mid_bit))>>mid_bit)<<2)|( (((par_x&(1<<mid_bit))>>mid_bit)^((par_z&(1<<mid_bit))>>mid_bit)) <<1)|(((par_x&(1<<mid_bit))>>mid_bit)^((par_y&(1<<mid_bit))>>mid_bit)^((par_z&(1<<mid_bit))>>mid_bit));
+//          parRotID=HILBERT_TABLE[parRotID*num_children+next_index];
+//          child_index=(rotations[rot_offset * parRotID + num_children + next_index]-'0');
+        }
+      }
+
+      GET_PARENT(m,par_level,parent);
+      rotation_id=parRotID; // calculated from get ChildNumber
       par_x=parent.xint();
       par_y=parent.yint();
       par_z=parent.zint();
-      par_level=parLev;
-
       len=m_uiMaxDepth-par_level-1;//(m_uiMaxDepth-parent.getLevel()-1);
       if(child_index<next_limit)
       {
@@ -387,42 +321,20 @@ Point DA::getNextOffset(Point p, unsigned char d) {
         par_x=par_x +(( (( (next_index&4u)>>2u )&(!((next_index&2u)>>1u)))+( ((next_index&2u)>>1u) & (!((next_index&4u)>>2u))))<<len);
         par_y=par_y +((( (next_index&1u) & ( !((next_index&2u)>>1u)  ))+( ((next_index&2u)>>1u) & (!(next_index&1u)  )))<<len);
         par_z=par_z +(((next_index&4u)>>2u)<<len);
-
-        // Tree node with updated coordinates.
         m=Point(par_x,par_y,par_z);
-        //ot::TreeNode tmp(1,m.xint(),m.yint(),m.zint(),k,m_uiDimension,m_uiMaxDepth);
         childRotID=parRotID;
-        unsigned int mid_bit;
         for (int q = k; q < nextLev; q++) {
-            // tmp = tmp.getFirstChild();
-           // char rid=tmp.calculateTreeNodeRotation();
             childRotID=HILBERT_TABLE[childRotID*num_children+next_index];
-//            if(childRotID!=rid)
-//            {
-//                std::cout<<"Rot ID stored:"<<childRotID<<" Computed:"<<(int)rid<<" k:"<<k<<" q:"<<q<<" nextLev:"<<nextLev<<std::endl;
-//            }
             GET_FIRST_CHILD(m,childRotID,q,m);
-            // std::cout<<"q:"<<q<<" "<<m.xint()<<","<<m.yint()<<","<<m.zint()<<" tmp:"<<tmp<<std::endl;
             mid_bit=m_uiMaxDepth-q-1;
             par_z=m.zint(); par_x=m.xint(); par_y=m.yint();
             next_index= (((par_z&(1<<mid_bit))>>mid_bit)<<2)|( (((par_x&(1<<mid_bit))>>mid_bit)^((par_z&(1<<mid_bit))>>mid_bit)) <<1)|(((par_x&(1<<mid_bit))>>mid_bit)^((par_y&(1<<mid_bit))>>mid_bit)^((par_z&(1<<mid_bit))>>mid_bit));
-            //tmp=tmp.getFirstChild();
-
-//            if(tmp.getAnchor()!=m) {
-//                std::cout<<"Q: "<<q <<" "<<m.xint()<<","<<m.yint()<<","<<m.zint()<<" tmp:"<<tmp<<std::endl;
-//            }
-
-        }
+         }
         break;
-
       }else {
         m=parent;
-        //state=true;
       }
     }
-
-
-
     return m;
 
 #else

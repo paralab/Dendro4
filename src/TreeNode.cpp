@@ -597,6 +597,7 @@ TreeNode  :: TreeNode(const int dummy, const unsigned int x, const unsigned int 
 
   m_uiLevel = lev;
   m_uiWeight = 1;
+
 //   #ifdef HILBERT_ORDERING
 //   //calculateTreeNodeRotation();
 //   #endif

@@ -797,7 +797,10 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
 
   for (unsigned int i = 0; i < localOcts.size(); i++) {
     m_ucpOctLevels[i] = localOcts[i].getFlag();
+
   }
+
+
 
   // clean up ...
   localOcts.clear();
@@ -832,6 +835,25 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
   } else {
     m_uiNlistPtr = NULL;
   }
+
+
+
+#ifdef HILBERT_ORDERING
+
+  m_uiParRotID=new unsigned char[end<DA_FLAGS::ALL>()];
+
+  for(init<DA_FLAGS::ALL>();curr()<end<DA_FLAGS::ALL>();next<DA_FLAGS::ALL>())
+  {
+    m_uiParRotID[m_uiCurrent]=DEFAULT_ROT_ID;
+
+  }
+
+
+
+
+#endif
+
+
 
   PROF_BUILD_DA_STAGE9_END
 
