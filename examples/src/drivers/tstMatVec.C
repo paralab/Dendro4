@@ -354,7 +354,7 @@ int main(int argc, char ** argv ) {
   par::Mpi_Reduce<DendroIntL>(&localSz, &minIndepSize, 1, MPI_MIN, 0, MPI_COMM_WORLD);
 
   unsigned int * nodeList=new unsigned int[8];
-  unsigned int diff,diff_min,diff_max,diff_mean;
+  unsigned long diff,diff_min,diff_max,diff_mean;
   unsigned int min,max;
   for(da.init<ot::DA_FLAGS::ALL>();da.curr()<da.end<ot::DA_FLAGS::ALL>();da.next<ot::DA_FLAGS::ALL>())
   {
@@ -374,6 +374,8 @@ int main(int argc, char ** argv ) {
     }
     diff=max-min;
   }
+
+  delete [] nodeList;
 
 //  par::Mpi_Reduce(&min,&min_g,1,MPI_MIN,0,MPI_COMM_WORLD);
 //  par::Mpi_Reduce(&max,&max_g,1,MPI_MAX,0,MPI_COMM_WORLD);
