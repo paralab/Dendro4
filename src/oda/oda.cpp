@@ -359,12 +359,14 @@ Point DA::getNextOffset(Point p, unsigned char d) {
       Point m;
       unsigned char nextLev=(m_ucpOctLevels[m_uiCurrent+1]& ot::TreeNode::MAX_LEVEL);
       unsigned char mid_bit;
+
       parRotID=(m_uiParRotID[m_uiCurrent] & ROT_ID_MASK);
       child_index=(m_uiParRotID[m_uiCurrent] >>5);
       par_level=m_uiParRotIDLev[m_uiCurrent];
       GET_PARENT(p, par_level, m);
       child_index = (rotations[16 * parRotID + child_index + 1] - '0');
       len = m_uiMaxDepth - par_level - 1;
+
       m=Point((m.xint() + (((((child_index & 4u) >> 2u) & (!((child_index & 2u) >> 1u))) +  (((child_index & 2u) >> 1u) & (!((child_index & 4u) >> 2u)))) << len)),(m.yint() + ((((child_index & 1u) & (!((child_index & 2u) >> 1u))) +  (((child_index & 2u) >> 1u) & (!(child_index & 1u)))) << len)),(m.zint() + (((child_index & 4u) >> 2u) << len)));
       //childRotID = parRotID;
       for (int q = par_level+1; q < nextLev; q++) {

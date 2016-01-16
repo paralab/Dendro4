@@ -353,29 +353,70 @@ int main(int argc, char ** argv ) {
   par::Mpi_Reduce<DendroIntL>(&localSz, &maxIndepSize, 1, MPI_MAX, 0, MPI_COMM_WORLD);
   par::Mpi_Reduce<DendroIntL>(&localSz, &minIndepSize, 1, MPI_MIN, 0, MPI_COMM_WORLD);
 
-  unsigned int * nodeList=new unsigned int[8];
+
   unsigned long diff,diff_min,diff_max,diff_mean;
   unsigned int min,max;
+  std::ofstream myfile1;
+  std::ofstream myfile2;
+  char ptsFileName1[256];
+  char ptsFileName2[256];
+  sprintf(ptsFileName1, "%s_%d_%d_%d_%d", "nodeListComplete", maxDepth,TotalPts,rank, size);
+  sprintf(ptsFileName2, "%s_%d_%d_%d_%d", "nodeListNonHangin", maxDepth,TotalPts,rank, size);
+  myfile1.open(ptsFileName1);
+  myfile2.open(ptsFileName2);
+  myfile1<<"ODA_NODE_LIST COMPLETE"<<std::endl;
+  myfile2<<"ODA NODE LIST NON HANGIN"<<std::endl;
   for(da.init<ot::DA_FLAGS::ALL>();da.curr()<da.end<ot::DA_FLAGS::ALL>();da.next<ot::DA_FLAGS::ALL>())
   {
+    unsigned int  nodeList[8];
     da.getNodeIndices(nodeList);
-
+    myfile1<<"Node List for element:\t"<<da.curr()<<":";
     min=nodeList[0];
     max=nodeList[0];
+    myfile1<<nodeList[0]<<",";
+
+    if(da.isGhost(nodeList[0]))
+      myfile2<<nodeList[0]<<",";
+
+
     for(int i=1;i<8;i++)
     {
-      if(max<nodeList[i])
+      if(i<8) {
+        myfile1 << nodeList[i] << ",";
+      }
+      else {
+        myfile1 << nodeList[i];
+      }
+
+      if(!da.isGhost(nodeList[i]))
+      {
+
+        if(i<8) {
+          myfile2 << nodeList[i] << ",";
+        }
+        else {
+          myfile2 << nodeList[i];
+        }
+
+      }
+
+      if(max<nodeList[i] & !da.isGhost(nodeList[i]))
         max=nodeList[i];
 
-      if(min>nodeList[i])
+      if(min>nodeList[i] & !da.isGhost(nodeList[i]))
         min=nodeList[i];
 
 
     }
+
     diff=max-min;
+    myfile1<<"\t Diff:"<<diff<<std::endl;
+    myfile2<<"\t Diff:"<<diff<<std::endl;
+
   }
 
-  delete [] nodeList;
+  myfile1.close();
+
 
 //  par::Mpi_Reduce(&min,&min_g,1,MPI_MIN,0,MPI_COMM_WORLD);
 //  par::Mpi_Reduce(&max,&max_g,1,MPI_MAX,0,MPI_COMM_WORLD);
