@@ -57,6 +57,7 @@ int main(int argc, char ** argv ) {
   PetscInitialize(&argc,&argv,"options",NULL);
   ot::RegisterEvents();
   ot::DA_Initialize(MPI_COMM_WORLD);
+  PetscErrorPrintf = PetscErrorPrintfNone;
 
 #ifdef PETSC_USE_LOG
   PetscClassId classid;
