@@ -728,7 +728,7 @@ for (unsigned int j = 0; j < 8; j++) {
 //This can happen only if the octant in question is a singular block
 //and its anchor is hanging and the 0th child of its parent is sitting on a different processor.
 //BlockPart should have detected this case and prevented this.
-//#ifdef __DEBUG_DA_NLIST__
+#ifdef __DEBUG_DA_NLIST__
 if ( (i >= m_uiElementBegin) && (i < m_uiElementEnd) &&
     ( (nlist[8*i] < m_uiElementBegin) || (nlist[8*i] >= m_uiPostGhostBegin) ) ) {
 
@@ -748,7 +748,7 @@ if ( (i >= m_uiElementBegin) && (i < m_uiElementEnd) &&
   }
   assert(false);
 }
-//#endif
+#endif
 
 //#ifdef __DEBUG_DA_NLIST__
 //Check if you sent yourself apriori (Second Ring).
@@ -1625,7 +1625,7 @@ for ( unsigned int j=0; j<8; j++) {
       unsigned int idx;    
       found = seq::maxLowerBound<ot::TreeNode >(recvKs, secondaryKeys[i], idx, NULL, NULL);
 
-//#ifdef __DEBUG_DA_NLIST__
+#ifdef __DEBUG_DA_NLIST__
       assert( found );
       assert( recvKs[idx] != rootNode );
       assert( recvKs[idx].getFlag() & ot::TreeNode::NODE );
@@ -1635,7 +1635,7 @@ for ( unsigned int j=0; j<8; j++) {
        }
       assert( recvKs[idx].getAnchor() == secondaryKeys[i].getAnchor());
 
-//#endif
+#endif
       /*
          Handle Special Case: When a pre-ghost element did not find its primary key in the local search, the secondary key is never searched for. In such situations, when the primary result is not usable and we must pick the secondary result got from the explicit parallel search, we must first check if this secondary result is already present in the local buffer (either own or elements got through a-priori comm.) If so, we must use the one that is already present and discard the one got through the parallel search. This must be done in order to avoid duplicate octants in the local buffer.
          */
