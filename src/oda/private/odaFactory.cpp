@@ -101,8 +101,10 @@ void DA::DA_FactoryPart0(std::vector<ot::TreeNode>& in, MPI_Comm comm,
     MPI_Comm activeInputComm, bool compressLut, bool* iAmActive) {
   RESET_DA_BLOCK
     m_uiInputSize = static_cast<unsigned int>(in.size());
+    //@Milinda
+    m_uiRotIDComputed=false;
 
-  //The default is NULL. 
+  //The default is NULL.
   if(iAmActive != NULL) {
     (*iAmActive) = (!(in.empty())); 
     m_bIamActive = (*iAmActive);    
@@ -170,6 +172,7 @@ void DA::DA_FactoryPart1(std::vector<ot::TreeNode>& in) {
   in=tmpTN;
   tmpTN.clear();
 #endif
+
 
   //treeNodesTovtk(positiveBoundaryOctants,rank,"positive_bdy_octs");
   // Update the maxDepth ...
@@ -254,8 +257,9 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
   if(blocksPtr == NULL) {
 
     //min grain size = 1000
-    const DendroIntL THOUSAND = 1;
-
+ /*   const DendroIntL THOUSAND = 1000;
+//    if(!m_iRankActive)
+//      std::cout<<"globalSizeBefore:"<<globalSizeBefore<<std::endl;
     if (globalSizeBefore < (THOUSAND*m_iNpesActive)) {
       int splittingSize = (globalSizeBefore/THOUSAND); 
       if(splittingSize == 0) {
@@ -284,6 +288,14 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
       MPI_Comm_size(m_mpiCommActive,&m_iNpesActive);
       MPI_Comm_rank(m_mpiCommActive,&m_iRankActive);
 
+#ifdef HILBERT_ORDERING
+      std::vector<ot::TreeNode> tmp;
+      par::sampleSort(in,tmp,m_mpiCommActive);
+      in=tmp;
+      tmp.clear();
+#endif
+
+
 #ifndef __SILENT_MODE__
       if(!m_iRankActive) {
         std::cout<<" input to DA constructor is small("<<globalSizeBefore
@@ -302,7 +314,7 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
           return;
       }
     }//end check if total size is too small
-
+*/
     PROF_DA_BPART1_BEGIN
 
 
@@ -838,14 +850,7 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
 
 
 
-#ifdef HILBERT_ORDERING
 
-  m_uiParRotID=new unsigned char[end<DA_FLAGS::ALL>()];
-  m_uiParRotIDLev=new unsigned char[end<DA_FLAGS::ALL>()];
-
-  for(init<DA_FLAGS::ALL>();curr()<end<DA_FLAGS::ALL>();next<DA_FLAGS::ALL>());
-
-#endif
 
 
 

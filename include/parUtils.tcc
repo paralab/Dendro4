@@ -1461,9 +1461,10 @@ namespace par {
 
     if (totSize < (FIVE * npesLong * npesLong)) {
       if (!myrank) {
-        std::cout << " Using bitonic sort since totSize < (5*(npes^2)). totSize: "
+        std::cout << " *Using bitonic sort since totSize < (5*(npes^2)). totSize: "
         << totSize << " npes: " << npes << std::endl;
       }
+
 
 
 #ifdef __DEBUG_PAR__
@@ -1496,6 +1497,7 @@ namespace par {
 
       if (!SortedElem.empty()) {
         par::bitonicSort<T>(SortedElem, new_comm);
+        //std::cout<<"Rank:"<<rank<<" bitonic search complete"<<std::endl;
       }
 
 #ifdef __DEBUG_PAR__
@@ -1509,11 +1511,16 @@ namespace par {
       PROF_SORT_END
     }// end if
 
+  // if(!rank)
+
 #ifdef __DEBUG_PAR__
     if(!myrank) {
       std::cout<<"Using sample sort to sort nodes. n/p^2 is fine."<<std::endl;
     }
 #endif
+
+
+
 
     //Re-part arr so that each proc. has atleast p elements.
 

@@ -14,6 +14,7 @@
 #include "externVars.h"
 #include "dendro.h"
 #include "genPts_par.h"
+#include <climits>
 
 //Don't want time to be synchronized. Need to check load imbalance.
 #ifdef MPI_WTIME_IS_GLOBAL
@@ -355,79 +356,147 @@ int main(int argc, char ** argv ) {
   par::Mpi_Reduce<DendroIntL>(&localSz, &minIndepSize, 1, MPI_MIN, 0, MPI_COMM_WORLD);
 
 
-  unsigned long diff,diff_min,diff_max,diff_mean;
-  unsigned int min,max;
+  unsigned long diff_pre=0,diff_mine=0,diff_post=0;
+  unsigned long diff_min_pre=LONG_MAX,diff_max_pre=0,diff_sum_pre;
+  unsigned long diff_min_mine=LONG_MAX,diff_max_mine=0,diff_sum_mine;
+  unsigned long diff_min_post=LONG_MAX,diff_max_post=0,diff_sum_post;
+
+  unsigned long diff_min_pre_g, diff_max_pre_g;
+  unsigned long diff_min_mine_g, diff_max_mine_g;
+  unsigned long diff_min_post_g, diff_max_post_g;
+
+
+  double diff_mean_pre, diff_mean_mine, diff_mean_post;
+
+  unsigned long min_pre=LONG_MAX,max_pre=0, min_mine=LONG_MAX,max_mine=0, min_post=LONG_MAX,max_post=0;
   std::ofstream myfile1;
-  std::ofstream myfile2;
   char ptsFileName1[256];
-  char ptsFileName2[256];
   sprintf(ptsFileName1, "%s_%d_%d_%d_%d", "nodeListComplete", maxDepth,TotalPts,rank, size);
-  sprintf(ptsFileName2, "%s_%d_%d_%d_%d", "nodeListNonHangin", maxDepth,TotalPts,rank, size);
   myfile1.open(ptsFileName1);
-  myfile2.open(ptsFileName2);
   myfile1<<"ODA_NODE_LIST COMPLETE"<<std::endl;
-  myfile2<<"ODA NODE LIST NON HANGIN"<<std::endl;
-  for(da.init<ot::DA_FLAGS::ALL>();da.curr()<da.end<ot::DA_FLAGS::ALL>();da.next<ot::DA_FLAGS::ALL>())
-  {
-    unsigned int  nodeList[8];
-    da.getNodeIndices(nodeList);
-    myfile1<<"Node List for element:\t"<<da.curr()<<":";
-    min=nodeList[0];
-    max=nodeList[0];
-    myfile1<<nodeList[0]<<",";
+  int actCnt=0;
+  int actCnt_g=0;
 
-    if(da.isGhost(nodeList[0]))
-      myfile2<<nodeList[0]<<",";
+  if(da.iAmActive()) {
+    actCnt=1;
+    for (da.init<ot::DA_FLAGS::ALL>(); da.curr() < da.end<ot::DA_FLAGS::ALL>(); da.next<ot::DA_FLAGS::ALL>()) {
+      unsigned int nodeList[8];
+      da.getNodeIndices(nodeList);
+      myfile1 << "Node List for element:\t" << da.curr() << ":";
+      unsigned int index;
+         for (int i = 0; i < 8; i++) {
+            if (i < 8) {
+              myfile1 << nodeList[i] << ",";
+            }
+            else {
+              myfile1 << nodeList[i];
+            }
+            index=nodeList[i];
+            if(index<da.getIdxElementBegin()) // pre ghost element
+            {
+              if(min_pre>index)
+                min_pre=index;
+
+              if(max_pre<index)
+                max_pre=index;
+
+            }else if(index<da.getIdxElementEnd()) // this is a my element.
+            {
+
+              if(min_mine>index)
+                min_mine=index;
+
+              if(max_mine<index)
+                max_mine=index;
+
+            }else // this is a post ghost element.
+            {
+
+              if(min_post>index)
+                min_post=index;
+
+              if(max_post<index)
+                max_post=index;
+            }
+
+          }
+
+      if(max_pre!=0 && min_pre!=LONG_MAX)
+        diff_pre=max_pre-min_pre;
+      else
+        diff_pre=0;
+
+      if(max_mine!=0 && min_mine!=LONG_MAX)
+        diff_mine=max_mine-min_mine;
+      else
+        diff_mine=0;
+
+      if(max_post!=0 && min_post!=LONG_MAX)
+        diff_post=max_post-min_post;
+      else
+        diff_post=0;
+
+      myfile1 << "\t Diff_Pre:" << diff_pre <<" Diff_Mine:"<<diff_mine<<" Diff_Post:"<<diff_post<< std::endl;
 
 
-    for(int i=1;i<8;i++)
-    {
-      if(i<8) {
-        myfile1 << nodeList[i] << ",";
-      }
-      else {
-        myfile1 << nodeList[i];
-      }
+      if(diff_min_pre>diff_pre)
+         diff_min_pre=diff_pre;
 
-      if(!da.isGhost(nodeList[i]))
-      {
+      if(diff_min_mine>diff_mine)
+        diff_min_mine=diff_mine;
 
-        if(i<8) {
-          myfile2 << nodeList[i] << ",";
-        }
-        else {
-          myfile2 << nodeList[i];
-        }
+      if(diff_min_post>diff_post)
+        diff_min_post=diff_post;
 
-      }
 
-      if(max<nodeList[i] & !da.isGhost(nodeList[i]))
-        max=nodeList[i];
+      if(diff_max_pre<diff_pre)
+        diff_max_pre=diff_pre;
 
-      if(min>nodeList[i] & !da.isGhost(nodeList[i]))
-        min=nodeList[i];
+      if(diff_max_mine<diff_mine)
+        diff_max_mine=diff_mine;
+
+      if(diff_max_post<diff_post)
+        diff_max_post=diff_post;
 
 
     }
 
-    diff=max-min;
-    myfile1<<"\t Diff:"<<diff<<std::endl;
-    myfile2<<"\t Diff:"<<diff<<std::endl;
 
-  }
+   }
 
   myfile1.close();
 
 
-//  par::Mpi_Reduce(&min,&min_g,1,MPI_MIN,0,MPI_COMM_WORLD);
-//  par::Mpi_Reduce(&max,&max_g,1,MPI_MAX,0,MPI_COMM_WORLD);
-  par::Mpi_Reduce(&diff,&diff_min,1,MPI_MIN,0,MPI_COMM_WORLD);
-  par::Mpi_Reduce(&diff,&diff_max,1,MPI_MAX,0,MPI_COMM_WORLD);
-  par::Mpi_Reduce(&diff,&diff_mean,1,MPI_SUM,0,MPI_COMM_WORLD);
+  par::Mpi_Reduce(&actCnt,&actCnt_g,1,MPI_SUM,0,MPI_COMM_WORLD);
 
-  diff_mean=diff_mean/size;
+  par::Mpi_Reduce(&diff_max_pre,&diff_min_pre_g,1,MPI_MIN,0,MPI_COMM_WORLD);
+  par::Mpi_Reduce(&diff_max_pre,&diff_max_pre_g,1,MPI_MAX,0,MPI_COMM_WORLD);
+  par::Mpi_Reduce(&diff_max_pre,&diff_sum_pre,1,MPI_SUM,0,MPI_COMM_WORLD);
+
+
+
+  par::Mpi_Reduce(&diff_max_mine,&diff_min_mine_g,1,MPI_MIN,0,MPI_COMM_WORLD);
+  par::Mpi_Reduce(&diff_max_mine,&diff_max_mine_g,1,MPI_MAX,0,MPI_COMM_WORLD);
+  par::Mpi_Reduce(&diff_max_mine,&diff_sum_mine,1,MPI_SUM,0,MPI_COMM_WORLD);
+
+
+
+  par::Mpi_Reduce(&diff_max_post,&diff_min_post_g,1,MPI_MIN,0,MPI_COMM_WORLD);
+  par::Mpi_Reduce(&diff_max_post,&diff_max_post_g,1,MPI_MAX,0,MPI_COMM_WORLD);
+  par::Mpi_Reduce(&diff_max_post,&diff_sum_post,1,MPI_SUM,0,MPI_COMM_WORLD);
+
+
+
+
+
 
   if (!rank) {
+
+    diff_mean_pre=diff_sum_pre/(double)(actCnt_g);
+    diff_mean_mine=diff_sum_mine/(double)(actCnt_g);
+    diff_mean_post=diff_sum_post/(double)(actCnt_g);
+
+
 
     std::cout << RED<<"=====================QUALITY OF ODA========================================"<<NRM<<std::endl;
     std::cout << "Nodes          \t(" << minNodeSize << ", " << maxNodeSize << ")" << std::endl;
@@ -435,9 +504,10 @@ int main(int argc, char ** argv ) {
     std::cout << "Element Size   \t(" << minElementSize << ", " << maxElementSize << ")" << std::endl;
     std::cout << "Independent    \t(" << minIndepSize << ", " << maxIndepSize << ")" << std::endl;
     std::cout << RED<<"=====================NODELIST STATISTICS========================================"<<NRM<<std::endl;
-    std::cout << RED<<"Diff Global Min:"<<diff_min<<NRM<<std::endl;
-    std::cout << RED<<"Diff Global Max:"<<diff_max<<NRM<<std::endl;
-    std::cout << RED<<"Diff Global Mean:"<<diff_mean<<NRM<<std::endl;
+    std::cout << RED<< "Number of active ODA's:"<<actCnt_g<<NRM<<std::endl;
+    std::cout << RED<<"Diff Pre Ghost:"<<"("<<diff_min_pre_g<<", "<<diff_mean_pre<<", "<<diff_max_pre_g<<")"<<NRM<<std::endl;
+    std::cout << RED<<"Diff My elements:"<<"("<<diff_min_mine_g<<", "<<diff_mean_mine<<", "<<diff_max_mine_g<<")"<<NRM<<std::endl;
+    std::cout << RED<<"Diff Phost Ghost:"<<"("<<diff_min_post_g<<", "<<diff_mean_post<<", "<<diff_max_post_g<<")"<<NRM<<std::endl;
     std::cout << RED<<"==========================================================================="<<NRM<<std::endl;
 
   }

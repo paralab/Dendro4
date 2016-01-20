@@ -62,16 +62,22 @@ void DA::buildNodeList(std::vector<ot::TreeNode> &in) {
     unsigned int nelem = m_uiPreGhostElementSize + m_uiElementSize;
 
   std::vector<unsigned int> nlist;
-
-  std::vector<ot::TreeNode> debugKeys;
-  std::vector<ot::TreeNode> debugNodeFound;
-  std::vector<ot::TreeNode> debugNode;
+//
+//  std::vector<ot::TreeNode> debugKeys;
+//  std::vector<ot::TreeNode> debugNodeFound;
+//  std::vector<ot::TreeNode> debugNode;
   /*
      The first iteration is for pre-ghosts only.
      The second iteration is for own elements. 
      The first iteration does not use 4-way searches. The second iteration does.
      */
   for(unsigned int numFullLoopCtr = 0; numFullLoopCtr < 2; numFullLoopCtr++) {
+
+//      if(!m_iRankActive)
+//      {
+//          std::cout<<"numFullLoopCtr:"<<numFullLoopCtr<<std::endl;
+//      }
+
 
     // Some storage ...
     std::vector<ot::TreeNode> primaryKeys;
@@ -96,6 +102,8 @@ void DA::buildNodeList(std::vector<ot::TreeNode> &in) {
       iLoopSt = m_uiPreGhostElementSize;
       iLoopEnd = nelem;
     }
+
+
 
 #ifdef __DEBUG_DA_NLIST__
     MPI_Barrier(m_mpiCommActive);
@@ -156,7 +164,7 @@ void DA::buildNodeList(std::vector<ot::TreeNode> &in) {
       unsigned int ch_num = (4*c + 2*b + a);
 
 
-//#ifdef __DEBUG_DA_NLIST__
+#ifdef __DEBUG_DA_NLIST__
 
      if ( !ch_num || (ch_num==7) ) {
         if ( !(in[i].getFlag() & ot::TreeNode::NODE) ) {
@@ -164,7 +172,7 @@ void DA::buildNodeList(std::vector<ot::TreeNode> &in) {
           assert(false);
         }
       }
-//#endif
+#endif
 
       bool found[8];
       // haven't found anything yet. Set Default values.
@@ -174,12 +182,12 @@ void DA::buildNodeList(std::vector<ot::TreeNode> &in) {
       }//end for k
 
       //~~~~~~~~~~~~~~~~~~~~~~~NEGATIVE SEARCH~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      if(numFullLoopCtr == 1) {
+ /*     if(numFullLoopCtr == 1) {
 
 
-        unsigned int idnx, idny, idnz;
-        //Basic Idea of a negative search. 
-        //1. Search and find elements on the negative faces. 
+        unsigned int idnx=0, idny=0, idnz=0;
+        //Basic Idea of a negative search.
+        //1. Search and find elements on the negative faces.
         //2. If the result is a brother and the Vtx in question is hanging, swap and copy.
         //3. In all other cases, simply copy.
         //4. Note, copy only if the nlist is pointing to a valid location
@@ -239,9 +247,9 @@ void DA::buildNodeList(std::vector<ot::TreeNode> &in) {
         }
 
         // How we use the results of the negative search depends on the child number ...
-        // if here my is the current element and x, y, and z are the elements in the 
+        // if here my is the current element and x, y, and z are the elements in the
         // respective negative directions, then the default mapping sans corrections is
-        // 
+        //
         // my[0] = x[1] = y[2] = z[4]
         // my[1] = y[3] = z[5]
         // my[2] = x[3] = z[6]
@@ -249,8 +257,8 @@ void DA::buildNodeList(std::vector<ot::TreeNode> &in) {
         // my[4] = x[5] = y[6]
         // my[5] = y[7];
         // my[6] = x[7];
-        // 
-        // The corrections will appear for all children except for child zero ... 
+        //
+        // The corrections will appear for all children except for child zero ...
         // and will be explained when they are performed.
 
 #define NEG_SEARCH_BLOCK1(idx,n1l,n1r,n2l,n2r,n3l,n3r,n4l,n4r) {\
@@ -351,7 +359,7 @@ switch (ch_num) {
             break;
           }
   case 1: {
-            //negX could be a brother. 
+            //negX could be a brother.
             if (foundNegX) {
               NEG_SEARCH_BLOCK2X
             }
@@ -394,7 +402,7 @@ switch (ch_num) {
             if (foundNegX) {
               NEG_SEARCH_BLOCK1X
             }
-            if (foundNegY) { 
+            if (foundNegY) {
               NEG_SEARCH_BLOCK1Y
             }
             if (foundNegZ) {
@@ -407,7 +415,7 @@ switch (ch_num) {
             if (foundNegX) {
               NEG_SEARCH_BLOCK2X
             }
-            if (foundNegY) {  
+            if (foundNegY) {
               NEG_SEARCH_BLOCK1Y
             }
             if (foundNegZ) {
@@ -452,11 +460,17 @@ switch (ch_num) {
 #undef NEG_SEARCH_BLOCK1X
 #undef NEG_SEARCH_BLOCK2X
 #undef NEG_SEARCH_BLOCK1Y
-#undef NEG_SEARCH_BLOCK2Y 
-#undef NEG_SEARCH_BLOCK1Z 
+#undef NEG_SEARCH_BLOCK2Y
+#undef NEG_SEARCH_BLOCK1Z
 #undef NEG_SEARCH_BLOCK2Z
 #undef NEG_SEARCH_BLOCK1
 #undef NEG_SEARCH_BLOCK2
+
+if(!m_iRankActive && numFullLoopCtr==1 )
+{
+    std::cout<<"Negative Seach Complete:"<<i<<"/"<<iLoopEnd<<std::endl;
+}*/
+
 
 //~~~~~~~~~~~~~~~~~~~~~POSITIVE SEARCH~~~~~~~~~~~~~~~~~~~~~~
 //#define __DEBUG_DA_NLIST__
@@ -473,9 +487,13 @@ switch (ch_num) {
 }
 
 #define  POS_SEARCH_DEBUG_BLOCK2 {\
-  assert(sKey > in[m_uiPostGhostBegin - 1]);\
+  /*@hari This assertion should be to check the both pre and post elemets. original assetion was : assert(assert(sKey > in[m_uiPostGhostBegin - 1]) */\
+  assert(sKey > in[m_uiPostGhostBegin - 1] || sKey<in[m_uiElementBegin]);\
   chkMissedPrimary.push_back(sKey);\
 }
+
+
+
 
 #define POS_SEARCH_DEBUG_BLOCK3 {\
   assert( (idx+k) < m_uiLocalBufferSize );\
@@ -497,7 +515,7 @@ switch (ch_num) {
   /* All other cNums are anchored at the parent+(2*sz,0,0).*/\
   sKey = parNodeLocations[j];\
   lastLevel = d-1;\
- /* foundKey = seq::maxLowerBound<ot::TreeNode>(in, sKey, idx,&i,NULL);*/\
+  /*foundKey = seq::maxLowerBound<ot::TreeNode>(in, sKey, idx,&i,NULL);*/\
   foundKey = seq::maxLowerBound<ot::TreeNode>(in, sKey, idx,NULL,NULL);\
   /*DEBUG_CHECK_FAST_MAX_LOWER_BOUND(in, sKey,idx, foundKey)*/ \
   if ( foundKey && !((in[idx].getAnchor()==sKey.getAnchor()) && (in[idx].getFlag()&ot::TreeNode::NODE))) {\
@@ -511,6 +529,7 @@ switch (ch_num) {
   }\
 }
 
+//Only 0 is a special case.
 #define POS_SEARCH_BLOCK(debugV1,debugV2) {\
   /* first search in default location */\
   sKey = nodeLocations[j];\
@@ -582,9 +601,7 @@ switch (ch_num) {
 }
 
 // find the eight vertices ...
-//Only 0 is a special case.
 
-ot::TreeNode tmp(1,0,96,0,4,3,9);
 
 
 for (unsigned int j = 0; j < 8; j++) {
@@ -607,12 +624,12 @@ for (unsigned int j = 0; j < 8; j++) {
               // first search is not required since we are searching for i
               if ( !(in[i].getFlag() & ot::TreeNode::NODE ) ) {
                 // if this is not a node, i.e., it is hanging
-//#ifdef __DEBUG_DA_NLIST__
+#ifdef __DEBUG_DA_NLIST__
                 if ( (ch_num == 0) || (ch_num == 7) ) {
                   std::cout << "Failing for index " << i << " with child num " << ch_num << std::endl;
                   assert(false);
                 }
-//#endif
+#endif
                 // All other child numbers are anchored at the parent.
                 sKey = parNodeLocations[j];
                 lastLevel = d-1;
@@ -626,14 +643,14 @@ for (unsigned int j = 0; j < 8; j++) {
                     foundKey=false;
                   }
                 if ( !foundKey ) {
-//#ifdef __DEBUG_DA_NLIST__
+#ifdef __DEBUG_DA_NLIST__
                   // should only happen for ghosts ...
                   if(i >= m_uiElementBegin) {
                     std::cout<<m_iRankActive<<" i = "<<i<<" preGhostElemEnd "<<m_uiPreGhostElementSize
                       <<" elemBeg: "<<m_uiElementBegin<<" elemEnd: "<<m_uiElementEnd<<std::endl;
                   }
                   assert (i < m_uiElementBegin);
-//#endif
+#endif
                   // for node zero, simply default to i.
 
                   nlist[8*i+j] = i;
@@ -659,12 +676,6 @@ for (unsigned int j = 0; j < 8; j++) {
               parNodeLocations[j] = 
                 ot::TreeNode(parX, parY+(sz<<1u), parZ, m_uiMaxDepth, m_uiDimension, m_uiMaxDepth);
               POS_SEARCH_BLOCK(2,5)
-//        if(in[i]==tmp)
-//        {
-//            std::cout<<"Searching for Node :"<<in[i]<<"Node location:"<<sKey<<std::endl;
-//            std::cout<<"i:"<<i<<"Found key :"<<foundKey<<" Found Node"<<in[idx]<<std::endl;
-//            std::cout<<"Node List Pointing Node:"<<in[nlist[8*i+j]]<<std::endl;
-//        }
                 break;
             }
     case 3: {

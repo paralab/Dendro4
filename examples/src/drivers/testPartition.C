@@ -190,8 +190,8 @@ int main(int argc, char **argv) {
   // unsigned int num_pseudo_proc=1;
 
 
-   //signal(SIGSEGV, handler);   // install our handler
-   //signal(SIGTERM, handler);   // install our handler
+   signal(SIGSEGV, handler);   // install our handler
+   signal(SIGTERM, handler);   // install our handler
 
 #ifdef PETSC_USE_LOG
   int stages[3];
