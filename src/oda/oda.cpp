@@ -188,11 +188,18 @@ namespace ot {
       MPI_Comm_rank(comm,&rank);
 
       DA_FactoryPart0(in, comm, activeInputComm, compressLut, iAmActive);
-      m_uiRotIDComputed=false;
+
+
+      if(!rank)
+          std::cout<<"ODA Part 0 completed"<<std::endl;
 
     if(m_bIamActive) {
       DA_FactoryPart1(in);
+        if(!rank)
+            std::cout<<"ODA Part 1 completed"<<std::endl;
       DA_FactoryPart2(in);
+        if(!rank)
+            std::cout<<"ODA Part 2 completed"<<std::endl;
 
 //#ifdef HILBERT_ORDERING
 //        std::vector<ot::TreeNode> tmpIn;
@@ -209,11 +216,27 @@ namespace ot {
 //        std::cout<<"rotID:"<<(int)m_uiParRotID[i]<<std::endl;
 //        std::cout<<"Lev:"<<(int)m_uiParRotIDLev[i]<<std::endl;
 //      }
-      m_uiRotIDComputed=true;
-//       if(!rank)
-//           std::cout<<"ODA Part 3 completed"<<std::endl;
+
+       if(!rank)
+           std::cout<<"ODA Part 3 completed"<<std::endl;
 
     }
+
+#ifdef HILBERT_ORDERING
+
+      m_uiParRotID=new unsigned char[end<DA_FLAGS::ALL>()];
+      m_uiParRotIDLev=new unsigned char[end<DA_FLAGS::ALL>()];
+
+      for(init<DA_FLAGS::ALL>();curr()<end<DA_FLAGS::ALL>();next<DA_FLAGS::ALL>());
+      m_uiRotIDComputed=true;
+
+      if(!rank)
+          std::cout<<"ODA Rotation pattern computation completed for Hilbert. "<<std::endl;
+
+#endif
+
+
+
 
     PROF_BUILD_DA_END
 
