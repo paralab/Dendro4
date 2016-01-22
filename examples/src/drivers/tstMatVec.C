@@ -277,6 +277,7 @@ int main(int argc, char ** argv ) {
     std::cout << " finished reading  "<<pFile<<std::endl; // Point size
   }
   ptsLen = pts.size();
+  MPI_Barrier(MPI_COMM_WORLD);
   std::vector<ot::TreeNode> tmpNodes;
   for(int i=0;i<ptsLen;i+=3) {
     if( (pts[i] > 0.0) &&
@@ -310,7 +311,7 @@ int main(int argc, char ** argv ) {
   if(rank==0) {
     std::cout<<"# pts= " << totalSz<<std::endl;
   }
-
+  //std::cout<<"linOct:"<<linOct.size()<<std::endl;
   pts.resize(3*(linOct.size()));
   ptsLen = (3*(linOct.size()));
   for(int i=0;i<linOct.size();i++) {
@@ -323,7 +324,9 @@ int main(int argc, char ** argv ) {
   gSize[1] = 1.;
   gSize[2] = 1.;
 
-  MPI_Barrier(MPI_COMM_WORLD);	
+  //std::cout << rank << " : reached barrier" << std::endl;
+  MPI_Barrier(MPI_COMM_WORLD);
+  //std::cout << rank << " : reached barrier" << std::endl;
 #ifdef PETSC_USE_LOG
   PetscLogStagePush(stages[0]);
 #endif
@@ -347,7 +350,7 @@ int main(int argc, char ** argv ) {
   pts.clear();
 
   //Balancing...
-  MPI_Barrier(MPI_COMM_WORLD);	
+  MPI_Barrier(MPI_COMM_WORLD);
 #ifdef PETSC_USE_LOG
   PetscLogStagePush(stages[1]);
 #endif
@@ -373,7 +376,7 @@ int main(int argc, char ** argv ) {
   }
 
   //ODA ...
-  MPI_Barrier(MPI_COMM_WORLD);	
+  MPI_Barrier(MPI_COMM_WORLD);
 #ifdef PETSC_USE_LOG
   PetscLogStagePush(stages[2]);
 #endif
@@ -396,7 +399,16 @@ int main(int argc, char ** argv ) {
     std::cout << "Time to build ODA: "<<totalTime << std::endl;
   }
 
-  MPI_Barrier(MPI_COMM_WORLD);	
+#ifdef HILBERT_ORDERING
+  da.computeHilbertRotations();
+  if(!rank)
+    std::cout<<"ODA Rotation pattern computation completed for Hilbert. "<<std::endl;
+#endif
+
+
+
+
+  MPI_Barrier(MPI_COMM_WORLD);
 #ifdef PETSC_USE_LOG
   PetscLogStagePush(stages[3]);
 #endif

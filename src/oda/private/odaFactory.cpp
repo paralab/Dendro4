@@ -103,6 +103,8 @@ void DA::DA_FactoryPart0(std::vector<ot::TreeNode>& in, MPI_Comm comm,
     m_uiInputSize = static_cast<unsigned int>(in.size());
     //@Milinda
     m_uiRotIDComputed=false;
+    m_uiParRotID=NULL;
+    m_uiParRotIDLev=NULL;
 
   //The default is NULL.
   if(iAmActive != NULL) {

@@ -201,42 +201,12 @@ namespace ot {
         if(!rank)
             std::cout<<"ODA Stage 2 completed"<<std::endl;
 
-//#ifdef HILBERT_ORDERING
-//        std::vector<ot::TreeNode> tmpIn;
-//        par::sampleSort(in,tmpIn,activeInputComm);
-//        in=tmpIn;
-//        tmpIn.clear();
-//#endif
-
-
       DA_FactoryPart3(in, comm, compressLut, blocksPtr, iAmActive);
-
-//      for(int i=0;i<end<DA_FLAGS::ALL>();i++)
-//      {
-//        std::cout<<"rotID:"<<(int)m_uiParRotID[i]<<std::endl;
-//        std::cout<<"Lev:"<<(int)m_uiParRotIDLev[i]<<std::endl;
-//      }
 
        if(!rank)
            std::cout<<"ODA Stage 3 completed"<<std::endl;
 
     }
-
-#ifdef HILBERT_ORDERING
-
-      m_uiParRotID=new unsigned char[end<DA_FLAGS::ALL>()];
-      m_uiParRotIDLev=new unsigned char[end<DA_FLAGS::ALL>()];
-
-      for(init<DA_FLAGS::ALL>();curr()<end<DA_FLAGS::ALL>();next<DA_FLAGS::ALL>());
-      m_uiRotIDComputed=true;
-
-      if(!rank)
-          std::cout<<"ODA Rotation pattern computation completed for Hilbert. "<<std::endl;
-
-#endif
-
-
-
 
     PROF_BUILD_DA_END
 
@@ -277,8 +247,13 @@ namespace ot {
     }
 
 #ifdef HILBERT_ORDERING
+
     delete[] m_uiParRotID;
+      m_uiParRotID=NULL;
     delete[] m_uiParRotIDLev;
+      m_uiParRotIDLev=NULL;
+
+
 #endif
     m_ucpLutRemainders.clear();
     m_uspLutQuotients.clear();
@@ -474,14 +449,14 @@ Point DA::getNextOffset(Point p, unsigned char d) {
 
     unsigned int d = (m_ucpOctLevels[m_uiCurrent] & ot::TreeNode::MAX_LEVEL );
     Point p =m_ptCurrentOffset;
-    Point p2;
+    //Point p2;
     if(!m_uiRotIDComputed) {
-      p2 = getNextOffsetByRotation(p, d);
+      p = getNextOffsetByRotation(p, d);
     }else
     {
-      p2 = getNextOffset(p,d);
+      p = getNextOffset(p,d);
     }
-    m_ptCurrentOffset=p2;
+    m_ptCurrentOffset=p;
 
 #else
     unsigned char d = (m_ucpOctLevels[m_uiCurrent] & ot::TreeNode::MAX_LEVEL );
@@ -1041,6 +1016,27 @@ Point DA::getNextOffset(Point p, unsigned char d) {
     }
 
   }//end function
+
+
+  void DA::computeHilbertRotations() {
+
+#ifdef HILBERT_ORDERING
+
+      this->init<DA_FLAGS::ALL>();
+      m_uiParRotID=new unsigned char[this->end<ot::DA_FLAGS::ALL>()];
+      m_uiParRotIDLev=new unsigned char[this->end<ot::DA_FLAGS::ALL>()];
+
+      for(this->init<ot::DA_FLAGS::ALL>();this->curr()<this->end<ot::DA_FLAGS::ALL>();this->next<ot::DA_FLAGS::ALL>());
+      m_uiRotIDComputed=true;
+
+
+
+#endif
+
+      return;
+
+  }
+
 
 } // end namespace ot
 

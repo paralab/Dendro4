@@ -1734,7 +1734,7 @@ namespace par {
     // sort(SortedElem.begin(), SortedElem.end());
     // if (!rank) std::cout << "[samplesort] final local sort" << std::endl;
     omp_par::merge_sort(&SortedElem[0], &SortedElem[nsorted]);
-
+   // if (!rank) std::cout << "[samplesort] final local sort" << std::endl;
     PROF_SORT_END
   }//end function
 

@@ -51,6 +51,7 @@ void genGauss(const double& sd, const int numPts, int dim, char * filePrefix,MPI
     fclose(outfile);
 
     delete [] xyz;
+    xyz=NULL;
 
 
 }

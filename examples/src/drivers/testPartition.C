@@ -567,6 +567,9 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
     std::cout << "Time to build ODA: " << totalTime << std::endl;
   }
 
+#ifdef HILBERT_ORDERING
+  da.computeHilbertRotations();
+#endif
 
 
   //! Quality of the partition ...
@@ -611,12 +614,16 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
   //assert(oda::test::odaLoopTestWritable(da,MPI_COMM_WORLD));
 
 
+#ifdef HILBERT_ORDERING
+  delete [] rotations;
+  rotations=NULL;
+  delete [] HILBERT_TABLE;
+  HILBERT_TABLE=NULL;
+#endif
+
 
   ot::DA_Finalize();
   PetscFinalize();
-
-  delete[] rotations;
-  delete [] HILBERT_TABLE;
 
 
 

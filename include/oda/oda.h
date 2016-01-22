@@ -378,7 +378,7 @@ namespace ot {
     */
     class DA {
 
-      protected:
+    protected:
 
         LoopCounters m_lcLoopInfo;
 
@@ -392,12 +392,13 @@ namespace ot {
         std::vector<ot::TreeNode>	   m_tnBlocks;
         std::vector<ot::TreeNode>	   m_tnMinAllBlocks;
         //@milinda
+        unsigned char*                     m_uiParRotID; // Stores the parent's rotation ID for each elemet. If it is not computed, rotation ID default set to ''
+        unsigned char*                     m_uiParRotIDLev;
+        bool m_uiRotIDComputed; // default is false;
         //std::vector<ot::TreeNode>      m_localOctants; // stores the input for the build node list function. This contains pre-ghost, my octants and post octants.
         std::vector<unsigned int>          m_uiNlist;  
         unsigned int*                      m_uiNlistPtr;
-        unsigned char*                     m_uiParRotID; // Stores the parent's rotation ID for each elemet. If it is not computed, rotation ID default set to ''
-        unsigned char*                     m_uiParRotIDLev;
-        bool m_uiRotIDComputed=false; // default is false;
+
 
 
         DendroIntL*                      m_dilpLocalToGlobal;
@@ -530,6 +531,13 @@ namespace ot {
 
         std::vector<ot::TreeNode> getLocalOctants();
         std::vector<unsigned int> getCompleteNodeList();
+
+        /*
+         * Compute the Rotation patterns for Hilbert for compressed iteration.
+         * */
+
+        void computeHilbertRotations();
+
 
         /**
           @return the list of blocks owned by the calling processor

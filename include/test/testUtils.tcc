@@ -144,7 +144,6 @@ namespace par {
       bool isUniqueAndSorted(const std::vector<T > &nodes, MPI_Comm comm) {
         bool localPassed = seq::test::isUniqueAndSorted<T>(nodes);
         bool allLocalsPassed;
-
         par::Mpi_Allreduce<bool>(&localPassed, &allLocalsPassed, 1,
             par::Mpi_datatype<bool>::LAND(), comm);
 
