@@ -810,7 +810,7 @@ namespace ot {
         par::scatterValues<double>(pts, tmpPts, (dim * avgLoad), comm);
       }
       pts.clear();
-
+      std::cout<<"Rank:"<<rank<<"Scatter Complete"<<std::endl;
       MPI_Comm newComm;
       par::splitCommUsingSplittingRank(splittingSize, &newComm, comm);
 

@@ -191,15 +191,15 @@ namespace ot {
 
 
       if(!rank)
-          std::cout<<"ODA Part 0 completed"<<std::endl;
+          std::cout<<"ODA Stage 0 completed"<<std::endl;
 
     if(m_bIamActive) {
       DA_FactoryPart1(in);
         if(!rank)
-            std::cout<<"ODA Part 1 completed"<<std::endl;
+            std::cout<<"ODA Stage 1 completed"<<std::endl;
       DA_FactoryPart2(in);
         if(!rank)
-            std::cout<<"ODA Part 2 completed"<<std::endl;
+            std::cout<<"ODA Stage 2 completed"<<std::endl;
 
 //#ifdef HILBERT_ORDERING
 //        std::vector<ot::TreeNode> tmpIn;
@@ -218,7 +218,7 @@ namespace ot {
 //      }
 
        if(!rank)
-           std::cout<<"ODA Part 3 completed"<<std::endl;
+           std::cout<<"ODA Stage 3 completed"<<std::endl;
 
     }
 

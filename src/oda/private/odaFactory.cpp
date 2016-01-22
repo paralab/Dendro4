@@ -191,17 +191,16 @@ void DA::DA_FactoryPart1(std::vector<ot::TreeNode>& in) {
     par::sampleSort<ot::TreeNode>(positiveBoundaryOctants, tmpVecTN, bdyComm);
     positiveBoundaryOctants = tmpVecTN;
     tmpVecTN.clear();
-
-//#ifdef  __DEBUG_DA__
+#ifdef  __DEBUG_DA__
     for(int i=0;i<in.size();i++)
     {
-        if(in[i]>=positiveBoundaryOctants[0])
+       if(in[i]>=positiveBoundaryOctants[0])
         {
-          std::cout<<"Input octnat is larger than : "<<in[i]<<" postiveBoundary:"<<positiveBoundaryOctants[0]<<std::endl;
-          assert(false);
+         std::cout<<"Input octnat is larger than : "<<in[i]<<" postiveBoundary:"<<positiveBoundaryOctants[0]<<std::endl;
+         assert(false);
         }
     }
-//#endif
+#endif
  }
 
   assert(par::test::isUniqueAndSorted(positiveBoundaryOctants,m_mpiCommActive));

@@ -1788,6 +1788,8 @@ namespace ot {
     delete [] ShapeFnCoeffs;
     ShapeFnCoeffs = NULL;
 
+
+
     PROF_DA_FINAL_END 
   }
 
