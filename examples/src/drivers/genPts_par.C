@@ -13,7 +13,7 @@
 #include "genPts_par.h"
 
 
-void genGauss(const double& sd, const int numPts, int dim, char * filePrefix,MPI_Comm comm)
+void genGauss(const double& sd, const long int numPts, int dim, char * filePrefix,MPI_Comm comm)
 {
 
 
@@ -31,7 +31,8 @@ void genGauss(const double& sd, const int numPts, int dim, char * filePrefix,MPI
     sprintf(ptsFileName, "%s%d_%d.pts", filePrefix, rank, size);
 
     std::normal_distribution<> d(0.5,sd);
-    double* xyz = new double[dim*numPts];
+    long int ptsSize=numPts*size;
+    double* xyz = new double[ptsSize];
     double temp=0;
     for(long i=0;i<(long)dim*numPts;i++)
     {

@@ -22,7 +22,7 @@
 #include <chrono>
 
 
-void genGauss(const double& sd, const int numPts, int dim, char * filePrefix,MPI_Comm comm);
+void genGauss(const double& sd, const long int numPts, int dim, char * filePrefix,MPI_Comm comm);
 void genLogarithmicGauss(const double& sd, const int numPts, int dim, char * filePrefix,MPI_Comm comm);
 
 
