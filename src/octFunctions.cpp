@@ -410,6 +410,7 @@ namespace ot {
     return 1;
   }//end function
 
+
    int readNodesFromFile_binary (char* filename, std::vector<TreeNode > & nodes) {
 
      int res;

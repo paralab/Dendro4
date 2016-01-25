@@ -501,28 +501,19 @@ int main(int argc, char ** argv ) {
   double diff_mean_pre, diff_mean_mine, diff_mean_post;
 
   unsigned long min_pre=LONG_MAX,max_pre=0, min_mine=LONG_MAX,max_mine=0, min_post=LONG_MAX,max_post=0;
-  std::ofstream myfile1;
-  char ptsFileName1[256];
-  sprintf(ptsFileName1, "%s_%d_%d_%d_%d", "nodeListComplete", maxDepth, grainSize, rank, size);
-  myfile1.open(ptsFileName1);
-  myfile1<<"ODA_NODE_LIST COMPLETE"<<std::endl;
+   char fileName[256];
+  sprintf(fileName, "%s_%d_%d_%d_%d.%s", "nlist", maxDepth, grainSize, rank, size,"bin");
   int actCnt=0;
   int actCnt_g=0;
 
   if(da.iAmActive()) {
-    actCnt=1;
+    FILE* outfile = fopen(fileName,"wb");
+
     for (da.init<ot::DA_FLAGS::ALL>(); da.curr() < da.end<ot::DA_FLAGS::ALL>(); da.next<ot::DA_FLAGS::ALL>()) {
       unsigned int nodeList[8];
       da.getNodeIndices(nodeList);
-      myfile1 << "Node List for element:\t" << da.curr() << ":";
-      unsigned int index;
+       unsigned int index;
          for (int i = 0; i < 8; i++) {
-            if (i < 8) {
-              myfile1 << nodeList[i] << ",";
-            }
-            else {
-              myfile1 << nodeList[i];
-            }
             index=nodeList[i];
             if(index<da.getIdxElementBegin()) // pre ghost element
             {
@@ -568,7 +559,12 @@ int main(int argc, char ** argv ) {
       else
         diff_post=0;
 
-      myfile1 << "\t Diff_Pre:" << diff_pre <<" Diff_Mine:"<<diff_mine<<" Diff_Post:"<<diff_post<< std::endl;
+      fwrite(&index,sizeof(unsigned int),1,outfile);
+      fwrite(nodeList,sizeof(unsigned int),8,outfile);
+      fwrite(&diff_pre,sizeof(unsigned long),1,outfile);
+      fwrite(&diff_mine,sizeof(unsigned long),1,outfile);
+      fwrite(&diff_post,sizeof(unsigned long),1,outfile);
+
 
 
       if(diff_min_pre>diff_pre)
@@ -591,12 +587,32 @@ int main(int argc, char ** argv ) {
         diff_max_post=diff_post;
 
 
+
+
+
+
     }
+
+    fclose(outfile);
+
+    /*FILE * instream=fopen(fileName,"rb");
+    unsigned int nlist[8];
+    unsigned long diff[3];
+    unsigned int index;
+    do {
+      fread(&index,sizeof(unsigned int), 1,instream);
+      fread(nlist, sizeof(unsigned int), 8, instream);
+      fread(diff, sizeof(unsigned long), 3, instream);
+      std::cout<<"index:"<<index<<"Nlist:"<<nlist[0]<<","<<nlist[1]<<","<<nlist[2]<<","<<nlist[3]<<","<<nlist[4]<<","<<nlist[5]<<","<<nlist[6]<<","<<nlist[7]<<", Diff:"<<diff[0]<<","<<diff[1]<<","<<diff[2]<<std::endl;
+    }while(nlist!=NULL);
+
+    fclose(instream);*/
+
+
 
 
    }
 
-  myfile1.close();
 
 
   par::Mpi_Reduce(&actCnt,&actCnt_g,1,MPI_SUM,0,MPI_COMM_WORLD);
