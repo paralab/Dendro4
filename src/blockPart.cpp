@@ -33,7 +33,7 @@ namespace ot {
     MPI_Barrier(comm);
 #endif
     PROF_BLKPART1_BEGIN
-      int npes, rank;
+    int npes, rank;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &npes);
 
@@ -56,13 +56,13 @@ namespace ot {
 
     //Select all the coarsest blocks and insert them into localBlocks
     unsigned int minLevel = maxDepth;
-    for(int i = 0; i < localCoarse.size(); i++) {
+    for(unsigned int i = 0; i < localCoarse.size(); i++) {
       if(localCoarse[i].getLevel() < minLevel) {
         minLevel = localCoarse[i].getLevel();
       }
     }
 
-    for(int i = 0; i < localCoarse.size(); i++) {
+    for(unsigned int i = 0; i < localCoarse.size(); i++) {
       if(localCoarse[i].getLevel() == minLevel) {
         localBlocks.push_back(localCoarse[i]);
       }
@@ -560,7 +560,7 @@ namespace ot {
     MPI_Barrier(comm);
 #endif
     PROF_BLKPART1_BEGIN
-      int npes, rank;
+    int npes, rank;
     const double thFac = 0.5;
     MPI_Comm_rank(comm,&rank);
     MPI_Comm_size(comm,&npes);
@@ -709,10 +709,10 @@ namespace ot {
 
 #else
 
-    int *sendCnt = new int[npes];
-    int *recvCnt = new int[npes];
-    int *sendOffsets = new int[npes];
-    int *recvOffsets = new int[npes];
+       int *sendCnt = new  int[npes];
+       int *recvCnt = new  int[npes];
+       int *sendOffsets = new  int[npes];
+       int *recvOffsets = new  int[npes];
 
     //1. Now compute the wts of these cells ...
     //    a. Get the min and max nodes at each processor.
@@ -738,7 +738,7 @@ namespace ot {
     par::Mpi_Allgather<ot::TreeNode>(sendMinMax, &(*_mins_maxs.begin()), 2, comm);
 
     std::vector<std::vector<TreeNode> > sendNodes(npes);
-    std::vector<std::vector<unsigned int> > keymap(npes);
+    std::vector<std::vector< int> > keymap(npes);
 
 
 
@@ -913,12 +913,12 @@ namespace ot {
         recvWts, sendCnt, sendOffsets, comm);
 
     //6. Now map them back to the blocks ...
-    for (int i=0;i<globalCoarse.size();i++) {
+    for (unsigned int i=0;i<globalCoarse.size();i++) {
       globalCoarse[i].setWeight(0);
     }
 
     for (int i=0; i<npes; i++) {
-      for (int j=0; j<sendCnt[i]; j++) {
+      for (unsigned int j=0; j<sendCnt[i]; j++) {
         globalCoarse[keymap[i][j]].addWeight(recvWts[sendOffsets[i] + j]);
       }
     }
@@ -979,7 +979,7 @@ namespace ot {
     par::Mpi_Allgather<ot::TreeNode>(&sendMin, &(* vtkDist.begin()), 1, comm);
 
     minsAllBlocks.clear();
-    for(int j = 0; j < npes; j++) {
+    for(unsigned int j = 0; j < npes; j++) {
       if(vtkDist[j] != rootNode) {
         minsAllBlocks.push_back(vtkDist[j]);
       }

@@ -583,7 +583,7 @@ namespace ot {
     prepareBalComm2Messages(allBoundaryLeaves, wList, wListRanks,
                             sendNodes, sentToPid, sendCnt);
 
-    for (int i = 0; i < allBoundaryLeaves.size(); i++) {
+    for (unsigned int i = 0; i < allBoundaryLeaves.size(); i++) {
       sentToPid[i].clear();
     }
 
@@ -737,13 +737,13 @@ namespace ot {
     //blocks were globally sorted and since the elements on each processor are
     //only decendants of these blocks, hence recvK[i][j] < recvK[i+][k] for all i,j
     //and k.
-    for (int i = 0; i < myOff; i++) {
+    for (unsigned int i = 0; i < myOff; i++) {
       nodes[i] = recvK[i];
     }
-    for (int i = myOff; i < myOff + n; i++) {
+    for (unsigned int i = myOff; i < myOff + n; i++) {
       nodes[i] = allBoundaryLeaves[i - myOff];
     }
-    for (int i = myOff + n; i < nodes.size(); i++) {
+    for (unsigned int i = myOff + n; i < nodes.size(); i++) {
       nodes[i] = recvK[i - n];
     }
     recvK.clear();
@@ -1266,7 +1266,7 @@ PROF_RIPPLE_BAL_END
       wList.resize(nodes.size());
 
       //Pick leaves at a particular level
-      for (int i = 0; i < nodes.size(); i++) {
+      for (unsigned int i = 0; i < nodes.size(); i++) {
         if (nodes[i].getLevel() == lev) {
           wList[wLen++] = nodes[i];
         }

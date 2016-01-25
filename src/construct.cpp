@@ -529,7 +529,6 @@ namespace ot {
       } //end single proc case
 
       out = inp;
-
       //Sort and remove duplicate leaves.
       if (!isUnique) {
         par::removeDuplicates<ot::TreeNode>(out, isSorted, comm);
@@ -834,13 +833,13 @@ namespace ot {
     nodes.resize(numNodes);
 
     double scale[3] = {0, 0, 0};
-    for (int i = 0; i < dim; i++) scale[i] = ((double) (1u << maxDepth)) / (gLens[i]);
+    for (unsigned int i = 0; i < dim; i++) scale[i] = ((double) (1u << maxDepth)) / (gLens[i]);
 #pragma omp parallel for
     for (DendroIntL i = 0; i < numNodes; i++) {
       //The constructor will ignore unnecessary arguments (for lower
       //dimensions).
       unsigned int p_int[3] = {0, 0, 0};
-      for (int j = 0; j < dim; j++) p_int[j] = (unsigned int) (pts[i * dim + j] * scale[j]);
+      for (unsigned int j = 0; j < dim; j++) p_int[j] = (unsigned int) (pts[i * dim + j] * scale[j]);
       nodes[i] = TreeNode(p_int[0], p_int[1], p_int[2], maxDepth, dim, maxDepth);
     } //end for
     pts.clear();
