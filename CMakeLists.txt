@@ -50,7 +50,7 @@ option(BUILD_MG_EXAMPLES "Build test applications using dendro::MG" ON)
 
 
 
-if(USE_64Bit_INDICES)
+if(USE_64BIT_INDICES)
     add_definitions(-DUSE_64BIT_INDICES)
 endif()
 
