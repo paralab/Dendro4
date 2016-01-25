@@ -31,8 +31,8 @@ void genGauss(const double& sd, const long int numPts, int dim, char * filePrefi
     sprintf(ptsFileName, "%s%d_%d.pts", filePrefix, rank, size);
 
     std::normal_distribution<> d(0.5,sd);
-    long int ptsSize=numPts*size;
-    double* xyz = new double[ptsSize];
+    long int ptsSize=numPts;
+    double* xyz = new double[ptsSize*dim];
     double temp=0;
     for(long i=0;i<(long)dim*numPts;i++)
     {

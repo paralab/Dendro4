@@ -2402,6 +2402,7 @@ MPI_Barrier(m_mpiCommActive);
 std::vector<unsigned int> nlistNew(8*nelem);
 std::vector<unsigned char> hnMaskNew(nelem);
 
+
 #ifdef __DEBUG_DA_NLIST__
 MPI_Barrier(m_mpiCommActive);
 if(!m_iRankActive) {
@@ -2493,7 +2494,7 @@ for(unsigned int i = 0; i < in.size(); i++) {
   in[i].setWeight(1);
 }
 
-nlist = nlistNew;
+std::swap(nlist, nlistNew);
 nlistNew.clear();
 
 #ifdef __DEBUG_DA_NLIST__

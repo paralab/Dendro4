@@ -28,116 +28,116 @@
 
 
 /** Print a demangled stack backtrace of the caller function to FILE* out. */
-void handler (int sig) {
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-  // char fname[256];
-  // sprintf(fname, "trace%.2d", rank);
-  // FILE *out = fopen(fname, "w");
-  unsigned int max_frames = 63;
-
-  // if (!rank) {
-    printf("%s---------------------------------%s\n", RED, NRM);
-    printf("%sError:%s signal %d:\n", RED, NRM, sig);
-    printf("%s---------------------------------%s\n", RED, NRM);
-    printf("\n%s======= stack trace =======%s\n", GRN, NRM);
-  // }
-
-  // fprintf(out, "======= stack trace =======\n");
-
-  // storage array for stack trace address data
-  void *addrlist[max_frames + 1];
-
-  // retrieve current stack addresses
-  int addrlen = backtrace(addrlist, sizeof(addrlist) / sizeof(void *));
-
-  if (addrlen == 0) {
-    // if (!rank)
-    fprintf(stderr, "%s  <empty, possibly corrupt>%s\n",RED, NRM);
-
-    // fprintf(out, "    <empty, possibly corrupt>\n");
-    return;
-  }
-
-  // resolve addresses into strings containing "filename(function+address)",
-  // this array must be free()-ed
-  char **symbollist = backtrace_symbols(addrlist, addrlen);
-
-  // allocate string which will be filled with the demangled function name
-  size_t funcnamesize = 256;
-  char *funcname = (char *) malloc(funcnamesize);
-
-  // iterate over the returned symbol lines. skip the first, it is the
-  // address of this function.
-  for (int i = 1; i < addrlen; i++) {
-    char *begin_name = 0, *begin_offset = 0, *end_offset = 0;
-
-    // find parentheses and +address offset surrounding the mangled name:
-    // ./module(function+0x15c) [0x8048a6d]
-    for (char *p = symbollist[i]; *p; ++p) {
-      if (*p == '(')
-        begin_name = p;
-      else if (*p == '+')
-        begin_offset = p;
-      else if (*p == ')' && begin_offset) {
-        end_offset = p;
-        break;
-      }
-    }
-
-    if (begin_name && begin_offset && end_offset
-        && begin_name < begin_offset) {
-      *begin_name++ = '\0';
-      *begin_offset++ = '\0';
-      *end_offset = '\0';
-
-      // mangled name is now in [begin_name, begin_offset) and caller
-      // offset in [begin_offset, end_offset). now apply
-      // __cxa_demangle():
-
-      int status;
-      char *ret = abi::__cxa_demangle(begin_name,
-                                      funcname, &funcnamesize, &status);
-      if (status == 0) {
-        funcname = ret; // use possibly realloc()-ed string
-        // if (!rank)
-        printf("%s[%.2d]%s%s : %s%s%s : \n",RED,rank,YLW, symbollist[i], MAG, funcname,NRM);
-
-        // fprintf(out, "%s : %s : ", symbollist[i], funcname);
-      }
-      else {
-        // demangling failed. Output function name as a C function with
-        // no arguments.
-        // if (!rank)
-        printf("%s[%.2d]%s%s : %s%s()%s : \n", RED,rank, YLW, symbollist[i], GRN,begin_name, NRM);
-
-        // fprintf(out, "%s : %s() : ", symbollist[i], begin_name);
-      }
-      size_t p = 0;
-      char syscom[256];
-      while(symbollist[i][p] != '(' && symbollist[i][p] != ' ' && symbollist[i][p] != 0)
-        ++p;
-
-      sprintf(syscom,"addr2line %p -e %.*s", addrlist[i], p, symbollist[i]);
-      //last parameter is the file name of the symbol
-      system(syscom);
-    }
-    else {
-      // couldn't parse the line? print the whole line.
-      // if (!rank)
-      printf("%sCouldn't Parse:%s  %s\n", RED, NRM, symbollist[i]);
-
-      // fprintf(out, "  %s\n", symbollist[i]);
-    }
-  }
-
-  free(funcname);
-  free(symbollist);
-  // fclose(out);
-
-  exit(1);
-}
+//void handler (int sig) {
+//  int rank;
+//  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//
+//  // char fname[256];
+//  // sprintf(fname, "trace%.2d", rank);
+//  // FILE *out = fopen(fname, "w");
+//  unsigned int max_frames = 63;
+//
+//  // if (!rank) {
+//    printf("%s---------------------------------%s\n", RED, NRM);
+//    printf("%sError:%s signal %d:\n", RED, NRM, sig);
+//    printf("%s---------------------------------%s\n", RED, NRM);
+//    printf("\n%s======= stack trace =======%s\n", GRN, NRM);
+//  // }
+//
+//  // fprintf(out, "======= stack trace =======\n");
+//
+//  // storage array for stack trace address data
+//  void *addrlist[max_frames + 1];
+//
+//  // retrieve current stack addresses
+//  int addrlen = backtrace(addrlist, sizeof(addrlist) / sizeof(void *));
+//
+//  if (addrlen == 0) {
+//    // if (!rank)
+//    fprintf(stderr, "%s  <empty, possibly corrupt>%s\n",RED, NRM);
+//
+//    // fprintf(out, "    <empty, possibly corrupt>\n");
+//    return;
+//  }
+//
+//  // resolve addresses into strings containing "filename(function+address)",
+//  // this array must be free()-ed
+//  char **symbollist = backtrace_symbols(addrlist, addrlen);
+//
+//  // allocate string which will be filled with the demangled function name
+//  size_t funcnamesize = 256;
+//  char *funcname = (char *) malloc(funcnamesize);
+//
+//  // iterate over the returned symbol lines. skip the first, it is the
+//  // address of this function.
+//  for (int i = 1; i < addrlen; i++) {
+//    char *begin_name = 0, *begin_offset = 0, *end_offset = 0;
+//
+//    // find parentheses and +address offset surrounding the mangled name:
+//    // ./module(function+0x15c) [0x8048a6d]
+//    for (char *p = symbollist[i]; *p; ++p) {
+//      if (*p == '(')
+//        begin_name = p;
+//      else if (*p == '+')
+//        begin_offset = p;
+//      else if (*p == ')' && begin_offset) {
+//        end_offset = p;
+//        break;
+//      }
+//    }
+//
+//    if (begin_name && begin_offset && end_offset
+//        && begin_name < begin_offset) {
+//      *begin_name++ = '\0';
+//      *begin_offset++ = '\0';
+//      *end_offset = '\0';
+//
+//      // mangled name is now in [begin_name, begin_offset) and caller
+//      // offset in [begin_offset, end_offset). now apply
+//      // __cxa_demangle():
+//
+//      int status;
+//      char *ret = abi::__cxa_demangle(begin_name,
+//                                      funcname, &funcnamesize, &status);
+//      if (status == 0) {
+//        funcname = ret; // use possibly realloc()-ed string
+//        // if (!rank)
+//        printf("%s[%.2d]%s%s : %s%s%s : \n",RED,rank,YLW, symbollist[i], MAG, funcname,NRM);
+//
+//        // fprintf(out, "%s : %s : ", symbollist[i], funcname);
+//      }
+//      else {
+//        // demangling failed. Output function name as a C function with
+//        // no arguments.
+//        // if (!rank)
+//        printf("%s[%.2d]%s%s : %s%s()%s : \n", RED,rank, YLW, symbollist[i], GRN,begin_name, NRM);
+//
+//        // fprintf(out, "%s : %s() : ", symbollist[i], begin_name);
+//      }
+//      size_t p = 0;
+//      char syscom[256];
+//      while(symbollist[i][p] != '(' && symbollist[i][p] != ' ' && symbollist[i][p] != 0)
+//        ++p;
+//
+//      sprintf(syscom,"addr2line %p -e %.*s", addrlist[i], p, symbollist[i]);
+//      //last parameter is the file name of the symbol
+//      system(syscom);
+//    }
+//    else {
+//      // couldn't parse the line? print the whole line.
+//      // if (!rank)
+//      printf("%sCouldn't Parse:%s  %s\n", RED, NRM, symbollist[i]);
+//
+//      // fprintf(out, "  %s\n", symbollist[i]);
+//    }
+//  }
+//
+//  free(funcname);
+//  free(symbollist);
+//  // fclose(out);
+//
+//  exit(1);
+//}
 
 int main(int argc, char **argv) {
 
@@ -177,7 +177,7 @@ int main(int argc, char **argv) {
 
   double slack=atof(argv[2]);
   int enable_pts_io=atoi(argv[3]);
-  long numlPts_g=atoi(argv[4]);
+  long grainSize =atoi(argv[4]);
   int num_pseudo_proc=atoi(argv[5]);
 
 
@@ -190,8 +190,8 @@ int main(int argc, char **argv) {
   // unsigned int num_pseudo_proc=1;
 
 
-   signal(SIGSEGV, handler);   // install our handler
-   signal(SIGTERM, handler);   // install our handler
+   //signal(SIGSEGV, handler);   // install our handler
+   //signal(SIGTERM, handler);   // install our handler
 
 #ifdef PETSC_USE_LOG
   int stages[3];
@@ -212,7 +212,7 @@ int main(int argc, char **argv) {
     std::cout << " Input File Prefix:"<<argv[1]  << std::endl;
     std::cout << " Slack Parameter::"<<slack  << std::endl;
     std::cout << " Gen Pts files:: "<< enable_pts_io  << std::endl;
-    std::cout << " Total Number of Points:: "<<numlPts_g<<std::endl;
+    std::cout << " Number of Points per Process:: " << grainSize << std::endl;
     std::cout << " Max Depth:"<<maxDepth<<std::endl;
     std::cout << " Number of psuedo Processors:: "<<num_pseudo_proc<<std::endl;
     std::cout << BLU << "===============================================" << NRM << std::endl;
@@ -223,11 +223,7 @@ int main(int argc, char **argv) {
 
   if(enable_pts_io==1)
   {
-
-      long local_numPts=numlPts_g/size;
-      long lc_size=0;
-      lc_size=((rank+1)*numlPts_g)/size-(rank*numlPts_g)/size;
-      genGauss(0.15,lc_size,dim,argv[1],MPI_COMM_WORLD);
+    genGauss(0.15,grainSize,dim,argv[1],MPI_COMM_WORLD);
 
   }
 

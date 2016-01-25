@@ -172,7 +172,7 @@ int main(int argc, char ** argv ) {
   DendroIntL locSz, totalSz;
   std::vector<ot::TreeNode> linOct, balOct;
   std::vector<double> pts;
-  DendroIntL TotalPts=10000;
+  DendroIntL grainSize =10000;
 
   PetscInitialize(&argc,&argv,"options",NULL);
   ot::RegisterEvents();
@@ -227,15 +227,11 @@ int main(int argc, char ** argv ) {
   if(argc > 8) { numLoops = atoi(argv[8]); }
   if(argc > 9) { compressLut = (bool)(atoi(argv[9]));}
   if(argc > 10) { genPts = (bool)(atoi(argv[10]));}
-  if(argc >11 ) {TotalPts=atol(argv[11]);}
+  if(argc >11 ) { grainSize =atol(argv[11]);}
 
   if(genPts)
   {
-
-    long local_numPts=TotalPts/size;
-    long lc_size=0;
-    lc_size=((rank+1)*TotalPts)/size-(rank*TotalPts)/size;
-    genGauss(0.15,lc_size,dim,argv[1],MPI_COMM_WORLD);
+    genGauss(0.15,grainSize,dim,argv[1],MPI_COMM_WORLD);
 
   }
 
@@ -250,7 +246,7 @@ int main(int argc, char ** argv ) {
     std::cout << " Input Parameters"  << std::endl;
     std::cout << " Input File Prefix:"<<argv[1]  << std::endl;
     std::cout << " Gen Pts files:: "<< genPts  << std::endl;
-    std::cout << " Total Number of Points:: "<<TotalPts<<std::endl;
+    std::cout << "Number of Points per process:: " << grainSize << std::endl;
     std::cout << " Max Depth:"<<maxDepth<<std::endl;
     //std::cout << " Number of psuedo Processors:: "<<num_pseudo_proc<<std::endl;
     std::cout << BLU << "===============================================" << NRM << std::endl;
@@ -507,7 +503,7 @@ int main(int argc, char ** argv ) {
   unsigned long min_pre=LONG_MAX,max_pre=0, min_mine=LONG_MAX,max_mine=0, min_post=LONG_MAX,max_post=0;
   std::ofstream myfile1;
   char ptsFileName1[256];
-  sprintf(ptsFileName1, "%s_%d_%d_%d_%d", "nodeListComplete", maxDepth,TotalPts,rank, size);
+  sprintf(ptsFileName1, "%s_%d_%d_%d_%d", "nodeListComplete", maxDepth, grainSize, rank, size);
   myfile1.open(ptsFileName1);
   myfile1<<"ODA_NODE_LIST COMPLETE"<<std::endl;
   int actCnt=0;
