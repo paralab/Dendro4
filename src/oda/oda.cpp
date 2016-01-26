@@ -342,7 +342,7 @@ Point DA::getNextOffsetByRotation(Point p, unsigned char d)
 }
 
 
-Point DA::getNextOffset(Point p, unsigned char d) {
+inline Point DA::getNextOffset(Point p, unsigned char d) {
 
 #ifdef __DEBUG_DA_PUBLIC__
     assert(m_bIamActive);

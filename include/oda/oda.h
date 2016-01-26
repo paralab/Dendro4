@@ -702,7 +702,7 @@ namespace ot {
           @param d The level of the current octant
           @return the anchor of the next octant 
           */
-        Point getNextOffset(Point p, unsigned char d);
+        inline Point getNextOffset(Point p, unsigned char d);
 
         Point getNextOffsetByRotation(Point p, unsigned char d);
 
