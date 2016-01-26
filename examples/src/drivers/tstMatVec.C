@@ -159,7 +159,7 @@ int main(int argc, char ** argv ) {
   unsigned int writeB = 0;
   unsigned int numLoops = 100;
   char Kstr[20];
-  char pFile[50],bFile[50],uFile[50];
+  char pFile[256],bFile[256],uFile[256];
   double gSize[3];
   unsigned int ptsLen;
   unsigned int maxNumPts= 1;
@@ -173,6 +173,7 @@ int main(int argc, char ** argv ) {
   std::vector<ot::TreeNode> linOct, balOct;
   std::vector<double> pts;
   DendroIntL grainSize =10000;
+  char nlistFName[256];
 
   PetscInitialize(&argc,&argv,"options",NULL);
   ot::RegisterEvents();
@@ -199,6 +200,8 @@ int main(int argc, char ** argv ) {
   PetscLogStageRegister("ODACreate",&stages[2]);
   PetscLogStageRegister("MatVec",&stages[3]);
 #endif
+
+
 
   MPI_Comm_size(MPI_COMM_WORLD,&size);
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
@@ -228,6 +231,7 @@ int main(int argc, char ** argv ) {
   if(argc > 9) { compressLut = (bool)(atoi(argv[9]));}
   if(argc > 10) { genPts = (bool)(atoi(argv[10]));}
   if(argc >11 ) { grainSize =atol(argv[11]);}
+  sprintf(nlistFName, "%s_%d_%d_%d_%d.%s", argv[12], maxDepth, grainSize, rank, size, "bin");
 
   if(genPts)
   {
@@ -500,20 +504,20 @@ int main(int argc, char ** argv ) {
 
   double diff_mean_pre, diff_mean_mine, diff_mean_post;
 
-  unsigned long min_pre=LONG_MAX,max_pre=0, min_mine=LONG_MAX,max_mine=0, min_post=LONG_MAX,max_post=0;
-   char fileName[256];
-  sprintf(fileName, "%s_%d_%d_%d_%d.%s", "nlist", maxDepth, grainSize, rank, size,"bin");
+
+
   int actCnt=0;
   int actCnt_g=0;
 
   if(da.iAmActive()) {
     actCnt=1;
-    FILE* outfile = fopen(fileName,"wb");
+    FILE* outfile = fopen(nlistFName, "wb");
 
     for (da.init<ot::DA_FLAGS::ALL>(); da.curr() < da.end<ot::DA_FLAGS::ALL>(); da.next<ot::DA_FLAGS::ALL>()) {
       unsigned int nodeList[8];
       da.getNodeIndices(nodeList);
        unsigned int index;
+       unsigned long min_pre=LONG_MAX,max_pre=0, min_mine=LONG_MAX,max_mine=0, min_post=LONG_MAX,max_post=0;
          for (int i = 0; i < 8; i++) {
             index=nodeList[i];
             if(index<da.getIdxElementBegin()) // pre ghost element
@@ -544,7 +548,7 @@ int main(int argc, char ** argv ) {
             }
 
           }
-
+      index=da.curr();
       if(max_pre!=0 && min_pre!=LONG_MAX)
         diff_pre=max_pre-min_pre;
       else
@@ -559,6 +563,9 @@ int main(int argc, char ** argv ) {
         diff_post=max_post-min_post;
       else
         diff_post=0;
+
+      //std::cout<<"Current Node:"<<da.curr()<<"diff_pre:"<<diff_pre<<" diff_mine:"<<diff_mine<<" diff_post:"<<diff_post<<std::endl;
+
 
       fwrite(&index,sizeof(unsigned int),1,outfile);
       fwrite(nodeList,sizeof(unsigned int),8,outfile);
@@ -596,7 +603,8 @@ int main(int argc, char ** argv ) {
 
     fclose(outfile);
 
-    /*FILE * instream=fopen(fileName,"rb");
+/*
+    FILE * instream=fopen(nlistFName,"rb");
     unsigned int nlist[8];
     unsigned long diff[3];
     unsigned int index;
@@ -607,10 +615,14 @@ int main(int argc, char ** argv ) {
       std::cout<<"index:"<<index<<"Nlist:"<<nlist[0]<<","<<nlist[1]<<","<<nlist[2]<<","<<nlist[3]<<","<<nlist[4]<<","<<nlist[5]<<","<<nlist[6]<<","<<nlist[7]<<", Diff:"<<diff[0]<<","<<diff[1]<<","<<diff[2]<<std::endl;
     }while(nlist!=NULL);
 
-    fclose(instream);*/
+    fclose(instream);
+*/
 
 
 
+//    std::cout<<"diff_pre (min,max):"<<diff_min_pre<<","<<diff_max_pre<<std::endl;
+//    std::cout<<"diff_mine (min,max):"<<diff_min_mine<<","<<diff_max_mine<<std::endl;
+//    std::cout<<"diff_post (min,max):"<<diff_min_post<<","<<diff_max_post<<std::endl;
 
    }
 
