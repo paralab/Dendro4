@@ -507,6 +507,7 @@ int main(int argc, char ** argv ) {
   int actCnt_g=0;
 
   if(da.iAmActive()) {
+    actCnt=1;
     FILE* outfile = fopen(fileName,"wb");
 
     for (da.init<ot::DA_FLAGS::ALL>(); da.curr() < da.end<ot::DA_FLAGS::ALL>(); da.next<ot::DA_FLAGS::ALL>()) {
