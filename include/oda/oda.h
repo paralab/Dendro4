@@ -1361,6 +1361,9 @@ namespace ot {
           */
         bool iAmActive();
 
+        void printODAStatistics();
+        void printODANodeListStatistics(char * nlistFName);
+
       protected:
 
         /**
@@ -1387,6 +1390,9 @@ namespace ot {
 
         void DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool compressLut, 
             const std::vector<ot::TreeNode>* blocksPtr, bool* iAmActive);
+
+
+
 
     };//end DA class definition
 

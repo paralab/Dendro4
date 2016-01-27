@@ -1037,6 +1037,430 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
 
   }
 
+ void DA::printODAStatistics()
+ {
+
+     DendroIntL localSz;
+
+     // Node information
+
+     DendroIntL nodeTlSz[3]; // total available nodes
+     DendroIntL glbBndry[3]; // Global boundary
+     DendroIntL preGhost[3]; // Pre ghost octants
+     DendroIntL indNodes[3];
+     DendroIntL postGhost[3];
+
+     // Communication information.
+     DendroIntL sendProcCnt[3];
+     DendroIntL recvProcCnt[3];
+     DendroIntL totalProcCnt[3];
+
+     DendroIntL sendDataCnt[3];
+     DendroIntL recvDataCnt[3];
+     DendroIntL totalDataCnt[3];
+
+     DendroIntL scatterMp[3];
+     DendroIntL elementScatterMp[3];
+
+
+     int size,rank;
+     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+     MPI_Comm_size(MPI_COMM_WORLD,&size);
+
+
+     // Node Information
+
+     localSz = m_uiNodeSize + m_uiBoundaryNodeSize;
+     par::Mpi_Reduce<DendroIntL>(&localSz, nodeTlSz, 1, MPI_MIN, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (nodeTlSz + 1), 1, MPI_SUM, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (nodeTlSz + 2), 1, MPI_MAX, 0, m_mpiCommActive);
+     nodeTlSz[1]=nodeTlSz[1]/size;
+
+
+     localSz =m_uiBoundaryNodeSize;
+     par::Mpi_Reduce<DendroIntL>(&localSz, glbBndry, 1, MPI_MIN, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (glbBndry+1), 1, MPI_SUM, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (glbBndry+2),1,MPI_MAX,0,m_mpiCommActive);
+     glbBndry[1]=glbBndry[1]/size;
+
+
+     localSz=m_uiPreGhostElementSize;
+     par::Mpi_Reduce<DendroIntL>(&localSz,preGhost,1,MPI_MIN,0,m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz,(preGhost+1),1,MPI_SUM,0,m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz,(preGhost+2),1,MPI_MAX,0,m_mpiCommActive);
+     preGhost[1]=preGhost[1]/size;
+
+
+     localSz = m_uiElementSize;
+     par::Mpi_Reduce<DendroIntL>(&localSz, indNodes, 1, MPI_MIN, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (indNodes+1), 1, MPI_SUM, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (indNodes+2), 1, MPI_MAX, 0, m_mpiCommActive);
+     indNodes[1]=indNodes[1]/size;
+
+     localSz =m_uiPostGhostNodeSize;
+     par::Mpi_Reduce<DendroIntL>(&localSz, postGhost, 1, MPI_MIN, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (postGhost+1), 1, MPI_SUM, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (postGhost+2), 1, MPI_MAX, 0, m_mpiCommActive);
+     postGhost[1]=postGhost[1]/size;
+
+
+
+     // send proc count
+
+     localSz=m_uipSendProcs.size();
+     par::Mpi_Reduce<DendroIntL>(&localSz, sendProcCnt, 1, MPI_MIN, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (sendProcCnt+1), 1, MPI_SUM, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (sendProcCnt+2), 1, MPI_MAX, 0, m_mpiCommActive);
+     sendProcCnt[1]=sendProcCnt[1]/size;
+
+     // recv proc count
+
+     localSz=m_uipRecvProcs.size();
+     par::Mpi_Reduce<DendroIntL>(&localSz, recvProcCnt, 1, MPI_MIN, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (recvProcCnt+1), 1, MPI_SUM, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (recvProcCnt+2), 1, MPI_MAX, 0, m_mpiCommActive);
+     recvProcCnt[1]=recvProcCnt[1]/size;
+
+     // total send
+
+     localSz=m_uipSendOffsets[m_uipSendOffsets.size()-1]+m_uipSendCounts[m_uipSendCounts.size()-1];
+     par::Mpi_Reduce<DendroIntL>(&localSz, sendDataCnt, 1, MPI_MIN, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (sendDataCnt+1), 1, MPI_SUM, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (sendDataCnt+2), 1, MPI_MAX, 0, m_mpiCommActive);
+     sendDataCnt[1]=sendDataCnt[1]/size;
+
+
+     //total recv
+
+     localSz=m_uipRecvOffsets[m_uipRecvOffsets.size()-1]+m_uipRecvCounts[m_uipRecvCounts.size()-1];
+     par::Mpi_Reduce<DendroIntL>(&localSz, recvDataCnt, 1, MPI_MIN, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (recvDataCnt+1), 1, MPI_SUM, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (recvDataCnt+2), 1, MPI_MAX, 0, m_mpiCommActive);
+     recvDataCnt[1]=recvDataCnt[1]/size;
+
+     // total proc (send + recv)
+
+     localSz=m_uipSendProcs.size()+m_uipRecvProcs.size();
+     par::Mpi_Reduce<DendroIntL>(&localSz, totalProcCnt, 1, MPI_MIN, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (totalProcCnt+1), 1, MPI_SUM, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (totalProcCnt+2), 1, MPI_MAX, 0, m_mpiCommActive);
+     totalProcCnt[1]=totalProcCnt[1]/size;
+
+
+     // total data (send +recv)
+
+     localSz=m_uipSendOffsets[m_uipSendOffsets.size()-1]+m_uipSendCounts[m_uipSendCounts.size()-1]+m_uipRecvOffsets[m_uipRecvOffsets.size()-1]+m_uipRecvCounts[m_uipRecvCounts.size()-1];
+     par::Mpi_Reduce<DendroIntL>(&localSz, totalDataCnt, 1, MPI_MIN, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (totalDataCnt+1), 1, MPI_SUM, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (totalDataCnt+2), 1, MPI_MAX, 0, m_mpiCommActive);
+     totalDataCnt[1]=totalDataCnt[1]/size;
+
+     // scatter map nodal
+
+     localSz=m_uipScatterMap.size();
+     par::Mpi_Reduce<DendroIntL>(&localSz, scatterMp, 1, MPI_MIN, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (scatterMp+1), 1, MPI_SUM, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (scatterMp+2), 1, MPI_MAX, 0, m_mpiCommActive);
+     scatterMp[1]=scatterMp[1]/size;
+
+
+     // scatter map element
+
+     localSz=m_uipElemScatterMap.size();
+     par::Mpi_Reduce<DendroIntL>(&localSz, elementScatterMp, 1, MPI_MIN, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (elementScatterMp+1), 1, MPI_SUM, 0, m_mpiCommActive);
+     par::Mpi_Reduce<DendroIntL>(&localSz, (elementScatterMp+2), 1, MPI_MAX, 0, m_mpiCommActive);
+     elementScatterMp[1]=elementScatterMp[1]/size;
+
+
+     if(!rank)
+     {
+         std::cout<<"====================================ODA NODE STATISTICS================================"<<std::endl;
+         std::cout<<"==================\tmin\tmean\tmax"<<std::endl;
+         std::cout<<"Node (total)\t"<<nodeTlSz[0]<<"\t"<<nodeTlSz[1]<<"\t"<<nodeTlSz[2]<<std::endl;
+         std::cout<<"Boundary (global)\t"<<glbBndry[0]<<"\t"<<glbBndry[1]<<"\t"<<glbBndry[2]<<std::endl;
+         std::cout<<"Pre Ghost:\t"<<preGhost[0]<<"\t"<<preGhost[1]<<"\t"<<preGhost[2]<<std::endl;
+         std::cout<<"Independent (mine):\t"<<indNodes[0]<<"\t"<<indNodes[1]<<"\t"<<indNodes[2]<<std::endl;
+         std::cout<<"Post Ghost:\t"<<postGhost[0]<<"\t"<<postGhost[1]<<"\t"<<postGhost[2]<<std::endl;
+         std::cout<<std::endl;
+         std::cout<<"====================================ODA COMMUNICATION STATISTICS================================"<<std::endl;
+         std::cout<<"==================\tmin\tmean\tmax"<<std::endl;
+         std::cout<<"SEND STAT"<<std::endl;
+         std::cout<<"Send Processor Cnt\t"<<sendProcCnt[0]<<"\t"<<sendProcCnt[1]<<"\t"<<sendProcCnt[2]<<std::endl;
+         std::cout<<"Send Data Cnt\t"<<sendDataCnt[0]<<"\t"<<sendDataCnt[1]<<"\t"<<sendDataCnt[2]<<std::endl;
+
+         std::cout<<"RECV STAT"<<std::endl;
+         std::cout<<"Recv Processor Cnt\t"<<recvProcCnt[0]<<"\t"<<recvProcCnt[1]<<"\t"<<recvProcCnt[2]<<std::endl;
+         std::cout<<"Recv Data Cnt\t"<<recvDataCnt[0]<<"\t"<<recvDataCnt[1]<<"\t"<<recvDataCnt[2]<<std::endl;
+
+         std::cout<<"Total Data STAT"<<std::endl;
+         std::cout<<"(Send+Recv) Processor Cnt\t"<<totalProcCnt[0]<<"\t"<<totalProcCnt[1]<<"\t"<<totalProcCnt[2]<<std::endl;
+         std::cout<<"(Send+Recv)Data Cnt\t"<<totalDataCnt[0]<<"\t"<<totalDataCnt[1]<<"\t"<<totalDataCnt[2]<<std::endl;
+
+         std::cout<<"Nodal Satter Map"<<std::endl;
+         std::cout<<"Nodal Scatter (size)\t"<<scatterMp[0]<<"\t"<<scatterMp[1]<<"\t"<<scatterMp[2]<<std::endl;
+
+         std::cout<<"Element Satter Map"<<std::endl;
+         std::cout<<"Element Scatter (size)\t"<<elementScatterMp[0]<<"\t"<<elementScatterMp[1]<<"\t"<<elementScatterMp[2]<<std::endl;
+         std::cout<<"====================================ODA NODE STATISTICS================================"<<std::endl;
+
+
+
+     }
+
+
+
+
+
+
+ }
+
+
+ void DA::printODANodeListStatistics(char * nlistFName)
+ {
+
+     DendroIntL diff_pre=0,diff_mine=0,diff_post=0;
+     DendroIntL  pre_diff[3];  pre_diff[0]=INTMAX_MAX; pre_diff[1]=0; pre_diff[2]=0;
+     DendroIntL  mine_diff[3]; mine_diff[0]=INTMAX_MAX; mine_diff[1]=0; mine_diff[2]=0;
+     DendroIntL  post_diff[3]; post_diff[0]=INTMAX_MAX; post_diff[1]=0; post_diff[2]=0;
+
+
+     DendroIntL  pre_diff_g[3];  pre_diff_g[0]=INTMAX_MAX; pre_diff_g[1]=0; pre_diff_g[2]=0;
+     DendroIntL  mine_diff_g[3]; mine_diff_g[0]=INTMAX_MAX; mine_diff_g[1]=0; mine_diff_g[2]=0;
+     DendroIntL  post_diff_g[3]; post_diff_g[0]=INTMAX_MAX; post_diff_g[1]=0; post_diff_g[2]=0;
+
+     FILE* outfile = fopen(nlistFName, "wb");
+
+     int size,rank;
+     MPI_Comm_rank(m_mpiCommActive,&rank);
+     MPI_Comm_size(m_mpiCommActive,&size);
+
+
+     unsigned int nList[8];
+     unsigned int last_pre=0,last_mine=0,last_post=0;
+     bool pre=true;
+     bool mine=true;
+     bool post=true;
+     unsigned int currentIdx;
+     DendroIntL preCnt=0,mineCnt=0,postCnt=0;
+     for((this->init<DA_FLAGS::ALL>());(this->curr()<end<DA_FLAGS::ALL>());(this->next<DA_FLAGS::ALL>()))
+     {
+         currentIdx=this->curr();
+         this->getNodeIndices(nList);
+         pre=true;mine=true;post=true;
+
+         pre_diff[0]=INTMAX_MAX; pre_diff[1]=0; pre_diff[2]=0;
+         mine_diff[0]=INTMAX_MAX; mine_diff[1]=0; mine_diff[2]=0;
+         post_diff[0]=INTMAX_MAX; post_diff[1]=0; post_diff[2]=0;
+
+         for(int k=0;k<8;k++)
+         {
+           if(nList[k]<m_uiElementBegin)
+           { //Pre ghost
+
+                preCnt++;
+               if(pre)
+               {
+                   //std::cout<<"Pre Ghost End:"<<m_uiElementBegin<<std::endl;
+                   last_pre=nList[k];
+                   diff_pre=0;
+                   pre=false;
+               }else
+               {
+                   diff_pre=abs(last_pre-nList[k]);
+                   //std::cout<<"diff_pre:"<<diff_pre<<std::endl;
+                   last_pre=nList[k];
+               }
+
+               if(pre_diff[0]>diff_pre)
+                   pre_diff[0]=diff_pre;
+
+               pre_diff[1]=pre_diff[1]+diff_pre;
+
+               if(pre_diff[2]<diff_pre)
+                   pre_diff[2]=diff_pre;
+
+
+
+           }else if(nList[k]<m_uiElementEnd)
+           { // mine
+               mineCnt++;
+               if(mine)
+               {
+                   last_mine=nList[k];
+                   diff_mine=0;
+                   mine=false;
+               }else
+               {
+                   diff_mine=abs(last_mine-nList[k]);
+                   last_mine=nList[k];
+               }
+
+               if(mine_diff[0]>diff_mine)
+                   mine_diff[0]=diff_mine;
+
+               mine_diff[1]=mine_diff[1]+diff_mine;
+
+               if(mine_diff[2]<diff_mine)
+                   mine_diff[2]=diff_mine;
+
+           }else if(nList[k]>=m_uiElementEnd)
+           {//post
+                postCnt++;
+               if(post)
+               {
+                   last_post=nList[k];
+                   diff_post=0;
+                   post=false;
+               }else
+               {
+                   diff_post=abs(last_post-nList[k]);
+                   last_post=nList[k];
+               }
+
+               if(post_diff[0]>diff_post)
+                   post_diff[0]=diff_post;
+
+               post_diff[1]=post_diff[1]+diff_post;
+
+               if(post_diff[2]<diff_post)
+                   post_diff[2]=diff_post;
+
+           }
+
+
+
+         }
+
+
+         if((!pre) && (pre_diff_g[2]<pre_diff[2]))
+              pre_diff_g[2]=pre_diff[2];
+
+         if(!pre)
+             pre_diff_g[1]+=pre_diff[1];
+
+         if(!pre && (pre_diff_g[0]>pre_diff[0]))
+             pre_diff_g[0]=pre_diff[0];
+
+
+
+
+         if((!mine )&& (mine_diff_g[2]<mine_diff[2]))
+             mine_diff_g[2]=mine_diff[2];
+
+         if(!mine)
+             mine_diff_g[1]+=mine_diff[1];
+
+         if(!mine && (mine_diff_g[0]>mine_diff[0]))
+             mine_diff_g[0]=mine_diff[0];
+
+
+         if((!post) && (post_diff_g[2]<post_diff[2]))
+             post_diff_g[2]=post_diff[2];
+
+         if(!post)
+             post_diff_g[1]+=post_diff[1];
+
+         if(!post && (post_diff_g[0]>post_diff[0]))
+             post_diff_g[0]=post_diff[0];
+
+
+
+
+          fwrite(&currentIdx,sizeof(unsigned int),1,outfile);
+          fwrite(nList,sizeof(unsigned int),8,outfile);
+          if(!pre) {
+              fwrite(pre_diff, sizeof(DendroIntL), 3, outfile);
+          }else
+          {
+              int pad[3]; pad[0]=-1;pad[1]=-1;pad[2]=-1;
+              fwrite(pad, sizeof(int), 3, outfile);
+
+          }
+
+         if(!mine) {
+             fwrite(mine_diff, sizeof(DendroIntL), 3, outfile);
+         }else
+         {
+             int pad[3]; pad[0]=-1;pad[1]=-1;pad[2]=-1;
+             fwrite(pad, sizeof(int), 3, outfile);
+         }
+         if(!post) {
+             fwrite(post_diff, sizeof(DendroIntL), 3, outfile);
+         }else
+         {
+             int pad[3]; pad[0]=-1;pad[1]=-1;pad[2]=-1;
+             fwrite(pad, sizeof(int), 3, outfile);
+         }
+
+
+
+     }
+
+     fwrite(&preCnt,sizeof(DendroIntL),1,outfile);
+     fwrite(&mineCnt,sizeof(DendroIntL),1,outfile);
+     fwrite(&postCnt,sizeof(DendroIntL ),1,outfile);
+
+     fclose(outfile);
+
+     DendroIntL diff_stat_ofMax[9];
+     DendroIntL diff_stat_ofSum[3];
+
+     DendroIntL cnt[3];
+
+     par::Mpi_Reduce((pre_diff_g+2),(diff_stat_ofMax),1,MPI_MIN,0,m_mpiCommActive);
+     par::Mpi_Reduce((pre_diff_g+2),(diff_stat_ofMax+1),1,MPI_SUM,0,m_mpiCommActive);
+     par::Mpi_Reduce((pre_diff_g+2),(diff_stat_ofMax+2),1,MPI_MAX,0,m_mpiCommActive);
+     diff_stat_ofMax[1]=diff_stat_ofMax[1]/size;
+
+     par::Mpi_Reduce((mine_diff_g+2),(diff_stat_ofMax+3),1,MPI_MIN,0,m_mpiCommActive);
+     par::Mpi_Reduce((mine_diff_g+2),(diff_stat_ofMax+4),1,MPI_SUM,0,m_mpiCommActive);
+     par::Mpi_Reduce((mine_diff_g+2),(diff_stat_ofMax+5),1,MPI_MAX,0,m_mpiCommActive);
+     diff_stat_ofMax[4]=diff_stat_ofMax[4]/size;
+
+     par::Mpi_Reduce((post_diff_g+2),(diff_stat_ofMax+6),1,MPI_MIN,0,m_mpiCommActive);
+     par::Mpi_Reduce((post_diff_g+2),(diff_stat_ofMax+7),1,MPI_SUM,0,m_mpiCommActive);
+     par::Mpi_Reduce((post_diff_g+2),(diff_stat_ofMax+8),1,MPI_MAX,0,m_mpiCommActive);
+     diff_stat_ofMax[7]=diff_stat_ofMax[7]/size;
+
+
+     par::Mpi_Reduce(&preCnt,cnt,1,MPI_SUM,0,m_mpiCommActive);
+     par::Mpi_Reduce(&mineCnt,(cnt+1),1,MPI_SUM,0,m_mpiCommActive);
+     par::Mpi_Reduce(&postCnt,(cnt+2),1,MPI_SUM,0,m_mpiCommActive);
+
+
+     par::Mpi_Reduce((pre_diff_g+1),(diff_stat_ofSum),1,MPI_SUM,0,m_mpiCommActive);
+     par::Mpi_Reduce((mine_diff_g+1),(diff_stat_ofSum+1),1,MPI_SUM,0,m_mpiCommActive);
+     par::Mpi_Reduce((post_diff_g+1),(diff_stat_ofSum+2),1,MPI_SUM,0,m_mpiCommActive);
+
+
+
+
+     if(!rank)
+     {
+
+         std::cout<<"========================NODE LIST STATISTICS OF (MAX DIFFERENCE) MIN MEAN MAX ACCESS COUNT====================================="<<std::endl;
+         std::cout<<"Pre Ghost:\t"<<diff_stat_ofMax[0]<<"\t"<<diff_stat_ofMax[1]<<"\t"<<diff_stat_ofMax[2]<<"\t Pre Ghost Access Cnt:"<<cnt[0]<<std::endl;
+         std::cout<<"My Elements:\t"<<diff_stat_ofMax[3]<<"\t"<<diff_stat_ofMax[4]<<"\t"<<diff_stat_ofMax[5]<<"\t Mine Ghost Access Cnt:"<<cnt[1]<<std::endl;
+         std::cout<<"Post Ghost:\t"<<diff_stat_ofMax[6]<<"\t"<<diff_stat_ofMax[7]<<"\t"<<diff_stat_ofMax[8]<<"\t Post Ghost Access Cnt:"<<cnt[2]<<std::endl;
+
+         std::cout<<"========================NODE LIST STATISTICS OF (MAX DIFFERENCE) Total Diff Sum====================================="<<std::endl;
+         std::cout<<"Pre Ghost diff Sum:\t"<<diff_stat_ofSum[0]<<std::endl;
+         std::cout<<"My Element diff Sum:\t"<<diff_stat_ofSum[1]<<std::endl;
+         std::cout<<"Post Ghost diff Sum:\t"<<diff_stat_ofSum[2]<<std::endl;
+         std::cout<<"=============================================================================================="<<std::endl;
+
+
+     }
+
+
+
+ }
+
+
+
+
+
 
 } // end namespace ot
 
