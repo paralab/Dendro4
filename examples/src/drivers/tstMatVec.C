@@ -37,118 +37,6 @@ double**** LaplacianType2Stencil;
 double**** MassType2Stencil;
 
 
-//void handler (int sig) {
-//  int rank;
-//  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-//
-//  // char fname[256];
-//  // sprintf(fname, "trace%.2d", rank);
-//  // FILE *out = fopen(fname, "w");
-//  unsigned int max_frames = 63;
-//
-//  // if (!rank) {
-//  printf("%s---------------------------------%s\n", RED, NRM);
-//  printf("%sError:%s signal %d:\n", RED, NRM, sig);
-//  printf("%s---------------------------------%s\n", RED, NRM);
-//  printf("\n%s======= stack trace =======%s\n", GRN, NRM);
-//  // }
-//
-//  // fprintf(out, "======= stack trace =======\n");
-//
-//  // storage array for stack trace address data
-//  void *addrlist[max_frames + 1];
-//
-//  // retrieve current stack addresses
-//  int addrlen = backtrace(addrlist, sizeof(addrlist) / sizeof(void *));
-//
-//  if (addrlen == 0) {
-//    // if (!rank)
-//    fprintf(stderr, "%s  <empty, possibly corrupt>%s\n",RED, NRM);
-//
-//    // fprintf(out, "    <empty, possibly corrupt>\n");
-//    return;
-//  }
-//
-//  // resolve addresses into strings containing "filename(function+address)",
-//  // this array must be free()-ed
-//  char **symbollist = backtrace_symbols(addrlist, addrlen);
-//
-//  // allocate string which will be filled with the demangled function name
-//  size_t funcnamesize = 256;
-//  char *funcname = (char *) malloc(funcnamesize);
-//
-//  // iterate over the returned symbol lines. skip the first, it is the
-//  // address of this function.
-//  for (int i = 1; i < addrlen; i++) {
-//    char *begin_name = 0, *begin_offset = 0, *end_offset = 0;
-//
-//    // find parentheses and +address offset surrounding the mangled name:
-//    // ./module(function+0x15c) [0x8048a6d]
-//    for (char *p = symbollist[i]; *p; ++p) {
-//      if (*p == '(')
-//        begin_name = p;
-//      else if (*p == '+')
-//        begin_offset = p;
-//      else if (*p == ')' && begin_offset) {
-//        end_offset = p;
-//        break;
-//      }
-//    }
-//
-//    if (begin_name && begin_offset && end_offset
-//        && begin_name < begin_offset) {
-//      *begin_name++ = '\0';
-//      *begin_offset++ = '\0';
-//      *end_offset = '\0';
-//
-//      // mangled name is now in [begin_name, begin_offset) and caller
-//      // offset in [begin_offset, end_offset). now apply
-//      // __cxa_demangle():
-//
-//      int status;
-//      char *ret = abi::__cxa_demangle(begin_name,
-//                                      funcname, &funcnamesize, &status);
-//      if (status == 0) {
-//        funcname = ret; // use possibly realloc()-ed string
-//        // if (!rank)
-//        printf("%s[%.2d]%s%s : %s%s%s : \n",RED,rank,YLW, symbollist[i], MAG, funcname,NRM);
-//
-//        // fprintf(out, "%s : %s : ", symbollist[i], funcname);
-//      }
-//      else {
-//        // demangling failed. Output function name as a C function with
-//        // no arguments.
-//        // if (!rank)
-//        printf("%s[%.2d]%s%s : %s%s()%s : \n", RED,rank, YLW, symbollist[i], GRN,begin_name, NRM);
-//
-//        // fprintf(out, "%s : %s() : ", symbollist[i], begin_name);
-//      }
-//      size_t p = 0;
-//      char syscom[256];
-//      while(symbollist[i][p] != '(' && symbollist[i][p] != ' ' && symbollist[i][p] != 0)
-//        ++p;
-//
-//      sprintf(syscom,"addr2line %p -e %.*s", addrlist[i], p, symbollist[i]);
-//      //last parameter is the file name of the symbol
-//      system(syscom);
-//    }
-//    else {
-//      // couldn't parse the line? print the whole line.
-//      // if (!rank)
-//      printf("%sCouldn't Parse:%s  %s\n", RED, NRM, symbollist[i]);
-//
-//      // fprintf(out, "  %s\n", symbollist[i]);
-//    }
-//  }
-//
-//  free(funcname);
-//  free(symbollist);
-//  // fclose(out);
-//
-//  exit(1);
-//}
-
-
 
 
 int main(int argc, char ** argv ) {	
@@ -167,6 +55,7 @@ int main(int argc, char ** argv ) {
   unsigned int maxDepth=30;
   bool compressLut=true;
   bool genPts=true;
+  bool genRegGrid=false;
   double localTime, totalTime;
   double startTime, endTime;
   DendroIntL locSz, totalSz;
@@ -179,11 +68,7 @@ int main(int argc, char ** argv ) {
   ot::RegisterEvents();
   ot::DA_Initialize(MPI_COMM_WORLD);
   PetscErrorPrintf = PetscErrorPrintfNone;
-
-
-
-//  signal(SIGSEGV, handler);   // install our handler
-//  signal(SIGTERM, handler);   // install our handler
+  unsigned int regLev;
 
 
 #ifdef PETSC_USE_LOG
@@ -207,7 +92,7 @@ int main(int argc, char ** argv ) {
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   if(argc < 3) {
     std::cerr << "Usage: " << argv[0] << "inpfile  maxDepth[30] solveU[0]\
-      writeB[0] dim[3] maxNumPtsPerOctant[1] incCorner[1] numLoops[100] compressLut[1] genPts[1] totalPts[10000]" << std::endl;
+      writeB[0] dim[3] maxNumPtsPerOctant[1] incCorner[1] numLoops[100] compressLut[1] genPts[1] totalPts[10000] nlistFileName genRegGrid[false] regLev" << std::endl;
     return -1;
   }
   if(argc > 2) {
@@ -233,11 +118,7 @@ int main(int argc, char ** argv ) {
   if(argc >11 ) { grainSize =atol(argv[11]);}
   sprintf(nlistFName, "%s_%d_%d_%d_%d.%s", argv[12], maxDepth, grainSize, rank, size, "bin");
 
-  if(genPts)
-  {
-    genGauss(0.15,grainSize,dim,argv[1],MPI_COMM_WORLD);
-
-  }
+  if(argc >13) {genRegGrid=(bool)(atoi(argv[13])); regLev=atoi(argv[14]);}
 
 #ifdef HILBERT_ORDERING
   G_MAX_DEPTH = maxDepth;
@@ -245,54 +126,68 @@ int main(int argc, char ** argv ) {
   _InitializeHcurve();
 #endif
 
+
   if (!rank) {
     std::cout << BLU << "===============================================" << NRM << std::endl;
-    std::cout << " Input Parameters"  << std::endl;
-    std::cout << " Input File Prefix:"<<argv[1]  << std::endl;
-    std::cout << " Gen Pts files:: "<< genPts  << std::endl;
-    std::cout << "Number of Points per process:: " << grainSize << std::endl;
-    std::cout << " Max Depth:"<<maxDepth<<std::endl;
-    //std::cout << " Number of psuedo Processors:: "<<num_pseudo_proc<<std::endl;
+    std::cout << " Input Parameters" << std::endl;
+    std::cout << " Input File Prefix:" << argv[1] << std::endl;
+    std::cout << " Gen Pts files:: " << genPts << std::endl;
+    std::cout << " Number of Points per process:: " << grainSize << std::endl;
+    std::cout << " Max Depth:" << maxDepth << std::endl;
+    std::cout << " Gen Regular Grid:"<<genRegGrid<<std::endl;
+    std::cout << " Regular grid Level:"<<regLev<<std::endl;
     std::cout << BLU << "===============================================" << NRM << std::endl;
   }
 
-  strcpy(bFile,argv[1]);
-  ot::int2str(rank,Kstr);
-  strcat(bFile,Kstr);
-  strcat(bFile,"_\0");
-  ot::int2str(size,Kstr);
-  strcat(bFile,Kstr);
-  strcpy(pFile,bFile);
-  strcpy(uFile,bFile);
-  strcat(bFile,"_Bal.ot\0");
-  strcat(pFile,".pts\0");
-  strcat(uFile,".sol\0");
+
+
+if(!genRegGrid) {
+
+  if (genPts) {
+    genGauss(0.15, grainSize, dim, argv[1], MPI_COMM_WORLD);
+
+  }
+
+
+
+
+  strcpy(bFile, argv[1]);
+  ot::int2str(rank, Kstr);
+  strcat(bFile, Kstr);
+  strcat(bFile, "_\0");
+  ot::int2str(size, Kstr);
+  strcat(bFile, Kstr);
+  strcpy(pFile, bFile);
+  strcpy(uFile, bFile);
+  strcat(bFile, "_Bal.ot\0");
+  strcat(pFile, ".pts\0");
+  strcat(uFile, ".sol\0");
 
   //Points2Octree....
-  if(!rank){
-    std::cout << " reading  "<<pFile<<std::endl; // Point size
+  if (!rank) {
+    std::cout << " reading  " << pFile << std::endl; // Point size
   }
   ot::readPtsFromFile(pFile, pts);
-  if(!rank){
-    std::cout << " finished reading  "<<pFile<<std::endl; // Point size
+  if (!rank) {
+    std::cout << " finished reading  " << pFile << std::endl; // Point size
   }
   ptsLen = pts.size();
   MPI_Barrier(MPI_COMM_WORLD);
   std::vector<ot::TreeNode> tmpNodes;
-  for(int i=0;i<ptsLen;i+=3) {
-    if( (pts[i] > 0.0) &&
-        (pts[i+1] > 0.0)  
-        && (pts[i+2] > 0.0) &&
-        ( ((unsigned int)(pts[i]*((double)(1u << maxDepth)))) < (1u << maxDepth))  &&
-        ( ((unsigned int)(pts[i+1]*((double)(1u << maxDepth)))) < (1u << maxDepth))  &&
-        ( ((unsigned int)(pts[i+2]*((double)(1u << maxDepth)))) < (1u << maxDepth)) ) {
+  for (int i = 0; i < ptsLen; i += 3) {
+    if ((pts[i] > 0.0) &&
+        (pts[i + 1] > 0.0)
+        && (pts[i + 2] > 0.0) &&
+        (((unsigned int) (pts[i] * ((double) (1u << maxDepth)))) < (1u << maxDepth)) &&
+        (((unsigned int) (pts[i + 1] * ((double) (1u << maxDepth)))) < (1u << maxDepth)) &&
+        (((unsigned int) (pts[i + 2] * ((double) (1u << maxDepth)))) < (1u << maxDepth))) {
 #ifdef __DEBUG__
       assert((i+2) < ptsLen);
 #endif
-      tmpNodes.push_back( ot::TreeNode((unsigned int)(pts[i]*(double)(1u << maxDepth)),
-            (unsigned int)(pts[i+1]*(double)(1u << maxDepth)),
-            (unsigned int)(pts[i+2]*(double)(1u << maxDepth)),
-            maxDepth,dim,maxDepth) );
+      tmpNodes.push_back(ot::TreeNode((unsigned int) (pts[i] * (double) (1u << maxDepth)),
+                                      (unsigned int) (pts[i + 1] * (double) (1u << maxDepth)),
+                                      (unsigned int) (pts[i + 2] * (double) (1u << maxDepth)),
+                                      maxDepth, dim, maxDepth));
     }
   }
   pts.clear();
@@ -301,23 +196,23 @@ int main(int argc, char ** argv ) {
 //    for(int i=0;i<tmpNodes.size();i++)
 //      std::cout<<"Node:"<<tmpNodes[i]<<std::endl;
 //  }
-  par::removeDuplicates<ot::TreeNode>(tmpNodes,false,MPI_COMM_WORLD);	
+  par::removeDuplicates<ot::TreeNode>(tmpNodes, false, MPI_COMM_WORLD);
   linOct = tmpNodes;
   tmpNodes.clear();
-  par::partitionW<ot::TreeNode>(linOct, NULL,MPI_COMM_WORLD);
+  par::partitionW<ot::TreeNode>(linOct, NULL, MPI_COMM_WORLD);
   // reduce and only print the total ...
   locSz = linOct.size();
   par::Mpi_Reduce<DendroIntL>(&locSz, &totalSz, 1, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(rank==0) {
-    std::cout<<"# pts= " << totalSz<<std::endl;
+  if (rank == 0) {
+    std::cout << "# pts= " << totalSz << std::endl;
   }
   //std::cout<<"linOct:"<<linOct.size()<<std::endl;
-  pts.resize(3*(linOct.size()));
-  ptsLen = (3*(linOct.size()));
-  for(int i=0;i<linOct.size();i++) {
-    pts[3*i] = (((double)(linOct[i].getX())) + 0.5)/((double)(1u << maxDepth));
-    pts[(3*i)+1] = (((double)(linOct[i].getY())) +0.5)/((double)(1u << maxDepth));
-    pts[(3*i)+2] = (((double)(linOct[i].getZ())) +0.5)/((double)(1u << maxDepth));
+  pts.resize(3 * (linOct.size()));
+  ptsLen = (3 * (linOct.size()));
+  for (int i = 0; i < linOct.size(); i++) {
+    pts[3 * i] = (((double) (linOct[i].getX())) + 0.5) / ((double) (1u << maxDepth));
+    pts[(3 * i) + 1] = (((double) (linOct[i].getY())) + 0.5) / ((double) (1u << maxDepth));
+    pts[(3 * i) + 2] = (((double) (linOct[i].getZ())) + 0.5) / ((double) (1u << maxDepth));
   }//end for i
   linOct.clear();
   gSize[0] = 1.;
@@ -338,14 +233,14 @@ int main(int argc, char ** argv ) {
 #endif
   localTime = endTime - startTime;
   par::Mpi_Reduce<double>(&localTime, &totalTime, 1, MPI_MAX, 0, MPI_COMM_WORLD);
-  if(!rank){
-    std::cout <<"P2n Time: "<<totalTime << std::endl;
+  if (!rank) {
+    std::cout << "P2n Time: " << totalTime << std::endl;
   }
   // reduce and only print the total ...
   locSz = linOct.size();
   par::Mpi_Reduce<DendroIntL>(&locSz, &totalSz, 1, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(rank==0) {
-    std::cout<<"# of Unbalanced Octants: " << totalSz<<std::endl;
+  if (rank == 0) {
+    std::cout << "# of Unbalanced Octants: " << totalSz << std::endl;
   }
   pts.clear();
 
@@ -355,14 +250,14 @@ int main(int argc, char ** argv ) {
   PetscLogStagePush(stages[1]);
 #endif
   startTime = MPI_Wtime();
-  ot::balanceOctree (linOct, balOct, dim, maxDepth, incCorner, MPI_COMM_WORLD, NULL, NULL);
+  ot::balanceOctree(linOct, balOct, dim, maxDepth, incCorner, MPI_COMM_WORLD, NULL, NULL);
   endTime = MPI_Wtime();
 #ifdef PETSC_USE_LOG
   PetscLogStagePop();
 #endif
   linOct.clear();
-  if(writeB) { 
-    ot::writeNodesToFile(bFile,balOct);
+  if (writeB) {
+    ot::writeNodesToFile(bFile, balOct);
   }
   // compute total inp size and output size
   locSz = balOct.size();
@@ -370,11 +265,30 @@ int main(int argc, char ** argv ) {
   par::Mpi_Reduce<DendroIntL>(&locSz, &totalSz, 1, MPI_SUM, 0, MPI_COMM_WORLD);
   par::Mpi_Reduce<double>(&localTime, &totalTime, 1, MPI_MAX, 0, MPI_COMM_WORLD);
 
-  if(!rank) {
-    std::cout << "# of Balanced Octants: "<< totalSz << std::endl;       
-    std::cout << "bal Time: "<<totalTime << std::endl;
+  if (!rank) {
+    std::cout << "# of Balanced Octants: " << totalSz << std::endl;
+    std::cout << "bal Time: " << totalTime << std::endl;
   }
+}else
+{
+  if(!rank)
+    std::cout<<"Generating Regular Grid"<<std::endl;
 
+  assert(regLev<=maxDepth);
+  ot::createRegularOctree(balOct,regLev,dim,maxDepth,MPI_COMM_WORLD);
+
+
+  DendroIntL localSz=balOct.size();
+  DendroIntL sizeG=0;
+
+  par::Mpi_Reduce(&localSz,&sizeG,1,MPI_SUM,0,MPI_COMM_WORLD);
+
+
+  if(!rank)
+    std::cout<<"Bal Oct Size:"<<sizeG<<std::endl;
+
+
+}
   //ODA ...
   MPI_Barrier(MPI_COMM_WORLD);
 #ifdef PETSC_USE_LOG
@@ -406,8 +320,52 @@ int main(int argc, char ** argv ) {
 #endif
 
 
+ /*
+  * This Code is to Visually check the build node list correctness by writing the nodes to vtk file.
+  *
+  * unsigned int nodeList[8];
+  unsigned int nIndex=0.4*(da.end<ot::DA_FLAGS::ALL>());// (unsigned int )0.3*da.end<ot::DA_FLAGS::ALL>();
+  std::vector<ot::TreeNode> node;
+  ot::TreeNode tmp;
 
+  bool state=false;
 
+  for(da.init<ot::DA_FLAGS::ALL>();da.curr()< da.end<ot::DA_FLAGS::ALL>();da.next<ot::DA_FLAGS::ALL>())
+  {
+    da.getNodeIndices(nodeList);
+    if(da.curr()<da.getIdxElementBegin())
+    {
+      state=true;
+      Point p=da.getCurrentOffset();
+      tmp=ot::TreeNode(1,p.xint(),p.yint(),p.zint(),da.getLevel(da.curr()),3,da.getMaxDepth());
+      node.push_back(tmp);
+      da.getNodeIndices(nodeList);
+      treeNodesTovtk(node,rank,"node_pre");
+      break;
+    }
+
+  }
+
+  std::vector<ot::TreeNode> keys;
+  unsigned int curentIndex;
+ if(state) {
+   for (da.init<ot::DA_FLAGS::ALL>(); da.curr() < da.end<ot::DA_FLAGS::ALL>(); da.next<ot::DA_FLAGS::ALL>()) {
+     curentIndex = da.curr();
+
+     for (int w = 0; w < 8; w++) {
+       if (curentIndex == nodeList[w]) {
+         Point p = da.getCurrentOffset();
+         tmp = ot::TreeNode(1, p.xint(), p.yint(), p.zint(), da.getLevel(curentIndex), 3, da.getMaxDepth());
+         keys.push_back(tmp);
+       }
+     }
+   }
+   treeNodesTovtk(keys, rank, "keys_pre");
+ }
+
+  node.clear();
+  keys.clear();
+*/
   MPI_Barrier(MPI_COMM_WORLD);
 #ifdef PETSC_USE_LOG
   PetscLogStagePush(stages[3]);
@@ -469,19 +427,34 @@ int main(int argc, char ** argv ) {
 
 
   DendroIntL maxNodeSize, minNodeSize,
-          maxBdyNode, minBdyNode,
+          maxBdyNode, meanBdyNode,minBdyNode,
           maxIndepSize, minIndepSize,
           maxElementSize, minElementSize;
 
   DendroIntL localSz;
 
+  DendroIntL preGhost[3];//,postGhost[3];
+
+
   localSz = da.getNodeSize();
   par::Mpi_Reduce<DendroIntL>(&localSz, &maxNodeSize, 1, MPI_MAX, 0, MPI_COMM_WORLD);
   par::Mpi_Reduce<DendroIntL>(&localSz, &minNodeSize, 1, MPI_MIN, 0, MPI_COMM_WORLD);
 
-  localSz = da.getBoundaryNodeSize();
+  localSz =da.getBoundaryNodeSize();//da.getPreGhostElementSize();//da.getPrePostBoundaryNodesSize();//
   par::Mpi_Reduce<DendroIntL>(&localSz, &maxBdyNode, 1, MPI_MAX, 0, MPI_COMM_WORLD);
   par::Mpi_Reduce<DendroIntL>(&localSz, &minBdyNode, 1, MPI_MIN, 0, MPI_COMM_WORLD);
+  par::Mpi_Reduce<DendroIntL>(&localSz, &meanBdyNode,1,MPI_SUM,0,MPI_COMM_WORLD);
+  meanBdyNode=meanBdyNode/size;
+
+  localSz=da.getPreGhostElementSize();
+  par::Mpi_Reduce<DendroIntL>(&localSz,preGhost,1,MPI_MIN,0,MPI_COMM_WORLD);
+  par::Mpi_Reduce<DendroIntL>(&localSz,(preGhost+1),1,MPI_SUM,0,MPI_COMM_WORLD);
+  par::Mpi_Reduce<DendroIntL>(&localSz,(preGhost+2),1,MPI_MAX,0,MPI_COMM_WORLD);
+
+  preGhost[1]=preGhost[1]/size;
+
+
+
 
   localSz = da.getElementSize();
   par::Mpi_Reduce<DendroIntL>(&localSz, &maxElementSize, 1, MPI_MAX, 0, MPI_COMM_WORLD);
@@ -661,7 +634,8 @@ int main(int argc, char ** argv ) {
 
     std::cout << RED<<"=====================QUALITY OF ODA========================================"<<NRM<<std::endl;
     std::cout << "Nodes          \t(" << minNodeSize << ", " << maxNodeSize << ")" << std::endl;
-    std::cout << "Boundary Node  \t(" << minBdyNode << ", " << maxBdyNode << ")" << std::endl;
+    std::cout << "Boundary Node (Overall)  \t(" << minBdyNode << ", " <<meanBdyNode<<" ," << maxBdyNode << ")" << std::endl;
+    std::cout << "Boundary Node (Inter Process)\t"<<"("<<preGhost[0]<<", "<<preGhost[1]<<", "<<preGhost[2]<<" )"<<std::endl;
     std::cout << "Element Size   \t(" << minElementSize << ", " << maxElementSize << ")" << std::endl;
     std::cout << "Independent    \t(" << minIndepSize << ", " << maxIndepSize << ")" << std::endl;
     std::cout << RED<<"=====================NODELIST STATISTICS========================================"<<NRM<<std::endl;

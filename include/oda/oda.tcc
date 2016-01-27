@@ -156,6 +156,12 @@ namespace ot {
     return m_uiBoundaryNodeSize;
   }
 
+  inline unsigned int DA::getPrePostBoundaryNodesSize()
+  {
+      return m_uiPrePostBoundaryNodes;
+  }
+
+
   inline unsigned int DA::getInputSize() {
     return m_uiInputSize;
   }

@@ -459,6 +459,8 @@ namespace ot {
         // The number of elements owned by the current processor.
         unsigned int                    m_uiElementSize;
 
+        unsigned int                    m_uiPrePostBoundaryNodes;
+
         unsigned int                    m_uiIndependentElementSize;
         // The number of pre-ghosts elements, i.e., ghost elements with morton ids less than
         //  those belonging to this processor.
@@ -851,6 +853,7 @@ namespace ot {
           */
         unsigned int getDimension();
 
+        unsigned int getPrePostBoundaryNodesSize();
         //@}
 
         /** 

@@ -3104,6 +3104,7 @@ m_uiPreGhostBoundaryNodeSize = preBndNodeSz;
 m_uiPostGhostNodeSize = postGhostNodeSz + postBndNodeSz;
 m_uiNodeSize = elemNodeSz;
 m_uiBoundaryNodeSize = bndNodeSz;
+m_uiPrePostBoundaryNodes = preBndNodeSz+postBndNodeSz;
 
 #ifdef __DEBUG_DA_NLIST__
 MPI_Barrier(m_mpiCommActive);
