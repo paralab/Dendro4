@@ -21,6 +21,9 @@ configure_file (
 find_package(OpenMP REQUIRED)
 find_package(MPI REQUIRED)
 
+#set (PAPI_LIB /home/milinda/Programs/papi-5.4.3/src)
+#set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -l/home/milinda/Research/Utah/DENDRO/Libs/petsc/lib/libpapi.a")
+
 if(OPENMP_FOUND)
   set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -79,7 +82,9 @@ include_directories(${PROJECT_BINARY_DIR}
                     $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/include 
                     )
 
-link_directories($ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib)
+link_directories($ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+                 $ENV{PAPI_LIB}
+        )
 
 # Sources
 file(GLOB OMG_SOURCES src/omg/*.cpp)
@@ -163,7 +168,7 @@ if(BUILD_DA_EXAMPLES)
     target_link_libraries(flexPartition dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
     add_executable(tstMatVec include/hcurvedata.h src/hcurvedata.cpp examples/src/drivers/tstMatVec.C examples/src/backend/odaJac.C examples/src/backend/handleType2Stencils.C examples/include/genPts_par.h examples/src/drivers/genPts_par.C)
-    target_link_libraries(tstMatVec dendroDA dendro petsc ${MPI_LIBRARIES} m)
+    target_link_libraries(tstMatVec dendroDA dendro petsc papi ${MPI_LIBRARIES} m)
 
     add_executable(buildDA examples/src/drivers/buildDA.C include/hcurvedata.h examples/include/octreeStatistics.h examples/src/drivers/octreeStatistics.cpp)
     target_link_libraries(buildDA dendroDA dendro petsc ${MPI_LIBRARIES} m)

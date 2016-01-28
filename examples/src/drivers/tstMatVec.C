@@ -1,4 +1,4 @@
-
+#include "papi.h"
 #include "mpi.h"
 #include "petsc.h"
 #include "sys.h"
@@ -19,6 +19,11 @@
 
 #include "genPts_par.h"
 #include <climits>
+
+
+#include <papiStdEventDefs.h>
+
+
 
 //Don't want time to be synchronized. Need to check load imbalance.
 #ifdef MPI_WTIME_IS_GLOBAL
@@ -69,6 +74,9 @@ int main(int argc, char ** argv ) {
   ot::DA_Initialize(MPI_COMM_WORLD);
   PetscErrorPrintf = PetscErrorPrintfNone;
   unsigned int regLev;
+
+
+
 
 
 #ifdef PETSC_USE_LOG
@@ -412,10 +420,82 @@ if(!genRegGrid) {
 
   VecSet(in, zero);
 
+  DendroIntL PAPI_COUNTERS []={0,0,0,0,0};
+  int papi_counterSize=5;
+  /*
+   0-PAPI_L1_DCM	Level 1 data cache misses
+   1-PAPI_L2_DCM	Level 2 data cache misses
+   2-PAPI_L3_DCM	Level 3 data cache misses
+   3-PAPI_LD_INS    Loard Ins Completed
+   4-PAPI_SR_INS    Store Ins Completed
+   *
+   * */
+
+
+  int PAPI_events[]={PAPI_L1_DCM,PAPI_L2_DCM,PAPI_L3_DCM,PAPI_LD_INS,PAPI_SR_INS};
+  int papi_s=PAPI_library_init(PAPI_VER_CURRENT);
+
+  if(papi_s!=PAPI_OK)
+  {
+     std::cout<<"Papi Initialization failed:"<<papi_s<<std::endl;
+  }
+
+  papi_s=PAPI_start_counters( PAPI_events, papi_counterSize );
+  if(papi_s!=PAPI_OK)
+  {
+    std::cout<<"Rank:"<<rank<<" Papi Counter start failed"<<papi_s<<std::endl;
+  }
+
   for(unsigned int i=0;i<numLoops;i++) {
     iC(Jacobian1MatGetDiagonal(J, diag));
     iC(Jacobian1MatMult(J, in, out));
   }
+  papi_s=PAPI_read_counters( PAPI_COUNTERS, papi_counterSize );
+  if(papi_s!=PAPI_OK)
+  {
+    std::cout<<"Rank:"<<rank<<" Papi Counter read failed"<<papi_s<<std::endl;
+  }
+
+
+
+ /* DendroIntL papiCountersMin_g[5];
+  DendroIntL papiCountersMax_g[5];
+
+  MPI_Reduce(PAPI_COUNTERS,papiCountersMin_g,9,MPI_LONG_LONG,MPI_MIN,0,MPI_COMM_WORLD);
+  MPI_Reduce(PAPI_COUNTERS,papiCountersMax_g,9,MPI_LONG_LONG,MPI_MAX,0,MPI_COMM_WORLD);*/
+
+  /*
+  0-PAPI_L1_DCM	Level 1 data cache misses
+  1-PAPI_L1_ICM	Level 1 instruction cache misses
+  2-PAPI_L2_DCM	Level 2 data cache misses
+  3-PAPI_L2_ICM	Level 2 instruction cache misses
+  4-PAPI_L3_DCM	Level 3 data cache misses
+  5-PAPI_L3_ICM	Level 3 instruction cache misses
+  6-PAPI_L1_TCM	Level 1 total cache misses
+  7-PAPI_L2_TCM	Level 2 total cache misses
+  8-PAPI_L3_TCM	Level 3 total cache misses
+  *
+  * */
+
+  /*if(!rank)
+  {
+
+    std::cout<<"==PAPI COUNTERS (min max)"<<std::endl;
+    std::cout<<"L1_DATA_MISS:\t"<<papiCountersMin_g[0]<<"\t"<<papiCountersMax_g[0]<<std::endl;
+    std::cout<<"L1_INS_MISS:\t"<<papiCountersMin_g[1]<<"\t"<<papiCountersMax_g[1]<<std::endl;
+
+    std::cout<<"L2_DATA_MISS:\t"<<papiCountersMin_g[2]<<"\t"<<papiCountersMax_g[2]<<std::endl;
+    std::cout<<"L2_INS_MISS:\t"<<papiCountersMin_g[3]<<"\t"<<papiCountersMax_g[3]<<std::endl;
+
+    std::cout<<"L3_DATA_MISS:\t"<<papiCountersMin_g[4]<<"\t"<<papiCountersMax_g[4]<<std::endl;
+    std::cout<<"L3_INS_MISS:\t"<<papiCountersMin_g[5]<<"\t"<<papiCountersMax_g[5]<<std::endl;
+
+    std::cout<<"L1_Total_MISS:\t"<<papiCountersMin_g[6]<<"\t"<<papiCountersMax_g[6]<<std::endl;
+    std::cout<<"L2_Total_MISS:\t"<<papiCountersMin_g[7]<<"\t"<<papiCountersMax_g[7]<<std::endl;
+    std::cout<<"L3_Total_MISS:\t"<<papiCountersMin_g[8]<<"\t"<<papiCountersMax_g[8]<<std::endl;
+
+
+  }*/
 
   VecDestroy(&in);
   VecDestroy(&out);

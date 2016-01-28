@@ -1543,7 +1543,7 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
          std::cout<<"PreGhostAccessCnt:"<<cnt[0]<<std::endl;
          std::cout<<"MineGhostAccessCnt:"<<cnt[1]<<std::endl;
          std::cout<<"PostGhostAccessCnt:"<<cnt[2]<<std::endl;
-         
+
 //         std::cout<<"========================NODE LIST STATISTICS OF (MAX DIFFERENCE) Total Diff Sum====================================="<<std::endl;
 //         std::cout<<"Pre Ghost diff Sum:\t"<<diff_stat_ofSum[0]<<std::endl;
 //         std::cout<<"My Element diff Sum:\t"<<diff_stat_ofSum[1]<<std::endl;
