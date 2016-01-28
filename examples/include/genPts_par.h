@@ -19,7 +19,7 @@
 #include "mpi.h"
 #include <iostream>
 #include <random>
-#include <chrono>
+//#include <chrono>
 
 
 void genGauss(const double& sd, const long int numPts, int dim, char * filePrefix,MPI_Comm comm);

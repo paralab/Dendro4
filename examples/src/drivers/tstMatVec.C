@@ -1,4 +1,7 @@
-#include "papi.h"
+//#include "papi.h"
+//#include <papiStdEventDefs.h>
+
+
 #include "mpi.h"
 #include "petsc.h"
 #include "sys.h"
@@ -14,15 +17,9 @@
 #include "externVars.h"
 #include "dendro.h"
 
-//#include <cxxabi.h>
-//#include <execinfo.h>
 
 #include "genPts_par.h"
 #include <climits>
-
-
-#include <papiStdEventDefs.h>
-
 
 
 //Don't want time to be synchronized. Need to check load imbalance.
@@ -420,8 +417,8 @@ if(!genRegGrid) {
 
   VecSet(in, zero);
 
-  DendroIntL PAPI_COUNTERS []={0,0,0,0,0};
-  int papi_counterSize=5;
+//  DendroIntL PAPI_COUNTERS []={0,0,0,0,0};
+//  int papi_counterSize=5;
   /*
    0-PAPI_L1_DCM	Level 1 data cache misses
    1-PAPI_L2_DCM	Level 2 data cache misses
@@ -432,29 +429,30 @@ if(!genRegGrid) {
    * */
 
 
-  int PAPI_events[]={PAPI_L1_DCM,PAPI_L2_DCM,PAPI_L3_DCM,PAPI_LD_INS,PAPI_SR_INS};
-  int papi_s=PAPI_library_init(PAPI_VER_CURRENT);
-
-  if(papi_s!=PAPI_OK)
-  {
-     std::cout<<"Papi Initialization failed:"<<papi_s<<std::endl;
-  }
-
-  papi_s=PAPI_start_counters( PAPI_events, papi_counterSize );
-  if(papi_s!=PAPI_OK)
-  {
-    std::cout<<"Rank:"<<rank<<" Papi Counter start failed"<<papi_s<<std::endl;
-  }
+//  int PAPI_events[]={PAPI_L1_DCM,PAPI_L2_DCM,PAPI_L3_DCM,PAPI_LD_INS,PAPI_SR_INS};
+//  int papi_s=PAPI_library_init(PAPI_VER_CURRENT);
+//
+//  if(papi_s!=PAPI_OK)
+//  {
+//     std::cout<<"Papi Initialization failed:"<<papi_s<<std::endl;
+//  }
+//
+//  papi_s=PAPI_start_counters( PAPI_events, papi_counterSize );
+//  if(papi_s!=PAPI_OK)
+//  {
+//    std::cout<<"Rank:"<<rank<<" Papi Counter start failed"<<papi_s<<std::endl;
+//  }
 
   for(unsigned int i=0;i<numLoops;i++) {
     iC(Jacobian1MatGetDiagonal(J, diag));
     iC(Jacobian1MatMult(J, in, out));
   }
-  papi_s=PAPI_read_counters( PAPI_COUNTERS, papi_counterSize );
-  if(papi_s!=PAPI_OK)
-  {
-    std::cout<<"Rank:"<<rank<<" Papi Counter read failed"<<papi_s<<std::endl;
-  }
+
+//  papi_s=PAPI_read_counters( PAPI_COUNTERS, papi_counterSize );
+//  if(papi_s!=PAPI_OK)
+//  {
+//    std::cout<<"Rank:"<<rank<<" Papi Counter read failed"<<papi_s<<std::endl;
+//  }
 
 
 
