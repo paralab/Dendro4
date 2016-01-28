@@ -1129,6 +1129,93 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
      par::Mpi_Reduce<DendroIntL>(&localSz, (sendDataCnt+2), 1, MPI_MAX, 0, m_mpiCommActive);
      sendDataCnt[1]=sendDataCnt[1]/size;
 
+     DendroIntL minS=0,maxS=0;
+     double maxRminS=0;
+     for(int i=0;i<m_uipSendCounts.size();i++)
+     {
+         if(i==0)
+         {
+             minS=m_uipSendCounts[i];
+             maxS=m_uipSendCounts[i];
+             continue;
+         }
+
+         if(minS>m_uipSendCounts[i])
+             minS=m_uipSendCounts[i];
+
+         if(maxS<m_uipSendCounts[i])
+             maxS=m_uipSendCounts[i];
+
+     }
+     maxRminS=(double)maxS/(double)minS;
+
+
+     DendroIntL minR=0,maxR=0;
+     double maxRminR=0;
+     for(int i=0;i<m_uipRecvCounts.size();i++)
+     {
+         if(i==0)
+         {
+             minR=m_uipRecvCounts[i];
+             maxR=m_uipRecvCounts[i];
+             continue;
+         }
+
+         if(minR>m_uipRecvCounts[i])
+             minR=m_uipRecvCounts[i];
+
+         if(maxR<m_uipRecvCounts[i])
+             maxR=m_uipRecvCounts[i];
+
+     }
+     maxRminR=(double)maxR/(double)minR;
+
+     DendroIntL maxComCnt=std::max(maxS,maxR);
+     DendroIntL sendCnt[6];
+     DendroIntL recvCnt[6];
+     DendroIntL comCnt[3];
+
+     double sendR[3];
+     double recvR[3];
+
+     par::Mpi_Reduce(&minS,sendCnt,1,MPI_MIN,0,m_mpiCommActive);
+     par::Mpi_Reduce(&minS,(sendCnt+1),1,MPI_SUM,0,m_mpiCommActive);
+     par::Mpi_Reduce(&minS,(sendCnt+2),1,MPI_MAX,0,m_mpiCommActive);
+     sendCnt[1]=sendCnt[1]/size;
+
+     par::Mpi_Reduce(&maxS,(sendCnt+3),1,MPI_MIN,0,m_mpiCommActive);
+     par::Mpi_Reduce(&maxS,(sendCnt+4),1,MPI_SUM,0,m_mpiCommActive);
+     par::Mpi_Reduce(&maxS,(sendCnt+5),1,MPI_MAX,0,m_mpiCommActive);
+     sendCnt[4]=sendCnt[4]/size;
+
+     par::Mpi_Reduce(&maxRminS,sendR,1,MPI_MIN,0,m_mpiCommActive);
+     par::Mpi_Reduce(&maxRminS,(sendR+1),1,MPI_SUM,0,m_mpiCommActive);
+     par::Mpi_Reduce(&maxRminS,(sendR+2),1,MPI_MAX,0,m_mpiCommActive);
+     sendR[1]=sendR[1]/(double)size;
+
+
+     par::Mpi_Reduce(&minR,recvCnt,1,MPI_MIN,0,m_mpiCommActive);
+     par::Mpi_Reduce(&minR,(recvCnt+1),1,MPI_SUM,0,m_mpiCommActive);
+     par::Mpi_Reduce(&minR,(recvCnt+2),1,MPI_MAX,0,m_mpiCommActive);
+     recvCnt[1]=recvCnt[1]/size;
+
+     par::Mpi_Reduce(&maxR,(recvCnt+3),1,MPI_MIN,0,m_mpiCommActive);
+     par::Mpi_Reduce(&maxR,(recvCnt+4),1,MPI_SUM,0,m_mpiCommActive);
+     par::Mpi_Reduce(&maxR,(recvCnt+5),1,MPI_MAX,0,m_mpiCommActive);
+     recvCnt[4]=recvCnt[4]/size;
+
+     par::Mpi_Reduce(&maxRminR,recvR,1,MPI_MIN,0,m_mpiCommActive);
+     par::Mpi_Reduce(&maxRminR,(recvR+1),1,MPI_SUM,0,m_mpiCommActive);
+     par::Mpi_Reduce(&maxRminR,(recvR+2),1,MPI_MAX,0,m_mpiCommActive);
+     recvR[1]=recvR[1]/(double)size;
+
+     par::Mpi_Reduce(&maxComCnt,comCnt,1,MPI_MIN,0,m_mpiCommActive);
+     par::Mpi_Reduce(&maxComCnt,(comCnt+1),1,MPI_SUM,0,m_mpiCommActive);
+     par::Mpi_Reduce(&maxComCnt,(comCnt+2),1,MPI_MAX,0,m_mpiCommActive);
+
+     comCnt[1]=comCnt[1]/size;
+
+
 
      //total recv
 
@@ -1175,36 +1262,32 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
 
      if(!rank)
      {
-         std::cout<<"====================================ODA NODE STATISTICS================================"<<std::endl;
-         std::cout<<"==================\tmin\tmean\tmax"<<std::endl;
-         std::cout<<"Node (total)\t"<<nodeTlSz[0]<<"\t"<<nodeTlSz[1]<<"\t"<<nodeTlSz[2]<<std::endl;
-         std::cout<<"Boundary (global)\t"<<glbBndry[0]<<"\t"<<glbBndry[1]<<"\t"<<glbBndry[2]<<std::endl;
-         std::cout<<"Pre Ghost:\t"<<preGhost[0]<<"\t"<<preGhost[1]<<"\t"<<preGhost[2]<<std::endl;
-         std::cout<<"Independent (mine):\t"<<indNodes[0]<<"\t"<<indNodes[1]<<"\t"<<indNodes[2]<<std::endl;
-         std::cout<<"Post Ghost:\t"<<postGhost[0]<<"\t"<<postGhost[1]<<"\t"<<postGhost[2]<<std::endl;
-         std::cout<<std::endl;
-         std::cout<<"====================================ODA COMMUNICATION STATISTICS================================"<<std::endl;
-         std::cout<<"==================\tmin\tmean\tmax"<<std::endl;
-         std::cout<<"SEND STAT"<<std::endl;
-         std::cout<<"Send Processor Cnt\t"<<sendProcCnt[0]<<"\t"<<sendProcCnt[1]<<"\t"<<sendProcCnt[2]<<std::endl;
-         std::cout<<"Send Data Cnt\t"<<sendDataCnt[0]<<"\t"<<sendDataCnt[1]<<"\t"<<sendDataCnt[2]<<std::endl;
+         std::cout<<"=======ODA NODE STATISTICS (min mean max)=========="<<std::endl;
+         std::cout<<"Node(total):\t"<<nodeTlSz[0]<<"\t"<<nodeTlSz[1]<<"\t"<<nodeTlSz[2]<<std::endl;
+         std::cout<<"Boundary(global):\t"<<glbBndry[0]<<"\t"<<glbBndry[1]<<"\t"<<glbBndry[2]<<std::endl;
+         std::cout<<"PreGhost:\t"<<preGhost[0]<<"\t"<<preGhost[1]<<"\t"<<preGhost[2]<<std::endl;
+         std::cout<<"Independent(mine):\t"<<indNodes[0]<<"\t"<<indNodes[1]<<"\t"<<indNodes[2]<<std::endl;
+         std::cout<<"PostGhost:\t"<<postGhost[0]<<"\t"<<postGhost[1]<<"\t"<<postGhost[2]<<std::endl;
+         std::cout<<"ODA COMMUNICATION STATISTICS (min mean max)"<<std::endl;
+         std::cout<<"SendProcessorCnt:\t"<<sendProcCnt[0]<<"\t"<<sendProcCnt[1]<<"\t"<<sendProcCnt[2]<<std::endl;
 
-         std::cout<<"RECV STAT"<<std::endl;
-         std::cout<<"Recv Processor Cnt\t"<<recvProcCnt[0]<<"\t"<<recvProcCnt[1]<<"\t"<<recvProcCnt[2]<<std::endl;
-         std::cout<<"Recv Data Cnt\t"<<recvDataCnt[0]<<"\t"<<recvDataCnt[1]<<"\t"<<recvDataCnt[2]<<std::endl;
+         std::cout<<"SendDataCnt(total):\t"<<sendDataCnt[0]<<"\t"<<sendDataCnt[1]<<"\t"<<sendDataCnt[2]<<std::endl;
+         std::cout<<"SendDataCntMin:\t"<<sendCnt[0]<<"\t"<<sendCnt[1]<<"\t"<<sendCnt[2]<<std::endl;
+         std::cout<<"SendDataCntMax:\t"<<sendCnt[3]<<"\t"<<sendCnt[4]<<"\t"<<sendCnt[5]<<std::endl;
+         std::cout<<"SendDataCntRatio:\t"<<sendR[0]<<"\t"<<sendR[1]<<"\t"<<sendR[2]<<std::endl;
 
-         std::cout<<"Total Data STAT"<<std::endl;
-         std::cout<<"(Send+Recv) Processor Cnt\t"<<totalProcCnt[0]<<"\t"<<totalProcCnt[1]<<"\t"<<totalProcCnt[2]<<std::endl;
-         std::cout<<"(Send+Recv)Data Cnt\t"<<totalDataCnt[0]<<"\t"<<totalDataCnt[1]<<"\t"<<totalDataCnt[2]<<std::endl;
+         std::cout<<"RecvProcessorCnt:\t"<<recvProcCnt[0]<<"\t"<<recvProcCnt[1]<<"\t"<<recvProcCnt[2]<<std::endl;
+         std::cout<<"RecvDataCnt(total):\t"<<recvDataCnt[0]<<"\t"<<recvDataCnt[1]<<"\t"<<recvDataCnt[2]<<std::endl;
+         std::cout<<"RecvDataCntMin:\t:"<<recvCnt[0]<<"\t"<<recvCnt[1]<<"\t"<<recvCnt[2]<<std::endl;
+         std::cout<<"RecvDataCntMax:\t"<<recvCnt[3]<<"\t"<<recvCnt[4]<<"\t"<<recvCnt[5]<<std::endl;
+         std::cout<<"RecvDataCntRatio:\t"<<recvR[0]<<"\t"<<recvR[1]<<"\t"<<recvR[2]<<std::endl;
 
-         std::cout<<"Nodal Satter Map"<<std::endl;
-         std::cout<<"Nodal Scatter (size)\t"<<scatterMp[0]<<"\t"<<scatterMp[1]<<"\t"<<scatterMp[2]<<std::endl;
+         std::cout<<"MaxLocal(senCntMax,recvCntMax):\t"<<comCnt[0]<<"\t"<<comCnt[1]<<"\t"<<comCnt[2]<<std::endl;
 
-         std::cout<<"Element Satter Map"<<std::endl;
-         std::cout<<"Element Scatter (size)\t"<<elementScatterMp[0]<<"\t"<<elementScatterMp[1]<<"\t"<<elementScatterMp[2]<<std::endl;
-         std::cout<<"====================================ODA NODE STATISTICS================================"<<std::endl;
-
-
+         std::cout<<"(Send+Recv)ProcessorCnt:\t"<<totalProcCnt[0]<<"\t"<<totalProcCnt[1]<<"\t"<<totalProcCnt[2]<<std::endl;
+         std::cout<<"(Send+Recv)DataCnt(total):\t"<<totalDataCnt[0]<<"\t"<<totalDataCnt[1]<<"\t"<<totalDataCnt[2]<<std::endl;
+         std::cout<<"NodalScatter(size):\t"<<scatterMp[0]<<"\t"<<scatterMp[1]<<"\t"<<scatterMp[2]<<std::endl;
+         std::cout<<"ElementScatter(size):\t"<<elementScatterMp[0]<<"\t"<<elementScatterMp[1]<<"\t"<<elementScatterMp[2]<<std::endl;
 
      }
 
@@ -1229,7 +1312,7 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
      DendroIntL  mine_diff_g[3]; mine_diff_g[0]=INTMAX_MAX; mine_diff_g[1]=0; mine_diff_g[2]=0;
      DendroIntL  post_diff_g[3]; post_diff_g[0]=INTMAX_MAX; post_diff_g[1]=0; post_diff_g[2]=0;
 
-     FILE* outfile = fopen(nlistFName, "wb");
+//     FILE* outfile = fopen(nlistFName, "wb");
 
      int size,rank;
      MPI_Comm_rank(m_mpiCommActive,&rank);
@@ -1343,15 +1426,13 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
              pre_diff_g[0]=pre_diff[0];
 
 
-
-
          if((!mine )&& (mine_diff_g[2]<mine_diff[2]))
              mine_diff_g[2]=mine_diff[2];
 
          if(!mine)
              mine_diff_g[1]+=mine_diff[1];
 
-         if(!mine && (mine_diff_g[0]>mine_diff[0]))
+         if((!mine) && (mine_diff_g[0]>mine_diff[0]))
              mine_diff_g[0]=mine_diff[0];
 
 
@@ -1361,13 +1442,13 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
          if(!post)
              post_diff_g[1]+=post_diff[1];
 
-         if(!post && (post_diff_g[0]>post_diff[0]))
+         if((!post) && (post_diff_g[0]>post_diff[0]))
              post_diff_g[0]=post_diff[0];
 
 
 
 
-          fwrite(&currentIdx,sizeof(unsigned int),1,outfile);
+          /*fwrite(&currentIdx,sizeof(unsigned int),1,outfile);
           fwrite(nList,sizeof(unsigned int),8,outfile);
           if(!pre) {
               fwrite(pre_diff, sizeof(DendroIntL), 3, outfile);
@@ -1392,46 +1473,62 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
              int pad[3]; pad[0]=-1;pad[1]=-1;pad[2]=-1;
              fwrite(pad, sizeof(int), 3, outfile);
          }
-
+*/
 
 
      }
 
-     fwrite(&preCnt,sizeof(DendroIntL),1,outfile);
+     /*fwrite(&preCnt,sizeof(DendroIntL),1,outfile);
      fwrite(&mineCnt,sizeof(DendroIntL),1,outfile);
      fwrite(&postCnt,sizeof(DendroIntL ),1,outfile);
 
-     fclose(outfile);
+     fclose(outfile);*/
 
      DendroIntL diff_stat_ofMax[9];
      DendroIntL diff_stat_ofSum[3];
 
      DendroIntL cnt[3];
+     //std::cout<<"ststs computed"<<std::endl;
+     if(preCnt)
+        pre_diff_g[1]=pre_diff_g[1]/preCnt;
+     else
+         pre_diff_g[1]=0; // this is not needed but put to make sure;
 
-     par::Mpi_Reduce((pre_diff_g+2),(diff_stat_ofMax),1,MPI_MIN,0,m_mpiCommActive);
-     par::Mpi_Reduce((pre_diff_g+2),(diff_stat_ofMax+1),1,MPI_SUM,0,m_mpiCommActive);
-     par::Mpi_Reduce((pre_diff_g+2),(diff_stat_ofMax+2),1,MPI_MAX,0,m_mpiCommActive);
+     if(mineCnt)
+        mine_diff_g[1]=mine_diff_g[1]/mineCnt;
+     else
+         mine_diff_g[1]=0;
+     if(postCnt)
+        post_diff_g[1]=post_diff_g[1]/postCnt;
+     else
+         post_diff_g[1]=0;
+
+
+
+     par::Mpi_Reduce((pre_diff_g+1),(diff_stat_ofMax),1,MPI_MIN,0,m_mpiCommActive);
+     par::Mpi_Reduce((pre_diff_g+1),(diff_stat_ofMax+1),1,MPI_SUM,0,m_mpiCommActive);
+     par::Mpi_Reduce((pre_diff_g+1),(diff_stat_ofMax+2),1,MPI_MAX,0,m_mpiCommActive);
      diff_stat_ofMax[1]=diff_stat_ofMax[1]/size;
 
-     par::Mpi_Reduce((mine_diff_g+2),(diff_stat_ofMax+3),1,MPI_MIN,0,m_mpiCommActive);
-     par::Mpi_Reduce((mine_diff_g+2),(diff_stat_ofMax+4),1,MPI_SUM,0,m_mpiCommActive);
-     par::Mpi_Reduce((mine_diff_g+2),(diff_stat_ofMax+5),1,MPI_MAX,0,m_mpiCommActive);
+     par::Mpi_Reduce((mine_diff_g+1),(diff_stat_ofMax+3),1,MPI_MIN,0,m_mpiCommActive);
+     par::Mpi_Reduce((mine_diff_g+1),(diff_stat_ofMax+4),1,MPI_SUM,0,m_mpiCommActive);
+     par::Mpi_Reduce((mine_diff_g+1),(diff_stat_ofMax+5),1,MPI_MAX,0,m_mpiCommActive);
      diff_stat_ofMax[4]=diff_stat_ofMax[4]/size;
 
-     par::Mpi_Reduce((post_diff_g+2),(diff_stat_ofMax+6),1,MPI_MIN,0,m_mpiCommActive);
-     par::Mpi_Reduce((post_diff_g+2),(diff_stat_ofMax+7),1,MPI_SUM,0,m_mpiCommActive);
-     par::Mpi_Reduce((post_diff_g+2),(diff_stat_ofMax+8),1,MPI_MAX,0,m_mpiCommActive);
+     par::Mpi_Reduce((post_diff_g+1),(diff_stat_ofMax+6),1,MPI_MIN,0,m_mpiCommActive);
+     par::Mpi_Reduce((post_diff_g+1),(diff_stat_ofMax+7),1,MPI_SUM,0,m_mpiCommActive);
+     par::Mpi_Reduce((post_diff_g+1),(diff_stat_ofMax+8),1,MPI_MAX,0,m_mpiCommActive);
      diff_stat_ofMax[7]=diff_stat_ofMax[7]/size;
 
 
      par::Mpi_Reduce(&preCnt,cnt,1,MPI_SUM,0,m_mpiCommActive);
      par::Mpi_Reduce(&mineCnt,(cnt+1),1,MPI_SUM,0,m_mpiCommActive);
      par::Mpi_Reduce(&postCnt,(cnt+2),1,MPI_SUM,0,m_mpiCommActive);
-
-
-     par::Mpi_Reduce((pre_diff_g+1),(diff_stat_ofSum),1,MPI_SUM,0,m_mpiCommActive);
-     par::Mpi_Reduce((mine_diff_g+1),(diff_stat_ofSum+1),1,MPI_SUM,0,m_mpiCommActive);
-     par::Mpi_Reduce((post_diff_g+1),(diff_stat_ofSum+2),1,MPI_SUM,0,m_mpiCommActive);
+//
+//
+//     par::Mpi_Reduce((pre_diff_g+1),(diff_stat_ofSum),1,MPI_SUM,0,m_mpiCommActive);
+//     par::Mpi_Reduce((mine_diff_g+1),(diff_stat_ofSum+1),1,MPI_SUM,0,m_mpiCommActive);
+//     par::Mpi_Reduce((post_diff_g+1),(diff_stat_ofSum+2),1,MPI_SUM,0,m_mpiCommActive);
 
 
 
@@ -1440,15 +1537,18 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
      {
 
          std::cout<<"========================NODE LIST STATISTICS OF (MAX DIFFERENCE) MIN MEAN MAX ACCESS COUNT====================================="<<std::endl;
-         std::cout<<"Pre Ghost:\t"<<diff_stat_ofMax[0]<<"\t"<<diff_stat_ofMax[1]<<"\t"<<diff_stat_ofMax[2]<<"\t Pre Ghost Access Cnt:"<<cnt[0]<<std::endl;
-         std::cout<<"My Elements:\t"<<diff_stat_ofMax[3]<<"\t"<<diff_stat_ofMax[4]<<"\t"<<diff_stat_ofMax[5]<<"\t Mine Ghost Access Cnt:"<<cnt[1]<<std::endl;
-         std::cout<<"Post Ghost:\t"<<diff_stat_ofMax[6]<<"\t"<<diff_stat_ofMax[7]<<"\t"<<diff_stat_ofMax[8]<<"\t Post Ghost Access Cnt:"<<cnt[2]<<std::endl;
-
-         std::cout<<"========================NODE LIST STATISTICS OF (MAX DIFFERENCE) Total Diff Sum====================================="<<std::endl;
-         std::cout<<"Pre Ghost diff Sum:\t"<<diff_stat_ofSum[0]<<std::endl;
-         std::cout<<"My Element diff Sum:\t"<<diff_stat_ofSum[1]<<std::endl;
-         std::cout<<"Post Ghost diff Sum:\t"<<diff_stat_ofSum[2]<<std::endl;
-         std::cout<<"=============================================================================================="<<std::endl;
+         std::cout<<"PreGhost(MeanDiff):\t"<<diff_stat_ofMax[0]<<"\t"<<diff_stat_ofMax[1]<<"\t"<<diff_stat_ofMax[2]<<std::endl;
+         std::cout<<"MyElements(MeanDiff):\t"<<diff_stat_ofMax[3]<<"\t"<<diff_stat_ofMax[4]<<"\t"<<diff_stat_ofMax[5]<<std::endl;
+         std::cout<<"PostGhost(MeanDiff):\t"<<diff_stat_ofMax[6]<<"\t"<<diff_stat_ofMax[7]<<"\t"<<diff_stat_ofMax[8]<<std::endl;
+         std::cout<<"PreGhostAccessCnt:"<<cnt[0]<<std::endl;
+         std::cout<<"MineGhostAccessCnt:"<<cnt[1]<<std::endl;
+         std::cout<<"PostGhostAccessCnt:"<<cnt[2]<<std::endl;
+         
+//         std::cout<<"========================NODE LIST STATISTICS OF (MAX DIFFERENCE) Total Diff Sum====================================="<<std::endl;
+//         std::cout<<"Pre Ghost diff Sum:\t"<<diff_stat_ofSum[0]<<std::endl;
+//         std::cout<<"My Element diff Sum:\t"<<diff_stat_ofSum[1]<<std::endl;
+//         std::cout<<"Post Ghost diff Sum:\t"<<diff_stat_ofSum[2]<<std::endl;
+//         std::cout<<"=============================================================================================="<<std::endl;
 
 
      }
