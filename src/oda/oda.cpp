@@ -1068,6 +1068,11 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
      MPI_Comm_size(MPI_COMM_WORLD,&size);
 
 
+     if(size==1)
+         return;
+
+     std::cout <<"1_::"<<std::endl;
+
      // Node Information
 
      localSz = m_uiNodeSize + m_uiBoundaryNodeSize;
@@ -1075,6 +1080,7 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
      par::Mpi_Reduce<DendroIntL>(&localSz, (nodeTlSz + 1), 1, MPI_SUM, 0, m_mpiCommActive);
      par::Mpi_Reduce<DendroIntL>(&localSz, (nodeTlSz + 2), 1, MPI_MAX, 0, m_mpiCommActive);
      nodeTlSz[1]=nodeTlSz[1]/size;
+
 
 
      localSz =m_uiBoundaryNodeSize;
@@ -1147,7 +1153,11 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
              maxS=m_uipSendCounts[i];
 
      }
-     maxRminS=(double)maxS/(double)minS;
+     if(minS!=0)
+        maxRminS=(double)maxS/(double)minS;
+     else
+        maxRminS=0;
+
 
 
      DendroIntL minR=0,maxR=0;
@@ -1168,7 +1178,10 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
              maxR=m_uipRecvCounts[i];
 
      }
-     maxRminR=(double)maxR/(double)minR;
+     if(minR!=0)
+        maxRminR=(double)maxR/(double)minR;
+     else
+         maxRminR=0;
 
      DendroIntL maxComCnt=std::max(maxS,maxR);
      DendroIntL sendCnt[6];

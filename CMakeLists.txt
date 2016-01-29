@@ -46,6 +46,7 @@ set(LINK_FLAGS "${LINK_FLAGS} -rdynamic")
 option(USE_64BIT_INDICES "Use 64-Bit indices. Reverts to 32-bit if turned off" ON)
 option(PRIVATE_DA_IN_MG "Use private DA in Multigrid" ON)
 option(HILBERT_ORDERING "Use Hilbert ordering instead of Morton" ON)
+option(PAPI_PROFILING "Use Papi to compute L1 and L2 cache misses to MatVec Loop" OFF)
 option(USE_NCA_PROPERTY "Use the NCA based approach" ON)
 option(BUILD_TESTS "Build test applications" ON)
 option(BUILD_DA_EXAMPLES "Build examples using dendro::DA" ON)
@@ -67,6 +68,9 @@ endif()
 
 if(PRIVATE_DA_IN_MG)
     add_definitions(-D__USE_PVT_DA_IN_MG__)
+endif()
+if(PAPI_PROFILING)
+    add_definitions(-DPAPI_PROFILING)
 endif()
 
 ##------
@@ -168,7 +172,7 @@ if(BUILD_DA_EXAMPLES)
     target_link_libraries(flexPartition dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
     add_executable(tstMatVec include/hcurvedata.h src/hcurvedata.cpp examples/src/drivers/tstMatVec.C examples/src/backend/odaJac.C examples/src/backend/handleType2Stencils.C examples/include/genPts_par.h examples/src/drivers/genPts_par.C)
-    target_link_libraries(tstMatVec dendroDA dendro petsc ${MPI_LIBRARIES} m)
+    target_link_libraries(tstMatVec dendroDA dendro petsc papi ${MPI_LIBRARIES} m)
 
     add_executable(buildDA examples/src/drivers/buildDA.C include/hcurvedata.h examples/include/octreeStatistics.h examples/src/drivers/octreeStatistics.cpp)
     target_link_libraries(buildDA dendroDA dendro petsc ${MPI_LIBRARIES} m)
