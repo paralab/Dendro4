@@ -29,7 +29,7 @@
 
 
 
-#ifdef PAPI_PROFILING
+#ifdef __PAPI_PROFILING__
 #include <papi.h>
 #endif
 
@@ -426,7 +426,7 @@ if(!genRegGrid) {
 
   VecSet(in, zero);
 
-#ifdef PAPI_PROFILING
+#ifdef __PAPI_PROFILING__
 DendroIntL papi_counters []={0,0,0};
 int papi_num_events=2;
 int papi_retval=0;
@@ -452,7 +452,7 @@ int papi_events[]={PAPI_L1_TCM,PAPI_L2_DCM,PAPI_L2_DCH};
     iC(Jacobian1MatMult(J, in, out));
   }
 
-#ifdef PAPI_PROFILING
+#ifdef __PAPI_PROFILING__
 
 
   papi_retval=PAPI_read_counters(papi_counters,papi_num_events);
