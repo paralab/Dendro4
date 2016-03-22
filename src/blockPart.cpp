@@ -37,7 +37,11 @@ namespace ot {
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &npes);
 
+   // if(!rank) std::cout<<"BlockPart Stage 1 start "<<std::endl;
+
+
     par::partitionW<ot::TreeNode>(nodes, NULL, comm);
+     //std::cout<<"Partition W complete:  "<<rank <<std::endl;
 
     //assert(nodes.size() > (1 << dim) ); 
 
@@ -46,6 +50,8 @@ namespace ot {
 
     //include both the min and max elements as well  
     //The output will be sorted, unique and linear
+     // std::cout << rank << ": in BlkPart_1 before appendCompleteRegion" << std::endl;
+
     appendCompleteRegion(nodes[0], nodes[nodes.size()-1], localCoarse, true, true);
     
     // std::cout << rank << ": in BlkPart_1 after appendCompleteRegion" << std::endl;
@@ -82,6 +88,7 @@ namespace ot {
     //is the same as the first element on processor i+1 and if they are both
     //selected in localBlocks.
       //treeNodesTovtk(localBlocks,rank,"p2o_complete_octree_local_blocks");
+    //  if(!rank) std::cout<<"Before Complete Octree "<<std::endl;
     completeOctree(localBlocks, blocks, dim, maxDepth, false, true, false, comm);
     //int rank=0;
     //MPI_Comm_rank(MPI_COMM_WORLD,&rank);

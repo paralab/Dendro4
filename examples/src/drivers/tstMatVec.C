@@ -137,8 +137,8 @@ int main(int argc, char ** argv ) {
 #ifdef HILBERT_ORDERING
   G_MAX_DEPTH = maxDepth;
   G_dim = dim;
-  _InitializeHcurve();
 #endif
+  _InitializeHcurve(dim);
 
 
   if (!rank) {

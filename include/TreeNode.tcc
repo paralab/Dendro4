@@ -31,7 +31,8 @@ namespace ot {
         unsigned int rot_offset=num_children<<1;
 
         unsigned mid_bit=m_uiMaxDepth-parent.getLevel()-1; // @hari this is always positive correct ?
-        index1= (((m_uiZ&(1<<mid_bit))>>mid_bit)<<2)|( (((m_uiX&(1<<mid_bit))>>mid_bit)^((m_uiZ&(1<<mid_bit))>>mid_bit)) <<1)|(((m_uiX&(1<<mid_bit))>>mid_bit)^((m_uiY&(1<<mid_bit))>>mid_bit)^((m_uiZ&(1<<mid_bit))>>mid_bit));
+        index1=((((m_uiZ & (1u << mid_bit)) >> mid_bit) << 2u) |(((m_uiY & (1u << mid_bit)) >> mid_bit) << 1u) | ((m_uiX & (1u << mid_bit)) >> mid_bit));
+        //index1= (((m_uiZ&(1<<mid_bit))>>mid_bit)<<2)|( (((m_uiX&(1<<mid_bit))>>mid_bit)^((m_uiZ&(1<<mid_bit))>>mid_bit)) <<1)|(((m_uiX&(1<<mid_bit))>>mid_bit)^((m_uiY&(1<<mid_bit))>>mid_bit)^((m_uiZ&(1<<mid_bit))>>mid_bit));
 
         if(real){
             char rot_id=parent.calculateTreeNodeRotation();
@@ -132,10 +133,6 @@ namespace ot {
         } //end if
 
 #ifdef HILBERT_ORDERING
-#ifdef USE_NCA_PROPERTY
-        // #pragma message "Hilbert NCA"
-        // If you need to initilize the Hilbert table and the rotations for 2D you need to define DENDRO_DIM2
-        // Default initialization for 3D case.
         // NOTE: To work the Hilbert Ordering You need the Hilbert Table Initialized.
 
         unsigned int x1 = m_uiX;
@@ -208,7 +205,7 @@ namespace ot {
             //b_z=((ncaZ&(1<<mid_bit))>>mid_bit);
 
             // index1=(b_z<<2) + ((b_x^b_z)<<1) + (b_x^b_y^b_z);
-            index1= (((ncaZ&(1<<mid_bit))>>mid_bit)<<2)|( (((ncaX&(1<<mid_bit))>>mid_bit)^((ncaZ&(1<<mid_bit))>>mid_bit)) <<1)|(((ncaX&(1<<mid_bit))>>mid_bit)^((ncaY&(1<<mid_bit))>>mid_bit)^((ncaZ&(1<<mid_bit))>>mid_bit));
+            index1= ((((ncaZ & (1u << mid_bit)) >> mid_bit) << 2u) |(((ncaY & (1u << mid_bit)) >> mid_bit) << 1u) | ((ncaX & (1u << mid_bit)) >> mid_bit));
             //index_temp=rotations[rot_offset*current_rot+num_children+index1]-'0';
             current_rot=HILBERT_TABLE[current_rot*num_children+index1];
 
@@ -216,22 +213,12 @@ namespace ot {
 
 
         mid_bit--;
-        index1= (((z1&(1<<mid_bit))>>mid_bit)<<2)|( (((x1&(1<<mid_bit))>>mid_bit)^((z1&(1<<mid_bit))>>mid_bit)) <<1)|(((x1&(1<<mid_bit))>>mid_bit)^((y1&(1<<mid_bit))>>mid_bit)^((z1&(1<<mid_bit))>>mid_bit));
-        index2= (((z2&(1<<mid_bit))>>mid_bit)<<2)|( (((x2&(1<<mid_bit))>>mid_bit)^((z2&(1<<mid_bit))>>mid_bit)) <<1)|(((x2&(1<<mid_bit))>>mid_bit)^((y2&(1<<mid_bit))>>mid_bit)^((z2&(1<<mid_bit))>>mid_bit));
+        index1= ((((z1 & (1u << mid_bit)) >> mid_bit) << 2u) |(((y1 & (1u << mid_bit)) >> mid_bit) << 1u) | ((x1 & (1u << mid_bit)) >> mid_bit));
+        index2= ((((z2 & (1u << mid_bit)) >> mid_bit) << 2u) |(((y2 & (1u << mid_bit)) >> mid_bit) << 1u) | ((x2 & (1u << mid_bit)) >> mid_bit));
 
 
         return rotations[rot_offset*current_rot+num_children+index1] < rotations[rot_offset*current_rot+num_children+index2];
 
-
-
-
-#else
-        #pragma message "Hilbert"
-        //NOTE: We can remove this code later. // WARNING: External Variable set is mandatory.
-        G_MAX_DEPTH=m_uiMaxDepth;
-        G_dim=m_uiDim;
-	    return hilbert_order(p1,p2);
-#endif
 #else
         //#ifdef USE_NCA_PROPERTY
 
@@ -409,13 +396,10 @@ namespace ot {
 
 
 #ifdef HILBERT_ORDERING
-
         TreeNode dfd=*this;
         while(dfd.getLevel()<m_uiMaxDepth)
             dfd=dfd.getFirstChild();
-
         return dfd;
-
 #else
 
         TreeNode dfd(1, m_uiX, m_uiY, m_uiZ, m_uiMaxDepth, m_uiDim, m_uiMaxDepth);
@@ -435,9 +419,15 @@ namespace ot {
         char fchild=calculateTreeNodeRotation();
         index1=(rotations[rot_offset*fchild+0]-'0');
 
-        cfd_x=m_uiX +(( (( (index1&4u)>>2u )&(!((index1&2u)>>1u)))+( ((index1&2u)>>1u) & (!((index1&4u)>>2u))))<<len);
+
+        cfd_x=m_uiX +(((int)((bool)(index1& 1u)))<<len);
+        cfd_y=m_uiY +(((int)((bool)(index1& 2u)))<<len);
+        cfd_z=m_uiZ +(((int)((bool)(index1& 4u)))<<len);
+
+
+        /*cfd_x=m_uiX +(( (( (index1&4u)>>2u )&(!((index1&2u)>>1u)))+( ((index1&2u)>>1u) & (!((index1&4u)>>2u))))<<len);
         cfd_y=m_uiY +((( (index1&1u) & ( !((index1&2u)>>1u)  ))+( ((index1&2u)>>1u) & (!(index1&1u)  )))<<len);
-        cfd_z=m_uiZ +(((index1&4u)>>2u)<<len);
+        cfd_z=m_uiZ +(((index1&4u)>>2u)<<len);*/
 
         cfd=TreeNode(1,cfd_x,cfd_y,cfd_z,this->getLevel(),m_uiDim,m_uiMaxDepth);
         return cfd;
@@ -459,7 +449,7 @@ namespace ot {
 
         unsigned int index1 = 0;
         unsigned int dld_x,dld_y,dld_z;
-        unsigned int len = this->getMaxDepth()-this->getLevel();
+        unsigned int len =((this->getMaxDepth()) - (this->getLevel()));
         unsigned int last_child_index=(1<<m_uiDim)-1;
         unsigned int num_children=1u<<m_uiDim; // This is basically the hilbert table offset
         unsigned int rot_offset=num_children<<1;
@@ -468,9 +458,9 @@ namespace ot {
         char rot_id=calculateTreeNodeRotation();
         index1=(rotations[rot_offset*rot_id+last_child_index]-'0');
 
-        dld_x=m_uiX + (( (( (index1&4u)>>2u )&(!((index1&2u)>>1u)))+( ((index1&2u)>>1u) & (!((index1&4u)>>2u))))<<len) -( (( (index1&4u)>>2u )&(!((index1&2u)>>1u)))+( ((index1&2u)>>1u) & (!((index1&4u)>>2u))));
-        dld_y=m_uiY + ((( (index1&1u) & ( !((index1&2u)>>1u)  ))+( ((index1&2u)>>1u) & (!(index1&1u)  )))<<len) -(( (index1&1u) & ( !((index1&2u)>>1u)  ))+( ((index1&2u)>>1u) & (!(index1&1u)  )));
-        dld_z=m_uiZ + (((index1&4u)>>2u)<<len) -((index1&4u)>>2u);
+        dld_x=m_uiX + (((int)((bool)(index1& 1u)))<<len) - ((int)((bool)(index1& 1u)));
+        dld_y=m_uiY + (((int)((bool)(index1& 2u)))<<len) - ((int)((bool)(index1& 2u)));
+        dld_z=m_uiZ + (((int)((bool)(index1& 4u)))<<len) - ((int)((bool)(index1& 4u)));
 
         dld=TreeNode (1, dld_x, dld_y, dld_z, m_uiMaxDepth, m_uiDim, m_uiMaxDepth);
 
@@ -535,9 +525,9 @@ namespace ot {
 
                 // Note: Just calculation of x,y,x of a child octant for a given octant based on the child index. This is done to eliminate the branching.
 
-                par_x=par_x +(( (( (next_index&4u)>>2u )&(!((next_index&2u)>>1u)))+( ((next_index&2u)>>1u) & (!((next_index&4u)>>2u))))<<len);
-                par_y=par_y +((( (next_index&1u) & ( !((next_index&2u)>>1u)  ))+( ((next_index&2u)>>1u) & (!(next_index&1u)  )))<<len);
-                par_z=par_z +(((next_index&4u)>>2u)<<len);
+                par_x=par_x +(((int)((bool)(next_index& 1u)))<<len);
+                par_y=par_y +(((int)((bool)(next_index& 2u)))<<len);
+                par_z=par_z +(((int)((bool)(next_index& 4u)))<<len);
 
                 // Tree node with updated coordinates.
                 m=TreeNode(1,par_x,par_y,par_z,(par_level+1),m_uiDim,m_uiMaxDepth);
@@ -575,7 +565,7 @@ namespace ot {
 #ifdef HILBERT_ORDERING
 
         TreeNode m=*this;
-        unsigned int len1=((m.getMaxDepth()-m.getLevel())-1);
+        unsigned int len=((m.getMaxDepth()-m.getLevel())-1);
 
         unsigned int xf,yf,zf;
         unsigned int num_children=1u<<m_uiDim; // This is basically the hilbert table offset
@@ -588,9 +578,9 @@ namespace ot {
         //std::cout<<"rotation:"<<rotations[rot_offset*rot_id+0]<<rotations[rot_offset*rot_id+1]<<rotations[rot_offset*rot_id+2]<<rotations[rot_offset*rot_id+3]<<rotations[rot_offset*rot_id+4]<<rotations[rot_offset*rot_id+5]<<rotations[rot_offset*rot_id+6]<<rotations[rot_offset*rot_id+7]<<std::endl;
         //std::cout<<"node:"<<*this<<std::endl;
 
-        xf=m_uiX +(( (( (fchild&4u)>>2u )&(!((fchild&2u)>>1u)))+( ((fchild&2u)>>1u) & (!((fchild&4u)>>2u))))<<len1);
-        yf=m_uiY +((( (fchild&1u) & ( !((fchild&2u)>>1u)  ))+( ((fchild&2u)>>1u) & (!(fchild&1u)  )))<<len1);
-        zf=m_uiZ +(((fchild&4u)>>2u)<<len1);
+        xf=m_uiX +(((int)((bool)(fchild& 1u)))<<len);
+        yf=m_uiY +(((int)((bool)(fchild& 2u)))<<len);
+        zf=m_uiZ +(((int)((bool)(fchild& 4u)))<<len);
 
         m=TreeNode(1,xf,yf,zf,(this->getLevel()+1),m_uiDim,m_uiMaxDepth);
 
@@ -617,26 +607,32 @@ namespace ot {
     }
 #endif
 
-//#ifdef HILBERT_ORDERING
-//        unsigned int min1[3], min2[3], max1[3], max2[3];
-//
-//        min1[0] = this->minX(); min1[1] = this->minY(); min1[2] = this->minZ();
-//        min2[0] = other.minX(); min2[1] = other.minY(); min2[2] = other.minZ();
-//
-//        max1[0] = this->maxX(); max1[1] = this->maxY(); max1[2] = this->maxZ();
-//        max2[0] = other.maxX(); max2[1] = other.maxY(); max2[2] = other.maxZ();
-//
-//        bool state1=( (this->m_uiLevel < other.m_uiLevel) && (min2[0] >= min1[0]) && (min2[1] >= min1[1]) && (min2[2] >= min1[2]) && (max2[0] <= max1[0]) && (max2[1] <= max1[1]) && (max2[2] <= max1[2]) );
-////#else
-//        bool state2= ((other > (*this)) && (other <= (this->getDLD())));
-//        if(state1!=state2) {
-//            std::cout << "this:" << *(this) << "\t other:" << other << std::endl;
-//            //std::cout <<"other:"<<other<<">\t *(this):"<<*(this)<<":"<<(other > (*this))<<std::endl;
-//            //std::cout <<"(other <= (this->getDLD())):"<<(other <= (this->getDLD()))<<std::endl;
-//        }
-//         return state1;
+/*#ifdef HILBERT_ORDERING
+        unsigned int min1[3], min2[3], max1[3], max2[3];
+
+        min1[0] = this->minX(); min1[1] = this->minY(); min1[2] = this->minZ();
+        min2[0] = other.minX(); min2[1] = other.minY(); min2[2] = other.minZ();
+
+        max1[0] = this->maxX(); max1[1] = this->maxY(); max1[2] = this->maxZ();
+        max2[0] = other.maxX(); max2[1] = other.maxY(); max2[2] = other.maxZ();
+
+        //bool state1=( (this->m_uiLevel < other.m_uiLevel) && (min2[0] >= min1[0]) && (min2[1] >= min1[1]) && (min2[2] >= min1[2]) && (max2[0] <= max1[0]) && (max2[1] <= max1[1]) && (max2[2] <= max1[2]) );
         return ((other > (*this)) && (other <= (this->getDLD())));
-//#endif
+        //return state1;
+
+#else
+        bool state2= ((other > (*this)) && (other <= (this->getDLD())));
+        if(state1!=state2) {
+            std::cout << "this:" << *(this) << "\t other:" << other << std::endl;
+            //std::cout <<"other:"<<other<<">\t *(this):"<<*(this)<<":"<<(other > (*this))<<std::endl;
+            //std::cout <<"(other <= (this->getDLD())):"<<(other <= (this->getDLD()))<<std::endl;
+        }
+         return state1;
+        return ((other > (*this)) && (other <= (this->getDLD())));
+#endif*/
+
+        return ((other > (*this)) && (other <= (this->getDLD())));
+
     } //end function
 
     inline unsigned int TreeNode::minX() const {
@@ -1972,7 +1968,8 @@ char TreeNode::calculateTreeNodeRotation() const
     //b_z=((ncaZ&(1<<mid_bit))>>mid_bit);
 
     // index1=(b_z<<2) + ((b_x^b_z)<<1) + (b_x^b_y^b_z);
-    index1= (((ncaZ&(1<<mid_bit))>>mid_bit)<<2)|( (((ncaX&(1<<mid_bit))>>mid_bit)^((ncaZ&(1<<mid_bit))>>mid_bit)) <<1)|(((ncaX&(1<<mid_bit))>>mid_bit)^((ncaY&(1<<mid_bit))>>mid_bit)^((ncaZ&(1<<mid_bit))>>mid_bit));
+    index1= ((((ncaZ & (1u << mid_bit)) >> mid_bit) << 2u) |(((ncaY & (1u << mid_bit)) >> mid_bit) << 1u) | ((ncaX & (1u << mid_bit)) >> mid_bit));
+    //std::cout<<RED<<"cal rotation index1 :"<<index1<<NRM<<std::endl;
     //index_temp=rotations[rot_offset*current_rot+num_children+index1]-'0';
     current_rot=HILBERT_TABLE[current_rot*num_children+index1];
 

@@ -310,11 +310,10 @@ Point DA::getNextOffsetByRotation(Point p, unsigned char d)
           // next octant is in the same level;
           next_index = rotations[rot_offset * rotation_id + child_index + 1] - '0';
           // Note: Just calculation of x,y,x of a child octant for a given octant based on the child index. This is done to eliminate the branching.
-          par_x = par_x + (((((next_index & 4u) >> 2u) & (!((next_index & 2u) >> 1u))) +
-                            (((next_index & 2u) >> 1u) & (!((next_index & 4u) >> 2u)))) << len);
-          par_y = par_y + ((((next_index & 1u) & (!((next_index & 2u) >> 1u))) +
-                            (((next_index & 2u) >> 1u) & (!(next_index & 1u)))) << len);
-          par_z = par_z + (((next_index & 4u) >> 2u) << len);
+          par_x = par_x + (((int)((bool)(next_index& 1u)))<<len);
+          par_y = par_y + (((int)((bool)(next_index& 2u)))<<len);
+          par_z = par_z + (((int)((bool)(next_index& 4u)))<<len);
+
           m = Point(par_x, par_y, par_z);
           childRotID = parRotID;
           for (int q = k; q < nextLev; q++) {
@@ -324,10 +323,7 @@ Point DA::getNextOffsetByRotation(Point p, unsigned char d)
             par_z = m.zint();
             par_x = m.xint();
             par_y = m.yint();
-            next_index = (((par_z & (1 << mid_bit)) >> mid_bit) << 2) |
-                         ((((par_x & (1 << mid_bit)) >> mid_bit) ^ ((par_z & (1 << mid_bit)) >> mid_bit)) << 1) |
-                         (((par_x & (1 << mid_bit)) >> mid_bit) ^ ((par_y & (1 << mid_bit)) >> mid_bit) ^
-                          ((par_z & (1 << mid_bit)) >> mid_bit));
+            next_index = ((((par_z & (1u << mid_bit)) >> mid_bit) << 2u) |(((par_y & (1u << mid_bit)) >> mid_bit) << 1u) | ((par_x & (1u << mid_bit)) >> mid_bit));
           }
           break;
         } else {
@@ -365,13 +361,13 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
       child_index = (rotations[16 * parRotID + child_index + 1] - '0');
       len = m_uiMaxDepth - par_level - 1;
 
-      m=Point((m.xint() + (((((child_index & 4u) >> 2u) & (!((child_index & 2u) >> 1u))) +  (((child_index & 2u) >> 1u) & (!((child_index & 4u) >> 2u)))) << len)),(m.yint() + ((((child_index & 1u) & (!((child_index & 2u) >> 1u))) +  (((child_index & 2u) >> 1u) & (!(child_index & 1u)))) << len)),(m.zint() + (((child_index & 4u) >> 2u) << len)));
+      m=Point((m.xint() + (((int)((bool)(child_index& 1u)))<<len)),(m.yint() + (((int)((bool)(child_index& 2u)))<<len)),(m.zint() + (((int)((bool)(child_index& 4u)))<<len)));
       //childRotID = parRotID;
       for (int q = par_level+1; q < nextLev; q++) {
         parRotID = HILBERT_TABLE[parRotID * 8 + child_index];
         GET_FIRST_CHILD(m, parRotID, q, m);
         mid_bit = m_uiMaxDepth - q - 1;
-        child_index = (((m.zint() & (1 << mid_bit)) >> mid_bit) << 2) |  ((((m.xint() & (1 << mid_bit)) >> mid_bit) ^ ((m.zint() & (1 << mid_bit)) >> mid_bit)) << 1) | (((m.xint() & (1 << mid_bit)) >> mid_bit) ^ ((m.yint() & (1 << mid_bit)) >> mid_bit) ^ ((m.zint() & (1 << mid_bit)) >> mid_bit));
+        child_index = ((((m.zint() & (1u << mid_bit)) >> mid_bit) << 2u) |(((m.yint() & (1u << mid_bit)) >> mid_bit) << 1u) | ((m.xint() & (1u << mid_bit)) >> mid_bit));
       }
   return m;
 

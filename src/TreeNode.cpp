@@ -327,6 +327,7 @@ int TreeNode  ::addChildren(std::vector<ot::TreeNode>& children) const {
 #ifdef HILBERT_ORDERING
 #pragma message("===FIX ME===")
   std::sort(children.begin(), children.end());
+  assert(seq::test::isSorted(children));
 #endif
   return 1;
 } //end function

@@ -37,7 +37,7 @@ extern char* rotations;
 
 //#define DENDRO_DIM2
 
-void _InitializeHcurve();
+void _InitializeHcurve(int pDim);
 
 
 

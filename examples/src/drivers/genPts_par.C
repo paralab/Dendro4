@@ -27,6 +27,7 @@ void genGauss(const double& sd, const long int numPts, int dim, char * filePrefi
 
         std::random_device rd;
         std::mt19937 gen(rd());
+        //std::mt19937 gen;
 
     sprintf(ptsFileName, "%s%d_%d.pts", filePrefix, rank, size);
 

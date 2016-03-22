@@ -156,11 +156,13 @@ int main(int argc, char **argv) {
   //initializeHilbetTable(2);
 
 
+/*
 #ifdef HILBERT_ORDERING
   G_MAX_DEPTH = maxDepth;
   G_dim = dim;
-  _InitializeHcurve();
 #endif
+ */
+  _InitializeHcurve(dim );
 
   double localTime, totalTime;
   double startTime, endTime;
@@ -260,7 +262,7 @@ int main(int argc, char **argv) {
   pts.clear();
 
   // treeNodesTovtk(tmpNodes, rank, "input_points");
- // std::cout << rank << "removeDuplicates" << std::endl;
+  //std::cout << rank << "removeDuplicates" << std::endl;
   par::removeDuplicates<ot::TreeNode>(tmpNodes, false, MPI_COMM_WORLD);
 
   linOct = tmpNodes;
@@ -293,7 +295,7 @@ int main(int argc, char **argv) {
 
   MPI_Barrier(MPI_COMM_WORLD);
 
-  if (!rank) {
+ if (!rank) {
     std::cout << BLU << "===============================================" << NRM << std::endl;
     std::cout << RED " Starting Points to Octree" NRM << std::endl;
     std::cout << BLU << "===============================================" << NRM << std::endl;

@@ -229,7 +229,7 @@ return ;
     unsigned int index1=0;\
     for(int i=0; i<D;i++) {\
       mid_bit=m_uiMaxDepth-i-1; \
-      index1= (((z1&(1<<mid_bit))>>mid_bit)<<2)|( (((x1&(1<<mid_bit))>>mid_bit)^((z1&(1<<mid_bit))>>mid_bit)) <<1)|(((x1&(1<<mid_bit))>>mid_bit)^((y1&(1<<mid_bit))>>mid_bit)^((z1&(1<<mid_bit))>>mid_bit));\
+      index1= ((((z1 & (1u << mid_bit)) >> mid_bit) << 2u) |(((y1 & (1u << mid_bit)) >> mid_bit) << 1u) | ((x1 & (1u << mid_bit)) >> mid_bit));\
       current_rot=HILBERT_TABLE[current_rot*num_children+index1];\
     }\
     R=current_rot;\
@@ -248,7 +248,7 @@ return ;
     unsigned int mid_bit = m_uiMaxDepth - D;\
     unsigned int x1,y1,z1;\
     x1=P.xint(); y1=P.yint(); z1=P.zint();\
-    index1 = (((z1 & (1 << mid_bit)) >> mid_bit) << 2) | ((((x1 & (1 << mid_bit)) >> mid_bit) ^ ((z1 & (1 << mid_bit)) >> mid_bit)) << 1) | (((x1 & (1 << mid_bit)) >> mid_bit) ^ ((y1 & (1 << mid_bit)) >> mid_bit)^((z1 & (1 << mid_bit)) >> mid_bit));\
+    index1 = ((((z1 & (1u << mid_bit)) >> mid_bit) << 2u) |(((y1 & (1u << mid_bit)) >> mid_bit) << 1u) | ((x1 & (1u << mid_bit)) >> mid_bit));\
     char rot_id = 0;\
     Point parP;\
     unsigned int pLev=D-1;\
@@ -257,7 +257,7 @@ return ;
     unsigned int xp,yp,zp;\
     xp=parP.xint(); yp=parP.yint(); zp=parP.zint(); \
     mid_bit=m_uiMaxDepth-pLev-1;\
-    index2 = (((zp & (1 << mid_bit)) >> mid_bit) << 2) | ((((xp & (1 << mid_bit)) >> mid_bit) ^ ((zp & (1 << mid_bit)) >> mid_bit)) << 1) | (((xp & (1 << mid_bit)) >> mid_bit) ^ ((yp & (1 << mid_bit)) >> mid_bit)^((zp & (1 << mid_bit)) >> mid_bit));\
+    index2 =((((zp & (1u << mid_bit)) >> mid_bit) << 2u) |(((yp & (1u << mid_bit)) >> mid_bit) << 1u) | ((xp & (1u << mid_bit)) >> mid_bit));\
     parRotID=rot_id;\
     /*std::cout<<"Rotation:"<<(int)rotations[rot_offset * rot_id + num_children + index1]<<std::endl;*/\
     I=(rotations[rot_offset * rot_id + num_children + index1]-'0');\
@@ -273,9 +273,9 @@ return ;
     x1=P.xint();\
     y1=P.yint();\
     z1=P.zint();\
-    xf=x1 +(( (( (fchild&4u)>>2u )&(!((fchild&2u)>>1u)))+( ((fchild&2u)>>1u) & (!((fchild&4u)>>2u))))<<len1); \
-    yf=y1 +((( (fchild&1u) & ( !((fchild&2u)>>1u)  ))+( ((fchild&2u)>>1u) & (!(fchild&1u)  )))<<len1);\
-    zf=z1 +(((fchild&4u)>>2u)<<len1);\
+    xf=x1 +(((int)((bool)(fchild& 1u)))<<len1); \
+    yf=y1 +(((int)((bool)(fchild& 2u)))<<len1);\
+    zf=z1 +(((int)((bool)(fchild& 4u)))<<len1);\
     CHILD_P=Point(xf,yf,zf);\
  }
 

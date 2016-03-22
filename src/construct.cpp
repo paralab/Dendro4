@@ -847,11 +847,11 @@ namespace ot {
     //Sort nodes (pts.) and partition them.
 
 
-    // std::cout << rank << "before sample sort: " << nodes.size() << std::endl;
+     //std::cout << rank << "before sample sort: " << nodes.size() << std::endl;
     std::vector<ot::TreeNode> tmpNodes;
     //treeNodesTovtk(nodes,rank,"bf_SS");
     par::sampleSort<ot::TreeNode>(nodes, tmpNodes, comm);
-    // std::cout << rank << "after sample sort: " << tmpNodes.size() << std::endl;
+     //std::cout << rank << "after sample sort: " << tmpNodes.size() << std::endl;
     nodes.clear();
 
     nodes = tmpNodes;
@@ -864,7 +864,13 @@ namespace ot {
 #endif
     // if (nodes.size() > (1 << dim) )
     blockPartStage1_p2o(nodes, leaves, dim, maxDepth, comm);
+
+    //if(!rank) std::cout<<"BlockPartStage 1 Passed"<<std::endl;
+
     blockPartStage2_p2o(nodes, leaves, minsAllBlocks, dim, maxDepth, comm);
+
+    //if(!rank) std::cout<<"BlockPartStage 2 Passed"<<std::endl;
+
 //#ifdef __DEBUG_OCT__
     assert(par::test::isUniqueAndSorted(leaves, comm));
 //#endif
@@ -921,8 +927,7 @@ namespace ot {
     //Sort nodes (pts.) and partition them.
     omp_par::merge_sort(nodes.begin(), nodes.end());
 
-    // std::cout << CYN " - After mergesort, is sorted and unique: " NRM << seq::test::isUniqueAndSorted(nodes) <<
-    // std::endl;
+    std::cout << CYN " - After mergesort, is sorted and unique: " NRM << seq::test::isUniqueAndSorted(nodes) << std::endl;
 
     std::vector<TreeNode> leaves;
     leaves.push_back(root);
@@ -1053,6 +1058,8 @@ namespace ot {
 
     // std::cout << "entering " << __func__ << std::endl;
 
+    //assert(first<second);
+
     unsigned int dim = first.getDim();
     unsigned int maxDepth = first.getMaxDepth();
 
@@ -1063,8 +1070,8 @@ namespace ot {
 
     if (includeMin) {
       newNodes.push_back(min);
-//      if(!rank)
-//        std::cout<<"pushed min:"<<min<<std::endl;
+      /*if(!rank)
+        std::cout<<"pushed min:"<<min<<std::endl;*/
     }
 
     if (first == second) {
@@ -1110,12 +1117,12 @@ namespace ot {
 
     } else {
 
-      // std::cout<<"nca!=min case"<<std::endl;
+       //std::cout<<"nca!=min case"<<std::endl;
       TreeNode currentNode = min;
       //int count=0;
       while (nca < currentNode ) {
         TreeNode parentOfCurrent = currentNode.getParent();
-        // if (!rank) std::cout << "Rank:" << rank << " Parent Node:" << parentOfCurrent << std::endl;
+         //if (!rank) std::cout << "Rank:" << rank << " Parent Node:" << parentOfCurrent << std::endl;
         std::vector<ot::TreeNode> myBros;
         parentOfCurrent.addChildren(myBros);
 
@@ -1153,7 +1160,7 @@ namespace ot {
                 } else if (tmpChildList[j].isAncestor(max)) {
                   tmpAncestor = tmpChildList[j];
                   repeatLoop = true;
-                  // if (!rank) std::cout << rank << " Repeating Loop " << tmpAncestor.getLevel() << std::endl;
+                   /*if (!rank) std::cout << rank << " Repeating Loop " << tmpAncestor<< std::endl;*/
                   break;
                 } else {
 
