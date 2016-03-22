@@ -534,7 +534,12 @@ namespace ot {
         par::removeDuplicates<ot::TreeNode>(out, isSorted, comm);
       } else if (!isSorted) {
         std::vector<TreeNode> tmpOut;
+#ifdef TREE_SORT
+        par::SFC_3D_TreeSort(out,TOLLERANCE_OCT,comm);
+        std::swap(out,tmpOut);
+#else
         par::sampleSort<ot::TreeNode>(out, tmpOut, comm);
+#endif
         out = tmpOut;
         tmpOut.clear();
       }
@@ -850,8 +855,15 @@ namespace ot {
      //std::cout << rank << "before sample sort: " << nodes.size() << std::endl;
     std::vector<ot::TreeNode> tmpNodes;
     //treeNodesTovtk(nodes,rank,"bf_SS");
+
+    //unsigned int maxDepth=nodes[0].getMaxDepth();
+#ifdef TREE_SORT
+    par::SFC_3D_TreeSort(nodes,TOLLERANCE_OCT,comm);
+    std::swap(nodes,tmpNodes);
+#else
     par::sampleSort<ot::TreeNode>(nodes, tmpNodes, comm);
      //std::cout << rank << "after sample sort: " << tmpNodes.size() << std::endl;
+#endif
     nodes.clear();
 
     nodes = tmpNodes;
