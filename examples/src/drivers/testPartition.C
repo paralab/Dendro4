@@ -162,6 +162,8 @@ int main(int argc, char **argv) {
   G_dim = dim;
 #endif
  */
+
+
   _InitializeHcurve(dim );
 
   double localTime, totalTime;
@@ -200,6 +202,7 @@ int main(int argc, char **argv) {
   PetscLogStageRegister("P2O.", &stages[0]);
   PetscLogStageRegister("Bal", &stages[1]);
   PetscLogStageRegister("ODACreate", &stages[2]);
+  PetscErrorPrintf = PetscErrorPrintfNone;
 #endif
 
 
@@ -306,22 +309,23 @@ int main(int argc, char **argv) {
     std::cout << BLU << "===============================================" << NRM << std::endl;
   }
 
+
+
+  startTime = MPI_Wtime();
 #ifdef PETSC_USE_LOG
   PetscLogStagePush(stages[0]);
 #endif
-
-  startTime = MPI_Wtime();
   ot::points2Octree(pts, gSize, linOct, dim, maxDepth, maxNumPts, MPI_COMM_WORLD);
+#ifdef PETSC_USE_LOG
+  PetscLogStagePop();
+#endif
   endTime = MPI_Wtime();
 
   MPI_Barrier(MPI_COMM_WORLD);
   //treeNodesTovtk(linOct, rank, "bf_bal");
-  par::test::isComplete(linOct,MPI_COMM_WORLD);
+  //par::test::isComplete(linOct,MPI_COMM_WORLD);
 
 
-#ifdef PETSC_USE_LOG
-  PetscLogStagePop();
-#endif
 
   if (!rank) {
     std::cout << BLU << "===============================================" << NRM << std::endl;
@@ -398,19 +402,19 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
     std::cout << BLU << "===============================================" << NRM << std::endl;
   }
 
+
+  startTime = MPI_Wtime();
 #ifdef PETSC_USE_LOG
   PetscLogStagePush(stages[1]);
 #endif
-
-  startTime = MPI_Wtime();
   ot::balanceOctree(linOct, balOct, dim, maxDepth, incCorner, MPI_COMM_WORLD, NULL, NULL);
+#ifdef PETSC_USE_LOG
+  PetscLogStagePop();
+#endif
   endTime = MPI_Wtime();
 
 
 
-#ifdef PETSC_USE_LOG
-  PetscLogStagePop();
-#endif
   linOct.clear();
   // compute total inp size and output size
   localSz = balOct.size();
@@ -546,18 +550,19 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
   }
   //ODA ...
   MPI_Barrier(MPI_COMM_WORLD);
+
+  startTime = MPI_Wtime();
 #ifdef PETSC_USE_LOG
   PetscLogStagePush(stages[2]);
 #endif
-  startTime = MPI_Wtime();
   ot::DA da(balOct, MPI_COMM_WORLD, MPI_COMM_WORLD, compressLut);
+#ifdef PETSC_USE_LOG
+  PetscLogStagePop();
+#endif
   endTime = MPI_Wtime();
 
   //treeNodesTovtk(balOct,rank,"oda_octree");
 
-#ifdef PETSC_USE_LOG
-  PetscLogStagePop();
-#endif
 //  balOct.clear();
 //  // compute total inp size and output size
   localSz = da.getNodeSize();
