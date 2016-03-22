@@ -23,6 +23,8 @@
 #include "mpi.h"
 #include <vector>
 #include "dendro.h"
+#define TOLLERANCE_OCT 0.001
+//#include "seqUtils.h"
 
 #ifdef PETSC_USE_LOG
 
@@ -239,7 +241,14 @@ PetscFunctionReturn(0);
   @author Hari Sundar
   @brief Collection of Generic Parallel Functions: Sorting, Partitioning, Searching,...
   */
+
+
+
+
+
 namespace par {
+
+
 
   template <typename T>
     int Mpi_Isend(T* buf, int count, int dest, int tag, MPI_Comm comm, MPI_Request* request);
@@ -408,6 +417,8 @@ namespace par {
   template<typename T>
     int sampleSort(std::vector<T>& in, std::vector<T> & out, MPI_Comm comm); 
 
+
+
   /**
     @brief Removes duplicates in parallel. If the input is not sorted, sample sort will be called 
     within the function to sort the vector and then duplicates will be removed.
@@ -417,7 +428,7 @@ namespace par {
     @author Rahul Sampath
     */
   template<typename T>
-    int removeDuplicates(std::vector<T>& nodes, bool isSorted, MPI_Comm comm);
+    int removeDuplicates(std::vector<T>& nodes, bool isSorted,MPI_Comm comm);
 
   /**
     @brief Splits a communication group into two, one containing processors that passed a value of 'false' 
@@ -559,6 +570,20 @@ namespace par {
   template <typename T>
     void bitonicSort(std::vector<T> & in, MPI_Comm comm) ;
 
+
+    /*
+      *
+      * @author Milinda Shayamal
+      * Parallel version of the tree sort algorithm.
+      *
+      * */
+
+
+    template <typename T>
+    void SFC_3D_TreeSort(std::vector<T> &pNodes, double loadFlexibility, MPI_Comm comm);
+
+
+
 }//end namespace
 
 #ifdef USE_OLD_SORT
@@ -566,7 +591,6 @@ namespace par {
 #else
 #include "parUtils.tcc"
 #endif
-
 #endif
 
 

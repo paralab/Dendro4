@@ -46,6 +46,7 @@ set(LINK_FLAGS "${LINK_FLAGS} -rdynamic")
 option(USE_64BIT_INDICES "Use 64-Bit indices. Reverts to 32-bit if turned off" ON)
 option(PRIVATE_DA_IN_MG "Use private DA in Multigrid" ON)
 option(HILBERT_ORDERING "Use Hilbert ordering instead of Morton" ON)
+option(TREE_SORT "Use the treesort algorithm instead of sample sort" ON)
 option(__PAPI_PROFILING__ "Use Papi to compute L1 and L2 cache misses to MatVec Loop" OFF)
 option(USE_NCA_PROPERTY "Use the NCA based approach" ON)
 option(BUILD_TESTS "Build test applications" ON)
@@ -71,6 +72,10 @@ if(PRIVATE_DA_IN_MG)
 endif()
 if(__PAPI_PROFILING__)
     add_definitions(-D__PAPI_PROFILING__)
+endif()
+
+if(TREE_SORT)
+    add_definitions(-DTREE_SORT)
 endif()
 
 ##------

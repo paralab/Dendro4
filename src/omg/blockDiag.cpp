@@ -1471,7 +1471,12 @@ namespace ot {
     if(!(positiveBoundaries.empty())) {
       //Call Sample Sort  
       std::vector<ot::TreeNode > tmpVecTN;
+#ifdef TREE_SORT
+      par::SFC_3D_TreeSort(positiveBoundaries,TOLLERANCE_OCT,bdyComm);
+      std::swap(positiveBoundaries,tmpVecTN);
+#else
       par::sampleSort<ot::TreeNode>(positiveBoundaries, tmpVecTN, bdyComm);
+#endif
       positiveBoundaries = tmpVecTN;
       tmpVecTN.clear();
     }
@@ -1493,7 +1498,12 @@ namespace ot {
         if(!(positiveBoundaries.empty())) {
           //Call Sample Sort  
           std::vector<ot::TreeNode > tmpVecTN;
+#ifdef TREE_SORT
+          par::SFC_3D_TreeSort(positiveBoundaries,TOLLERANCE_OCT,bdyComm);
+          std::swap(positiveBoundaries,tmpVecTN);
+#else
           par::sampleSort<ot::TreeNode>(positiveBoundaries, tmpVecTN, bdyComm);
+#endif
           positiveBoundaries = tmpVecTN;
           tmpVecTN.clear();
         }

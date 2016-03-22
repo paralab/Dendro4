@@ -14,6 +14,210 @@
 
 namespace seq {
 
+
+
+    /*
+     * @author: Milinda Shayamal
+     * Seq: Tree sort bucketting function
+     * */
+
+
+    template<typename T>
+    void SFC_3D_Bucketting(std::vector<T> &pNodes, int lev, int maxDepth, unsigned char rot_id,
+                           DendroIntL &begin, DendroIntL &end, DendroIntL *splitters, bool *updateState) {
+
+
+      if (lev == maxDepth || begin == end) {
+        // Special Case when the considering level exceeds the max depth.
+
+        for (int ii = 0; ii < NUM_CHILDREN_3D; ii++) {
+          int index = (rotations[2 * NUM_CHILDREN_3D * rot_id + ii] - '0');
+          int nextIndex = 0;
+          if (ii == 7)
+            nextIndex = ii + 1;
+          else
+            nextIndex = (rotations[2 * NUM_CHILDREN_3D * rot_id + ii + 1] - '0');
+
+          if (ii == 0) {
+            splitters[index] = begin;
+            splitters[nextIndex] = end;
+            continue;
+          }
+
+          splitters[nextIndex] = splitters[index];
+        }
+
+        return;
+
+      }
+
+      unsigned int mid_bit = maxDepth - lev - 1;
+      // Can be parallelized using OpenMP;
+      assert(end <= pNodes.size());
+      register unsigned int x, y, z;
+      DendroIntL spliterCounts[] = {0, 0, 0, 0, 0, 0, 0, 0};
+      //std::cout<<"Bucketing Called For : begin: "<<(begin-pNodes.begin()) <<" end: "<<(end-pNodes.begin())<<" lev: "<<lev<<" rot_id: "<<(int)rot_id<<std::endl;
+      for (DendroIntL it = begin; it < end; it++) {
+        x = pNodes[it].getX();
+        y = pNodes[it].getY();
+        z = pNodes[it].getZ();
+        unsigned int index = ((((z & (1u << mid_bit)) >> mid_bit) << 2u) |
+                              (((y & (1u << mid_bit)) >> mid_bit) << 1u) | ((x & (1u << mid_bit)) >> mid_bit));
+        spliterCounts[index]++;
+        updateState[(it - begin)] = false;
+      }
+
+      for (int ii = 0; ii < NUM_CHILDREN_3D; ii++) {
+        int index = (rotations[2 * NUM_CHILDREN_3D * rot_id + ii] - '0');
+        int nextIndex = 0;
+        if (ii == 7)
+          nextIndex = ii + 1;
+        else
+          nextIndex = (rotations[2 * NUM_CHILDREN_3D * rot_id + ii + 1] - '0');
+
+        if (ii == 0) {
+          splitters[index] = begin;
+        }
+
+        splitters[nextIndex] = splitters[index] + spliterCounts[index];
+        //std::cout<<" Spliter B:"<<index <<" "<<splitters[index]<<" Splitters E "<<nextIndex<<" "<<splitters[nextIndex]<<std::endl;
+
+      }
+
+      if ((end - begin) <= 1) {
+
+        return;
+      }
+      ot::TreeNode temp;
+      DendroIntL counters[] = {0, 0, 0, 0, 0, 0, 0, 0};
+      for (DendroIntL it = begin; it < end; it++) {
+        bool state = false;
+        if (updateState[it - begin]) {
+          continue;
+        }
+        do {
+          x = pNodes[it].getX();
+          y = pNodes[it].getY();
+          z = pNodes[it].getZ();
+          unsigned int currentIndex = ((((z & (1u << mid_bit)) >> mid_bit) << 2u) |
+                                       (((y & (1u << mid_bit)) >> mid_bit) << 1u) |
+                                       ((x & (1u << mid_bit)) >> mid_bit));
+          //std::cout << "spliter: at " << currentIndex << " :" << splitters[currentIndex] << std::endl;
+          assert((counters[currentIndex] <= spliterCounts[currentIndex]));
+          temp = pNodes[(splitters[currentIndex] + counters[currentIndex])];
+          x = temp.getX();
+          y = temp.getY();
+          z = temp.getZ();
+
+          unsigned int index_tmp = ((((z & (1u << mid_bit)) >> mid_bit) << 2u) |
+                                    (((y & (1u << mid_bit)) >> mid_bit) << 1u) |
+                                    ((x & (1u << mid_bit)) >> mid_bit));
+          // std::cout<<"Begin of i :"<<i<<" Count["<<currentIndex<<"]:"<<counters[currentIndex]<<" Count(Index temp)["<<index_tmp<<"]:"<<counters[index_tmp]<<" Spliter Counter["<<currentIndex<<"]:"<<spliterCounts[currentIndex]<<std::endl;
+
+          state = !(((it - begin)) == (splitters[index_tmp] + counters[index_tmp] - begin));
+
+          std::swap(pNodes[it], pNodes[(splitters[currentIndex] + counters[currentIndex])]);
+
+          if (currentIndex != index_tmp) {
+            updateState[splitters[currentIndex] + counters[currentIndex] - begin] = true;
+            counters[currentIndex]++;
+            if (!state) {
+              updateState[it - begin] = true;
+              counters[index_tmp]++;
+            }
+
+          } else {
+            updateState[splitters[currentIndex] + counters[currentIndex] - begin] = true;
+            counters[currentIndex]++;
+            //std::cout << "At end of i :" << i << " Count[" << currentIndex << "]:" << counters[currentIndex] << " Count(Index temp)[" << index_tmp << "]:" << counters[index_tmp] << " Spliter Counter[" <<
+            //currentIndex << "]:" << spliterCounts[currentIndex] <<" State: "<<state<< std::endl;
+            break;
+          }
+
+          // std::cout << "At end of i :" << i << " Count[" << currentIndex << "]:" << counters[currentIndex] << " Count(Index temp)[" << index_tmp << "]:" << counters[index_tmp] << " Spliter Counter[" <<
+          // currentIndex << "]:" << spliterCounts[currentIndex] <<"State :"<<state <<std::endl;
+
+        } while (state);
+
+      }
+    }
+
+
+
+
+  /*
+     * @author Milinda Shayamal
+     * Sequential Tree sort implementation
+     *
+    */
+
+
+
+    template<typename T>
+    void SFC_3D_TreeSort(std::vector<T> &pNodes) {
+
+      //std::cout <<" function started"<<std::endl;
+
+      if(pNodes.empty())
+        return;
+
+      unsigned int pMaxDepth=pNodes[0].getMaxDepth();
+
+      std::vector<NodeInfo1<T>> nodeStack; // rotation id stack
+      NodeInfo1<T> root(0, 0, 0, pNodes.size());
+      nodeStack.push_back(root);
+      NodeInfo1<T> tmp = root;
+      unsigned int levSplitCount = 1;
+
+      unsigned int hindex = 0;
+      unsigned int hindexN = 0;
+
+      unsigned int index = 0;
+      bool *updateState = new bool[pNodes.size()];
+
+      DendroIntL splitersAll[9];
+      while (!nodeStack.empty()) {
+        tmp = nodeStack.back();
+        nodeStack.pop_back();
+
+        //assert(tmp.begin != tmp.end);
+
+        seq::SFC_3D_Bucketting(pNodes, tmp.lev, pMaxDepth, tmp.rot_id, tmp.begin, tmp.end, splitersAll,
+                               updateState);
+
+        if (tmp.lev < pMaxDepth) {
+
+          for (int i = NUM_CHILDREN_3D - 1; i >= 0; i--) {
+            hindex = (rotations[2 * NUM_CHILDREN_3D * tmp.rot_id + i] - '0');
+            if (i == 7)
+              hindexN = i + 1;
+            else
+              hindexN = (rotations[2 * NUM_CHILDREN_3D * tmp.rot_id + i + 1] - '0');
+            assert(splitersAll[hindex] <= splitersAll[hindexN]);
+
+            if ((splitersAll[hindexN] - splitersAll[hindex]) > 1) {
+              index = HILBERT_TABLE[NUM_CHILDREN_3D * tmp.rot_id + hindex];
+              //std::cout<<" i: "<<i<<" hindex:"<<hindex<<" : "<<splitersAll[hindex]<< " hindexNext:"<<hindexN<<" : "<<splitersAll[hindexN]<<std::endl;
+
+              NodeInfo1<T> child(index, (tmp.lev + 1), splitersAll[hindex], splitersAll[hindexN]);
+              nodeStack.push_back(child);
+
+            }
+
+          }
+
+        }
+
+      }
+      delete[] updateState;
+    }
+
+
+
+
+
+
+
   template <typename T>
     bool BinarySearch(const T* arr, unsigned int nelem, const T & key, unsigned int *ret_idx) {
       if(!nelem) {*ret_idx = nelem; return false;}

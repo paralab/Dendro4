@@ -263,7 +263,12 @@ int main(int argc, char **argv) {
 
   // treeNodesTovtk(tmpNodes, rank, "input_points");
   //std::cout << rank << "removeDuplicates" << std::endl;
-  par::removeDuplicates<ot::TreeNode>(tmpNodes, false, MPI_COMM_WORLD);
+
+ /* par::SFC_3D_TreeSort(tmpNodes,0.01,maxDepth,MPI_COMM_WORLD);
+  assert(par::test::isSorted(tmpNodes,MPI_COMM_WORLD));*/
+
+
+  par::removeDuplicates<ot::TreeNode>(tmpNodes, false,MPI_COMM_WORLD);
 
   linOct = tmpNodes;
   tmpNodes.clear();
