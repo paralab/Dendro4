@@ -354,6 +354,15 @@ namespace ot {
 #ifdef __DEBUG_DA__
       assert(m_bIamActive);
 #endif
+
+      //@milinda
+      // Rotation Stack Update.
+
+      RotationID_Stack.clear();
+      rotationStackPointer=0;
+      RotationID_Stack.push_back(0);
+
+
       m_ptCurrentOffset = m_ptGhostedOffset;
       m_uiCurrent = 0;
       m_uiQuotientCounter = 0;

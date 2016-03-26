@@ -2052,6 +2052,15 @@ namespace par {
 
         unsigned int pMaxDepth=pNodes[0].getMaxDepth();
 
+        if(npes==1)
+        {
+            seq::SFC_3D_TreeSort(pNodes);
+            return;
+        }
+
+
+
+
         unsigned int firstSplitLevel = std::ceil(binOp::fastLog2(npes)/3.0);
 
         MPI_Datatype MPI_TREENODE;

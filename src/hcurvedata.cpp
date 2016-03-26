@@ -16,6 +16,10 @@
 char* rotations;
 char* HILBERT_TABLE;
 
+std::vector<unsigned int> RotationID_Stack;
+unsigned int rotationStackPointer;
+
+
 void _InitializeHcurve(int pDim) {
 
 if(pDim==2) {
@@ -24,6 +28,8 @@ if(pDim==2) {
 
     rotations = new char[_2D_ROTATIONS_SIZE];
     HILBERT_TABLE = new char[_2D_HILBERT_TABLE];
+
+
 
     strcpy(rotations + 0, "01230123");
     strcpy(rotations + 8, "03210321");
@@ -88,6 +94,10 @@ else if(pDim==3) {
 
     rotations = new char[_3D_ROTATIONS_SIZE];
     HILBERT_TABLE = new char[_3D_HILBERT_TABLE];
+
+    RotationID_Stack.push_back(0);
+    rotationStackPointer=0;
+
 
     /*
     //Table for  Canonical Hilbert index.

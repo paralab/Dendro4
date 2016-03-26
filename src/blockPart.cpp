@@ -639,7 +639,7 @@ namespace ot {
     }//end while
 
     sort(localCoarse.begin(), localCoarse.end(), ot::bPartComparator);
-      //treeNodesTovtk(localCoarse,rank,"local_coarse");
+    //treeNodesTovtk(localCoarse,rank,"local_coarse");
     long localWt = 0;
     unsigned int cnt = 0;
     while ( ( cnt < localCoarse.size() ) &&
@@ -659,7 +659,8 @@ namespace ot {
     }
 
     //Sorting is necessary here since bPartcomparator is different from <.
-    sort(localBlocks.begin(), localBlocks.end());
+    //sort(localBlocks.begin(), localBlocks.end());
+    seq::SFC_3D_TreeSort(localBlocks);
 
     // 3. Call nodes2Oct on these cells to generate the 
     //    globalCoarse octree ...
@@ -669,7 +670,7 @@ namespace ot {
     //treeNodesTovtk(localBlocks,rank,"local_blocks");
 
     completeOctree(localBlocks, blocks, dim, maxDepth, true,true,true, comm);
-    assert(par::test::isUniqueAndSorted(blocks, comm));
+    //assert(par::test::isUniqueAndSorted(blocks, comm));
     //treeNodesTovtk(blocks,rank,"af_complete_octree");
     localBlocks.clear();
 

@@ -88,8 +88,9 @@ namespace ot {
        *@changes the rotation and rot_index values of the TreeNode.      
        */
       
-      inline char calculateTreeNodeRotation() const;
-      
+      char calculateTreeNodeRotation() const;
+
+      char calculateTreeNodeRotationWithStack() const;
 
       /**
         @author Rahul Sampath

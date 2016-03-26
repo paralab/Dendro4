@@ -218,6 +218,7 @@ return ;
 #define CHILD_INDEX_MASK 224
 #define ROT_ID_MASK 31
 
+
 #ifdef HILBERT_ORDERING
 #define CALCULATE_TREENODE_ROTATION(P,D,R){ \
     unsigned int x1=P.xint();\
@@ -226,11 +227,25 @@ return ;
     R=0;\
     unsigned int current_rot=0;\
     unsigned int mid_bit=m_uiMaxDepth; \
+    if(D<=rotationStackPointer){\
+    if(D>0) {\
+        rotationStackPointer=D-1;\
+        RotationID_Stack.erase(RotationID_Stack.begin() + D, RotationID_Stack.end());\
+    }\
+    else {\
+        rotationStackPointer=D;\
+        RotationID_Stack.erase(RotationID_Stack.begin() + D + 1, RotationID_Stack.end());\
+    }\
+    }\
     unsigned int index1=0;\
-    for(int i=0; i<D;i++) {\
+    unsigned int begin=rotationStackPointer;\
+    current_rot=RotationID_Stack[rotationStackPointer];\
+    for(int i=begin; i<D;i++) {\
       mid_bit=m_uiMaxDepth-i-1; \
       index1= ((((z1 & (1u << mid_bit)) >> mid_bit) << 2u) |(((y1 & (1u << mid_bit)) >> mid_bit) << 1u) | ((x1 & (1u << mid_bit)) >> mid_bit));\
       current_rot=HILBERT_TABLE[current_rot*num_children+index1];\
+      RotationID_Stack.push_back(current_rot);\
+      rotationStackPointer++;\
     }\
     R=current_rot;\
 }

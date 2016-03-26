@@ -21,6 +21,8 @@
 //#include <stdlib>
 #include<cstring>
 #include<string>
+#include <vector>
+
 
 
 
@@ -36,6 +38,9 @@ extern char* HILBERT_TABLE;
 extern char* rotations;
 
 //#define DENDRO_DIM2
+
+extern std::vector<unsigned int> RotationID_Stack;
+extern unsigned int rotationStackPointer;
 
 void _InitializeHcurve(int pDim);
 
