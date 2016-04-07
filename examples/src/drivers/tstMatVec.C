@@ -20,10 +20,12 @@
 #include <string>
 #include <stdio.h>
 #include <time.h>
-
+#include <time.h>
 
 #include "genPts_par.h"
 #include <climits>
+#include <chrono>
+#include <thread>
 
 
 //Don't want time to be synchronized. Need to check load imbalance.
@@ -465,12 +467,26 @@ int papi_events[]={PAPI_L1_TCM,PAPI_L2_DCM,PAPI_L2_DCH};
 
 #endif
 
+#ifdef POWER_MEASUREMENT_TIMESTEP
+
+  time_t rawtime;
+  struct tm * ptm;
+
+  time ( &rawtime );
+
+  ptm = gmtime ( &rawtime );
+std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+ if(!rank) std::cout<<" MatVec Begin: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
+#endif
 
   for(unsigned int i=0;i<numLoops;i++) {
     iC(Jacobian1MatGetDiagonal(J, diag));
     iC(Jacobian1MatMult(J, in, out));
   }
 
+#ifdef POWER_MEASUREMENT_TIMESTEP
+  if(!rank) std::cout<<" MatVec Begin: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
+#endif
 #ifdef __PAPI_PROFILING__
 
 

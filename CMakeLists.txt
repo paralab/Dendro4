@@ -54,6 +54,7 @@ option(BUILD_DA_EXAMPLES "Build examples using dendro::DA" ON)
 option(BUILD_MG_EXAMPLES "Build test applications using dendro::MG" ON)
 option(ALLTOALLV_FIX "Use K-way all to all v" ON)
 option(ROTATION_STACK_ENABLE "Calculate the rotation pattern using the stack implementation" ON)
+option(POWER_MEASUREMENT_TIMESTEP "Print the time step for mat vec loops" OFF)
 set(KWAY 128 CACHE INT 128)
 
 
@@ -89,6 +90,9 @@ if(ROTATION_STACK_ENABLE)
 add_definitions(-DROTATION_STACK_ENABLE)
 endif()
 
+if(POWER_MEASUREMENT_TIMESTEP)
+    add_definitions(-DPOWER_MEASUREMENT_TIMESTEP)
+endif()
 
 
 ##------
