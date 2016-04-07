@@ -126,7 +126,7 @@ int main(int argc, char ** argv ) {
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   if(argc < 3) {
     std::cerr << "Usage: " << argv[0] << "inpfile  maxDepth[30] solveU[0]\
-      writeB[0] dim[3] maxNumPtsPerOctant[1] incCorner[1] numLoops[100] compressLut[1] genPts[1] totalPts[10000] nlistFileName genRegGrid[false] regLev" << std::endl;
+      writeB[0] dim[3] maxNumPtsPerOctant[1] incCorner[1] numLoops[100] compressLut[1] genPts[1] totalPts[10000] nlistFileName genRegGrid[false] regLev tol[0-1]" << std::endl;
     return -1;
   }
   if(argc > 2) {
@@ -145,11 +145,14 @@ int main(int argc, char ** argv ) {
     maxNumPts = atoi(argv[6]);
   }
 
+  double tol=0.001;
+
   if(argc > 7) { incCorner = (bool)(atoi(argv[7]));}
   if(argc > 8) { numLoops = atoi(argv[8]); }
   if(argc > 9) { compressLut = (bool)(atoi(argv[9]));}
   if(argc > 10) { genPts = (bool)(atoi(argv[10]));}
   if(argc >11 ) { grainSize =atol(argv[11]);}
+  if(argc >12) {tol=atof(argv[12]);}
   sprintf(nlistFName, "%s_%d_%d_%d_%d.%s", argv[12], maxDepth, grainSize, rank, size, "bin");
 
   if(argc >13) {genRegGrid=(bool)(atoi(argv[13])); regLev=atoi(argv[14]);}
@@ -170,6 +173,7 @@ int main(int argc, char ** argv ) {
     std::cout << " Max Depth:" << maxDepth << std::endl;
     std::cout << " Gen Regular Grid:"<<genRegGrid<<std::endl;
     std::cout << " Regular grid Level:"<<regLev<<std::endl;
+    std::cout << " Tol: "<<tol<<std::endl;
     std::cout << BLU << "===============================================" << NRM << std::endl;
   }
 
@@ -309,8 +313,8 @@ if(!genRegGrid) {
   if(!rank)
     std::cout<<"Generating Regular Grid"<<std::endl;
 
-  assert(regLev<=maxDepth);
-  ot::createRegularOctree(balOct,regLev,dim,maxDepth,MPI_COMM_WORLD);
+  /*assert(regLev<=maxDepth);
+  ot::createRegularOctree(balOct,regLev,dim,maxDepth,MPI_COMM_WORLD);*/
 
 
   DendroIntL localSz=balOct.size();
@@ -324,6 +328,9 @@ if(!genRegGrid) {
 
 
 }
+
+  //par::SFC_3D_TreeSort(balOct,tol,MPI_COMM_WORLD);
+
   //ODA ...
   MPI_Barrier(MPI_COMM_WORLD);
 #ifdef PETSC_USE_LOG
@@ -359,6 +366,7 @@ if(!genRegGrid) {
   //! Quality of the partition ...
 
   da.printODAStatistics();
+
   da.printODANodeListStatistics(nlistFName);
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////ODA STATISTICS////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -475,7 +483,7 @@ int papi_events[]={PAPI_L1_TCM,PAPI_L2_DCM,PAPI_L2_DCH};
   time ( &rawtime );
 
   ptm = gmtime ( &rawtime );
-std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+std::this_thread::sleep_for(std::chrono::milliseconds(60000));
  if(!rank) std::cout<<" MatVec Begin: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
 #endif
 
