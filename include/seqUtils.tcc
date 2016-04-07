@@ -12,6 +12,8 @@
 #include <assert.h>
 #include <test/testUtils.h>
 
+
+
 namespace seq {
 
 
@@ -23,11 +25,11 @@ namespace seq {
 
 
     template<typename T>
-    void SFC_3D_Bucketting(std::vector<T> &pNodes, int lev, int maxDepth, unsigned char rot_id,
-                           DendroIntL &begin, DendroIntL &end, DendroIntL *splitters, bool *updateState) {
+    inline void SFC_3D_Bucketting(std::vector<T> &pNodes, int lev, int maxDepth, unsigned char rot_id,
+                                  DendroIntL &begin, DendroIntL &end, DendroIntL *splitters, bool *updateState) {
 
 
-      if (lev == maxDepth || begin == end) {
+      if (lev == maxDepth || begin == end ) {
         // Special Case when the considering level exceeds the max depth.
 
         for (int ii = 0; ii < NUM_CHILDREN_3D; ii++) {
@@ -53,16 +55,25 @@ namespace seq {
 
       unsigned int mid_bit = maxDepth - lev - 1;
       // Can be parallelized using OpenMP;
+      if(end>pNodes.size())
+        std::cout<<" end: "<<end<<" Pnodes.size(): "<<pNodes.size()<<std::endl;
       assert(end <= pNodes.size());
       register unsigned int x, y, z;
+      register unsigned int index;
+      register unsigned int currentIndex=0;
+      register unsigned int index_tmp=0;
       DendroIntL spliterCounts[] = {0, 0, 0, 0, 0, 0, 0, 0};
       //std::cout<<"Bucketing Called For : begin: "<<(begin-pNodes.begin()) <<" end: "<<(end-pNodes.begin())<<" lev: "<<lev<<" rot_id: "<<(int)rot_id<<std::endl;
+
       for (DendroIntL it = begin; it < end; it++) {
         x = pNodes[it].getX();
         y = pNodes[it].getY();
         z = pNodes[it].getZ();
-        unsigned int index = ((((z & (1u << mid_bit)) >> mid_bit) << 2u) |
-                              (((y & (1u << mid_bit)) >> mid_bit) << 1u) | ((x & (1u << mid_bit)) >> mid_bit));
+        if(pNodes[it].getLevel()==lev)
+          index=0;
+        else
+          index = ((((z & (1u << mid_bit)) >> mid_bit) << 2u) | (((y & (1u << mid_bit)) >> mid_bit) << 1u) | ((x & (1u << mid_bit)) >> mid_bit));
+
         spliterCounts[index]++;
         updateState[(it - begin)] = false;
       }
@@ -99,19 +110,21 @@ namespace seq {
           x = pNodes[it].getX();
           y = pNodes[it].getY();
           z = pNodes[it].getZ();
-          unsigned int currentIndex = ((((z & (1u << mid_bit)) >> mid_bit) << 2u) |
-                                       (((y & (1u << mid_bit)) >> mid_bit) << 1u) |
-                                       ((x & (1u << mid_bit)) >> mid_bit));
+          if(pNodes[it].getLevel()==lev)
+            currentIndex=0;
+          else
+            currentIndex = ((((z & (1u << mid_bit)) >> mid_bit) << 2u) |(((y & (1u << mid_bit)) >> mid_bit) << 1u) | ((x & (1u << mid_bit)) >> mid_bit));
           //std::cout << "spliter: at " << currentIndex << " :" << splitters[currentIndex] << std::endl;
           assert((counters[currentIndex] <= spliterCounts[currentIndex]));
-          temp = pNodes[(splitters[currentIndex] + counters[currentIndex])];
+          temp =pNodes[ (splitters[currentIndex] + counters[currentIndex])];
           x = temp.getX();
           y = temp.getY();
           z = temp.getZ();
 
-          unsigned int index_tmp = ((((z & (1u << mid_bit)) >> mid_bit) << 2u) |
-                                    (((y & (1u << mid_bit)) >> mid_bit) << 1u) |
-                                    ((x & (1u << mid_bit)) >> mid_bit));
+          if(temp.getLevel()==lev)
+            index_tmp=0;
+          else
+            index_tmp = ((((z & (1u << mid_bit)) >> mid_bit) << 2u) |(((y & (1u << mid_bit)) >> mid_bit) << 1u) | ((x & (1u << mid_bit)) >> mid_bit));
           // std::cout<<"Begin of i :"<<i<<" Count["<<currentIndex<<"]:"<<counters[currentIndex]<<" Count(Index temp)["<<index_tmp<<"]:"<<counters[index_tmp]<<" Spliter Counter["<<currentIndex<<"]:"<<spliterCounts[currentIndex]<<std::endl;
 
           state = !(((it - begin)) == (splitters[index_tmp] + counters[index_tmp] - begin));
@@ -140,6 +153,7 @@ namespace seq {
         } while (state);
 
       }
+
     }
 
 
@@ -214,7 +228,139 @@ namespace seq {
 
 
 
+    /*
+     * @author: Hari Sundar
+     * School of Computing, University of Utah
+     *
+     * */
 
+    template<typename T>
+    void SFC_3D_lsd_sort(std::vector<T> &pNodes, std::vector<T> &buffer, unsigned int pMaxDepth)  {
+      // std::vector<T> buffer(pNodes.size());
+      // T val;
+      register unsigned int cnum;
+
+      for (unsigned int bit=0; bit<pMaxDepth; ++bit) {
+        // Copy and count
+        int count[9]={};
+        for (int i=0; i<pNodes.size(); ++i) {
+          buffer[i] = pNodes[i];
+          // count
+          cnum = (((pNodes[i].getZ() >> bit) & 1u) << 2u) | (((pNodes[i].getY() >> bit) & 1u) << 1u) | ((pNodes[i].getX() >> bit) & 1u);
+          count[cnum+1]++;
+        }
+        // Init writer positions
+        for (int i=0; i<8; i++) {
+          count[i+1]+=count[i];
+        }
+
+        // Perform sort
+        for (int i=0; i<pNodes.size(); ++i) {
+          // val = buffer[i];
+          cnum = (((buffer[i].getZ() >> bit) & 1u) << 2u) | (((buffer[i].getY() >> bit) & 1u) << 1u) | ((buffer[i].getX() >> bit) & 1u);
+          pNodes[count[cnum]] = buffer[i];
+          count[cnum]++;
+        }
+      }
+    } // lsd
+
+
+
+    /*template<typename T>
+    void SFC_3D_msd_sort(T *pNodes, unsigned int n, unsigned int rot_id,unsigned int pMaxDepth)  {
+        register unsigned int cnum;
+        unsigned int count[9]={};
+        for (int i=0; i<n; ++i) {
+            cnum = (((pNodes[i].getZ() >> pMaxDepth) & 1u) << 2u) | (((pNodes[i].getY() >> pMaxDepth) & 1u) << 1u) | ((pNodes[i].getX() >> pMaxDepth) & 1u);
+            count[cnum+1]++;
+        }
+
+        unsigned int loc[8];
+        T unsorted[8];
+        unsigned int live = 0;
+        for (int i=0; i<8; ++i) {
+            loc[i] = count[i];
+            count[i+1] += count[i];
+            unsorted[live] = pNodes[loc[i]];
+            if (loc[i] < count[i+1]) live++;
+        }
+        live--;
+
+        for (int i=0; i<n; ++i) {
+            cnum = (((unsorted[live].getZ() >> pMaxDepth) & 1u) << 2u) | (((unsorted[live].getY() >> pMaxDepth) & 1u) << 1u) | ((unsorted[live].getX() >> pMaxDepth) & 1u);
+            pNodes[loc[cnum]++] = unsorted[live];
+            unsorted[live] = pNodes[loc[cnum]];
+            if ( (loc[cnum] == count[cnum+1]) ) live--;
+        }
+
+        if (pMaxDepth>0) {
+            for (int i=0; i<8; i++) {
+                n = count[i+1] - count[i];
+                if (n > 1) {
+                    SFC_3D_msd_sort(pNodes + count[i], n,rot_id,pMaxDepth-1);
+                }
+            }
+        }
+    } // msd sort*/
+
+    /*
+    * @author: Hari Sundar
+    * School of Computing, University of Utah
+    *
+    * */
+    template<typename T>
+    void SFC_3D_msd_sort(T *pNodes, unsigned int n, unsigned int rot_id,unsigned int pMaxDepth)  {
+
+      /*std::sort(pNodes,(pNodes+n));
+      return;*/
+
+      register unsigned int cnum;
+      register unsigned int cnum_prev=0;
+      unsigned int rotation=0;
+      unsigned int count[9]={};
+      pMaxDepth--;
+
+      for (int i=0; i<n; ++i) {
+        cnum = (((pNodes[i].getZ() >> pMaxDepth) & 1u) << 2u) | (((pNodes[i].getY() >> pMaxDepth) & 1u) << 1u) | ((pNodes[i].getX() >> pMaxDepth) & 1u);
+        count[cnum+1]++;
+      }
+
+      unsigned int loc[8];
+      T unsorted[8];
+      unsigned int live = 0;
+
+      for (int i=0; i<8; ++i) {
+        cnum=(rotations[ROTATION_OFFSET * rot_id+i] - '0');
+        (i>0)? cnum_prev = ((rotations[ROTATION_OFFSET * rot_id+i-1] - '0')+1) : cnum_prev=0;
+        loc[cnum]=count[cnum_prev];
+        count[cnum+1] += count[cnum_prev];
+        unsorted[live] = pNodes[loc[cnum]];
+        if (loc[cnum] < count[cnum+1]) {live++; /*std::cout<<i<<" Live: "<<live<<std::endl;*/}
+      }
+      live--;
+
+      for (int i=0; i<n; ++i) {
+        //std::cout << i << " Live: " << live << " qqunsorted live " <<unsorted[live]<<std::endl;
+        cnum = (((unsorted[live].getZ() >> pMaxDepth) & 1u) << 2u) |  (((unsorted[live].getY() >> pMaxDepth) & 1u) << 1u) |  ((unsorted[live].getX() >> pMaxDepth) & 1u);
+        pNodes[loc[cnum]++] = unsorted[live];
+        unsorted[live] = pNodes[loc[cnum]];
+        if ((loc[cnum] == count[cnum + 1])) {
+          live--;
+        }
+      }
+
+      if (pMaxDepth>0) {
+        for (int i=0; i<8; i++) {
+          cnum=(rotations[ROTATION_OFFSET*rot_id+i]-'0');
+          (i>0)? cnum_prev = ((rotations[ROTATION_OFFSET * rot_id+i-1] - '0')+1) : cnum_prev=0;
+          n = count[cnum+1] - count[cnum_prev];
+          if (n > 1) {
+            rotation=HILBERT_TABLE[NUM_CHILDREN_3D*rot_id+cnum];
+            SFC_3D_msd_sort(pNodes + count[cnum_prev], n,rotation,(pMaxDepth));
+          }
+        }
+      }
+    } // msd sort
 
 
 

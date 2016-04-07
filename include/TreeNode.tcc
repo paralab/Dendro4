@@ -1949,6 +1949,11 @@ namespace ot {
 inline char TreeNode::calculateTreeNodeRotationWithStack() const
 {
 
+#ifndef ROTATION_STACK_ENABLE
+    return this->calculateTreeNodeRotation();
+#endif
+
+
     unsigned int xl = 0;
     unsigned int yl = 0;
     unsigned int zl = 0;
@@ -1989,6 +1994,7 @@ inline char TreeNode::calculateTreeNodeRotationWithStack() const
             rotationStackPointer=ncaLev;
             RotationID_Stack.erase(RotationID_Stack.begin() + ncaLev + 1, RotationID_Stack.end());
         }
+        RotationID_Stack.resize(RotationID_Stack.size());
     }
 
 
@@ -2012,7 +2018,12 @@ inline char TreeNode::calculateTreeNodeRotationWithStack() const
         rotationStackPointer++;
 
     }
-
+    //std::cout<<"Rotation: "<<(int)current_rot<<std::endl;
+    unsigned int rot_cm=this->calculateTreeNodeRotation();
+    if(current_rot!=rot_cm)
+    {
+        std::cout<<"Rot ID Mismatch "<<*this<<" RSP begin:  "<<begin<<" Rotation End: "<<rotationStackPointer<<" stck ans: "<<(int)current_rot<<" correct: "<<(int)rot_cm<<std::endl;
+    }
     return current_rot;
 
 

@@ -170,8 +170,9 @@ void DA::DA_FactoryPart1(std::vector<ot::TreeNode>& in) {
 #ifdef HILBERT_ORDERING
   std::vector<ot::TreeNode> tmpTN;
 #ifdef TREE_SORT
-  par::SFC_3D_TreeSort(in,TOLLERANCE_OCT,m_mpiCommActive);
-  std::swap(in,tmpTN);
+  tmpTN=in;
+  par::SFC_3D_TreeSort(tmpTN,TOLLERANCE_OCT,m_mpiCommActive);
+  //std::swap(in,tmpTN);
 #else
   par::sampleSort(in,tmpTN,m_mpiCommActive);
 #endif
@@ -197,8 +198,9 @@ void DA::DA_FactoryPart1(std::vector<ot::TreeNode>& in) {
     std::vector<ot::TreeNode > tmpVecTN;
 
 #ifdef TREE_SORT
-    par::SFC_3D_TreeSort(positiveBoundaryOctants,TOLLERANCE_OCT,bdyComm);
-    std::swap(positiveBoundaryOctants,tmpVecTN);
+    tmpVecTN=positiveBoundaryOctants;
+    par::SFC_3D_TreeSort(tmpVecTN,TOLLERANCE_OCT,bdyComm);
+    //std::swap(positiveBoundaryOctants,tmpVecTN);
 #else
     par::sampleSort<ot::TreeNode>(positiveBoundaryOctants, tmpVecTN, bdyComm);
 #endif

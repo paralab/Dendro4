@@ -52,7 +52,9 @@ option(USE_NCA_PROPERTY "Use the NCA based approach" ON)
 option(BUILD_TESTS "Build test applications" ON)
 option(BUILD_DA_EXAMPLES "Build examples using dendro::DA" ON)
 option(BUILD_MG_EXAMPLES "Build test applications using dendro::MG" ON)
-
+option(ALLTOALLV_FIX "Use K-way all to all v" ON)
+option(ROTATION_STACK_ENABLE "Calculate the rotation pattern using the stack implementation" ON)
+set(KWAY 128 CACHE INT 128)
 
 
 if(USE_64BIT_INDICES)
@@ -77,6 +79,17 @@ endif()
 if(TREE_SORT)
     add_definitions(-DTREE_SORT)
 endif()
+
+if(ALLTOALLV_FIX)
+    add_definitions(-DALLTOALLV_FIX)
+    add_definitions(-DKWAY=${KWAY})
+endif()
+
+if(ROTATION_STACK_ENABLE)
+add_definitions(-DROTATION_STACK_ENABLE)
+endif()
+
+
 
 ##------
 include_directories(${PROJECT_BINARY_DIR}

@@ -451,6 +451,305 @@ namespace par {
     PROF_PAR_ALL2ALLV_DENSE_END
   }
 
+
+    template <typename T>
+    int Mpi_Alltoallv_Kway(T* sbuff_, int* s_cnt_, int* sdisp_,
+                           T* rbuff_, int* r_cnt_, int* rdisp_, MPI_Comm c){
+
+        //std::vector<double> tt(4096*200,0);
+        //std::vector<double> tt_wait(4096*200,0);
+
+#ifdef __PROFILE_WITH_BARRIER__
+        MPI_Barrier(comm);
+#endif
+        PROF_PAR_ALL2ALLV_DENSE_BEGIN
+
+#ifndef ALLTOALLV_FIX
+        Mpi_Alltoallv
+                (sbuff_, s_cnt_, sdisp_,
+                 rbuff_, r_cnt_, rdisp_, c);
+#else
+
+        int kway = KWAY;
+  int np, pid;
+  MPI_Comm_size(c, &np);
+  MPI_Comm_rank(c, &pid);
+  //std::cout<<" Kway: "<<kway<<std::endl;
+  int range[2]={0,np};
+  int split_id, partner;
+
+  std::vector<int> s_cnt(np);
+  #pragma omp parallel for
+  for(int i=0;i<np;i++){
+    s_cnt[i]=s_cnt_[i]*sizeof(T)+2*sizeof(int);
+  }
+  std::vector<int> sdisp(np); sdisp[0]=0;
+  omp_par::scan(&s_cnt[0],&sdisp[0],np);
+
+  char* sbuff=new char[sdisp[np-1]+s_cnt[np-1]];
+  #pragma omp parallel for
+  for(int i=0;i<np;i++){
+    ((int*)&sbuff[sdisp[i]])[0]=s_cnt[i];
+    ((int*)&sbuff[sdisp[i]])[1]=pid;
+    memcpy(&sbuff[sdisp[i]]+2*sizeof(int),&sbuff_[sdisp_[i]],s_cnt[i]-2*sizeof(int));
+  }
+
+  //int t_indx=0;
+  int iter_cnt=0;
+  while(range[1]-range[0]>1){
+    iter_cnt++;
+    if(kway>range[1]-range[0])
+      kway=range[1]-range[0];
+
+    std::vector<int> new_range(kway+1);
+    for(int i=0;i<=kway;i++)
+      new_range[i]=(range[0]*(kway-i)+range[1]*i)/kway;
+    int p_class=(std::upper_bound(&new_range[0],&new_range[kway],pid)-&new_range[0]-1);
+    int new_np=new_range[p_class+1]-new_range[p_class];
+    int new_pid=pid-new_range[p_class];
+
+    //Communication.
+    {
+      std::vector<int> r_cnt    (new_np*kway, 0);
+      std::vector<int> r_cnt_ext(new_np*kway, 0);
+      //Exchange send sizes.
+      for(int i=0;i<kway;i++){
+        MPI_Status status;
+        int cmp_np=new_range[i+1]-new_range[i];
+        int partner=(new_pid<cmp_np?       new_range[i]+new_pid: new_range[i+1]-1) ;
+        assert(     (new_pid<cmp_np? true: new_range[i]+new_pid==new_range[i+1]  )); //Remove this.
+        MPI_Sendrecv(&s_cnt[new_range[i]-new_range[0]], cmp_np, MPI_INT, partner, 0,
+                     &r_cnt[new_np   *i ], new_np, MPI_INT, partner, 0, c, &status);
+
+        //Handle extra communication.
+        if(new_pid==new_np-1 && cmp_np>new_np){
+          int partner=new_range[i+1]-1;
+          std::vector<int> s_cnt_ext(cmp_np, 0);
+          MPI_Sendrecv(&s_cnt_ext[       0], cmp_np, MPI_INT, partner, 0,
+                       &r_cnt_ext[new_np*i], new_np, MPI_INT, partner, 0, c, &status);
+        }
+      }
+
+      //Allocate receive buffer.
+      std::vector<int> rdisp    (new_np*kway, 0);
+      std::vector<int> rdisp_ext(new_np*kway, 0);
+      int rbuff_size, rbuff_size_ext;
+      char *rbuff, *rbuff_ext;
+      {
+        omp_par::scan(&r_cnt    [0], &rdisp    [0],new_np*kway);
+        omp_par::scan(&r_cnt_ext[0], &rdisp_ext[0],new_np*kway);
+        rbuff_size     = rdisp    [new_np*kway-1] + r_cnt    [new_np*kway-1];
+        rbuff_size_ext = rdisp_ext[new_np*kway-1] + r_cnt_ext[new_np*kway-1];
+        rbuff     = new char[rbuff_size    ];
+        rbuff_ext = new char[rbuff_size_ext];
+      }
+
+      //Sendrecv data.
+      //*
+      int my_block=kway;
+      while(pid<new_range[my_block]) my_block--;
+//      MPI_Barrier(c);
+      for(int i_=0;i_<=kway/2;i_++){
+        int i1=(my_block+i_)%kway;
+        int i2=(my_block+kway-i_)%kway;
+
+        for(int j=0;j<(i_==0 || i_==kway/2?1:2);j++){
+          int i=(i_==0?i1:((j+my_block/i_)%2?i1:i2));
+          MPI_Status status;
+          int cmp_np=new_range[i+1]-new_range[i];
+          int partner=(new_pid<cmp_np?       new_range[i]+new_pid: new_range[i+1]-1) ;
+
+          int send_dsp     =sdisp[new_range[i  ]-new_range[0]  ];
+          int send_dsp_last=sdisp[new_range[i+1]-new_range[0]-1];
+          int send_cnt     =s_cnt[new_range[i+1]-new_range[0]-1]+send_dsp_last-send_dsp;
+
+//          double ttt=omp_get_wtime();
+//          MPI_Sendrecv(&sbuff[send_dsp], send_cnt>0?1:0, MPI_BYTE, partner, 0,
+//                       &rbuff[rdisp[new_np  * i ]], (r_cnt[new_np  *(i+1)-1]+rdisp[new_np  *(i+1)-1]-rdisp[new_np  * i ])>0?1:0, MPI_BYTE, partner, 0, c, &status);
+//          tt_wait[200*pid+t_indx]=omp_get_wtime()-ttt;
+//
+//          ttt=omp_get_wtime();
+          MPI_Sendrecv(&sbuff[send_dsp], send_cnt, MPI_BYTE, partner, 0,
+                       &rbuff[rdisp[new_np  * i ]], r_cnt[new_np  *(i+1)-1]+rdisp[new_np  *(i+1)-1]-rdisp[new_np  * i ], MPI_BYTE, partner, 0, c, &status);
+//          tt[200*pid+t_indx]=omp_get_wtime()-ttt;
+//          t_indx++;
+
+          //Handle extra communication.
+          if(pid==new_np-1 && cmp_np>new_np){
+            int partner=new_range[i+1]-1;
+            std::vector<int> s_cnt_ext(cmp_np, 0);
+            MPI_Sendrecv(                       NULL,                                                                       0, MPI_BYTE, partner, 0,
+                         &rbuff[rdisp_ext[new_np*i]], r_cnt_ext[new_np*(i+1)-1]+rdisp_ext[new_np*(i+1)-1]-rdisp_ext[new_np*i], MPI_BYTE, partner, 0, c, &status);
+          }
+        }
+      }
+      /*/
+      {
+        MPI_Request* requests = new MPI_Request[4*kway];
+        MPI_Status * statuses = new MPI_Status[4*kway];
+        int commCnt=0;
+        for(int i=0;i<kway;i++){
+          MPI_Status status;
+          int cmp_np=new_range[i+1]-new_range[i];
+          int partner=              new_range[i]+new_pid;
+          if(partner<new_range[i+1]){
+            MPI_Irecv(&rbuff    [rdisp    [new_np*i]], r_cnt    [new_np*(i+1)-1]+rdisp    [new_np*(i+1)-1]-rdisp    [new_np*i ], MPI_BYTE, partner, 0, c, &requests[commCnt]); commCnt++;
+          }
+
+          //Handle extra recv.
+          if(new_pid==new_np-1 && cmp_np>new_np){
+            int partner=new_range[i+1]-1;
+            MPI_Irecv(&rbuff_ext[rdisp_ext[new_np*i]], r_cnt_ext[new_np*(i+1)-1]+rdisp_ext[new_np*(i+1)-1]-rdisp_ext[new_np*i ], MPI_BYTE, partner, 0, c, &requests[commCnt]); commCnt++;
+          }
+        }
+        for(int i=0;i<kway;i++){
+          MPI_Status status;
+          int cmp_np=new_range[i+1]-new_range[i];
+          int partner=(new_pid<cmp_np?  new_range[i]+new_pid: new_range[i+1]-1);
+          int send_dsp     =sdisp[new_range[i  ]-new_range[0]  ];
+          int send_dsp_last=sdisp[new_range[i+1]-new_range[0]-1];
+          int send_cnt     =s_cnt[new_range[i+1]-new_range[0]-1]+send_dsp_last-send_dsp;
+          MPI_Issend (&sbuff[send_dsp], send_cnt, MPI_BYTE, partner, 0, c, &requests[commCnt]); commCnt++;
+        }
+        MPI_Waitall(commCnt, requests, statuses);
+        delete[] requests;
+        delete[] statuses;
+      }// */
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+      //Rearrange received data.
+      {
+        if(sbuff!=NULL) delete[] sbuff;
+        sbuff=new char[rbuff_size+rbuff_size_ext];
+
+        std::vector<int>  cnt_new(2*new_np*kway, 0);
+        std::vector<int> disp_new(2*new_np*kway, 0);
+        for(int i=0;i<new_np;i++)
+        for(int j=0;j<kway;j++){
+          cnt_new[(i*2  )*kway+j]=r_cnt    [j*new_np+i];
+          cnt_new[(i*2+1)*kway+j]=r_cnt_ext[j*new_np+i];
+        }
+        omp_par::scan(&cnt_new[0], &disp_new[0],2*new_np*kway);
+
+        #pragma omp parallel for
+        for(int i=0;i<new_np;i++)
+        for(int j=0;j<kway;j++){
+          memcpy(&sbuff[disp_new[(i*2  )*kway+j]], &rbuff    [rdisp    [j*new_np+i]], r_cnt    [j*new_np+i]);
+          memcpy(&sbuff[disp_new[(i*2+1)*kway+j]], &rbuff_ext[rdisp_ext[j*new_np+i]], r_cnt_ext[j*new_np+i]);
+        }
+
+        //Free memory.
+        if(rbuff    !=NULL) delete[] rbuff    ;
+        if(rbuff_ext!=NULL) delete[] rbuff_ext;
+
+        s_cnt.clear();
+        s_cnt.resize(new_np,0);
+        sdisp.resize(new_np);
+        for(int i=0;i<new_np;i++){
+          for(int j=0;j<2*kway;j++)
+            s_cnt[i]+=cnt_new[i*2*kway+j];
+          sdisp[i]=disp_new[i*2*kway];
+        }
+      }
+
+/*
+      //Rearrange received data.
+      {
+        int * s_cnt_old=&s_cnt[new_range[0]-range[0]];
+        int * sdisp_old=&sdisp[new_range[0]-range[0]];
+
+        std::vector<int> s_cnt_new(&s_cnt_old[0],&s_cnt_old[new_np]);
+        std::vector<int> sdisp_new(new_np       ,0                 );
+        #pragma omp parallel for
+        for(int i=0;i<new_np;i++){
+          s_cnt_new[i]+=r_cnt[i];
+        }
+        omp_par::scan(&s_cnt_new[0],&sdisp_new[0],new_np);
+
+        //Copy data to sbuff_new.
+        char* sbuff_new=new char[sdisp_new[new_np-1]+s_cnt_new[new_np-1]];
+        #pragma omp parallel for
+        for(int i=0;i<new_np;i++){
+          memcpy(&sbuff_new[sdisp_new[i]                      ],&sbuff   [sdisp_old[i]],s_cnt_old[i]);
+          memcpy(&sbuff_new[sdisp_new[i]+s_cnt_old[i]         ],&rbuff   [rdisp    [i]],r_cnt    [i]);
+        }
+
+        //Free memory.
+        if(sbuff   !=NULL) delete[] sbuff   ;
+        if(rbuff   !=NULL) delete[] rbuff   ;
+
+        //Substitute data for next iteration.
+        s_cnt=s_cnt_new;
+        sdisp=sdisp_new;
+        sbuff=sbuff_new;
+      }*/
+    }
+
+    range[0]=new_range[p_class  ];
+    range[1]=new_range[p_class+1];
+    //range[0]=new_range[0];
+    //range[1]=new_range[1];
+  }
+
+  //Copy data to rbuff_.
+  std::vector<char*> buff_ptr(np);
+  char* tmp_ptr=sbuff;
+  for(int i=0;i<np;i++){
+    int& blk_size=((int*)tmp_ptr)[0];
+    buff_ptr[i]=tmp_ptr;
+    tmp_ptr+=blk_size;
+  }
+  #pragma omp parallel for
+  for(int i=0;i<np;i++){
+    int& blk_size=((int*)buff_ptr[i])[0];
+    int& src_pid=((int*)buff_ptr[i])[1];
+    assert(blk_size-2*sizeof(int)<=r_cnt_[src_pid]*sizeof(T));
+    memcpy(&rbuff_[rdisp_[src_pid]],buff_ptr[i]+2*sizeof(int),blk_size-2*sizeof(int));
+  }
+/*
+  std::vector<double> tt_sum(4096*200,0);
+  std::vector<double> tt_wait_sum(4096*200,0);
+  MPI_Reduce(&tt[0], &tt_sum[0], 4096*200, MPI_DOUBLE, MPI_SUM, 0, c);
+  MPI_Reduce(&tt_wait[0], &tt_wait_sum[0], 4096*200, MPI_DOUBLE, MPI_SUM, 0, c);
+
+#define MAX_PROCS 4096
+
+  if(np==MAX_PROCS){
+    if(!pid) std::cout<<"Tw=[";
+    size_t j=0;
+    for(size_t i=0;i<200;i++){
+      for(j=0;j<MAX_PROCS;j++)
+        if(!pid) std::cout<<tt_wait_sum[j*200+i]<<' ';
+      if(!pid) std::cout<<";\n";
+      MPI_Barrier(c);
+    }
+    if(!pid) std::cout<<"];\n\n\n";
+  }
+
+  MPI_Barrier(c);
+
+  if(np==MAX_PROCS){
+    if(!pid) std::cout<<"Tc=[";
+    size_t j=0;
+    for(size_t i=0;i<200;i++){
+      for(j=0;j<MAX_PROCS;j++)
+        if(!pid) std::cout<<tt_sum[j*200+i]<<' ';
+      if(!pid) std::cout<<";\n";
+      MPI_Barrier(c);
+    }
+    if(!pid) std::cout<<"];\n\n\n";
+  }
+  // */
+  //Free memory.
+  if(sbuff   !=NULL) delete[] sbuff;
+#endif
+
+        PROF_PAR_ALL2ALLV_DENSE_END
+    }
+
+
+
   template<typename T>
   unsigned int defaultWeight(const T *a) {
     return 1;
@@ -1321,8 +1620,10 @@ namespace par {
 
 #ifdef TREE_SORT
         #pragma message("========Using Tree Sort==================")
-        par::SFC_3D_TreeSort(vecT,TOLLERANCE_OCT,comm);
-        std::swap(vecT,tmpVec);
+        tmpVec=vecT;
+        par::SFC_3D_TreeSort(tmpVec,TOLLERANCE_OCT,comm);
+        //std::swap(vecT,tmpVec);
+
 #else
       par::sampleSort<T>(vecT, tmpVec, comm);
 #endif
@@ -1393,7 +1694,7 @@ namespace par {
 
       //Remove endRecv if it exists (There can be no more than one copy of this)
       if (new_rank) {
-        typename std::vector<T>::iterator Iter = find(tmpVec.begin(), tmpVec.end(), endRecv);
+        typename std::vector<T>::iterator Iter = std::find(tmpVec.begin(), tmpVec.end(), endRecv);
         if (Iter != tmpVec.end()) {
           tmpVec.erase(Iter);
         }//end if found
@@ -2039,33 +2340,41 @@ namespace par {
        * */
 
     template <typename T>
-    void SFC_3D_TreeSort(std::vector<T> &pNodes, double loadFlexibility,MPI_Comm comm) {
+    void SFC_3D_TreeSort(std::vector<T> &pNodes, double loadFlexibility,MPI_Comm pcomm) {
 
-        MPI_Comm newComm;
-        par::splitComm2way(pNodes.empty(),&newComm,comm);
-
-        comm=newComm;
 
         int rank, npes;
-        MPI_Comm_rank(comm, &rank);
-        MPI_Comm_size(comm, &npes);
+        MPI_Comm_rank(pcomm, &rank);
+        MPI_Comm_size(pcomm, &npes);
 
-        unsigned int pMaxDepth=pNodes[0].getMaxDepth();
+        unsigned int pMaxDepth=30;
 
         if(npes==1)
         {
+            if(pNodes.empty())
+                return;
+            pMaxDepth=pNodes[0].getMaxDepth();
+            //seq::SFC_3D_msd_sort(&(*(pNodes.begin())),pNodes.size(),0,pMaxDepth);
             seq::SFC_3D_TreeSort(pNodes);
+
             return;
         }
 
 
+        MPI_Comm  comm=pcomm;
+        par::splitComm2way(pNodes.empty(),&comm,pcomm);
+
+        MPI_Comm_rank(comm, &rank);
+        MPI_Comm_size(comm, &npes);
+        pMaxDepth=pNodes[0].getMaxDepth();
+
 
 
         unsigned int firstSplitLevel = std::ceil(binOp::fastLog2(npes)/3.0);
-
-        MPI_Datatype MPI_TREENODE;
-        MPI_Type_contiguous(5,MPI_UNSIGNED,&MPI_TREENODE);
-        MPI_Type_commit(&MPI_TREENODE);
+       // if(!rank) std::cout<<"First Split Level: "<<firstSplitLevel<<std::endl;
+        /*MPI_Datatype MPI_TREENODE;
+        MPI_Type_contiguous(4,MPI_UNSIGNED,&MPI_TREENODE);
+        MPI_Type_commit(&MPI_TREENODE);*/
 
 
         DendroIntL localSz=pNodes.size();
@@ -2096,9 +2405,9 @@ namespace par {
         unsigned int numLeafBuckets =0;
 
         unsigned int begin_loc=0;
-
-
-        // * We need to split the array into buckets until it is we number of buckets is slightly higher than the number of processors.
+        /*
+       * We need to split the array into buckets until it is we number of buckets is slightly higher than the number of processors.
+       */
 
 
         // 1. ===================Initial Splitting Start===============================
@@ -2111,7 +2420,8 @@ namespace par {
 
             bool state=false;
             seq::SFC_3D_Bucketting(pNodes, tmp.lev, pMaxDepth, tmp.rot_id, tmp.begin, tmp.end, spliterstemp,
-                                   updateState);
+                                            updateState);
+
 
             if(tmp.lev == (firstSplitLevel-1))
             {
@@ -2177,7 +2487,7 @@ namespace par {
             if(tmp.lev==(firstSplitLevel-1) || state)
                 levSplitCount++;
 
-           /*  if(!rank)
+            /* if(!rank)
              std::cout<<"newLeafBuckets: "<<numLeafBuckets<<std::endl;*/
 
             if(numLeafBuckets == totalNumBuckets) {
@@ -2239,29 +2549,40 @@ namespace par {
 #ifdef DEBUG_TREE_SORT
         assert(bucketCounts_gScan.back()==globalSz);
 #endif
+        DendroIntL* localSplitter=new DendroIntL[npes];
         std::vector<unsigned int> splitBucketIndex;
         DendroIntL idealLoadBalance=0;
         begin_loc=0;
         for(int i=0;i<npes-1;i++) {
             idealLoadBalance+=((i+1)*globalSz/npes -i*globalSz/npes);
             DendroIntL toleranceLoadBalance = ((i+1)*globalSz/npes -i*globalSz/npes) * loadFlexibility;
+
             unsigned int  loc=(std::lower_bound(bucketCounts_gScan.begin(), bucketCounts_gScan.end(), idealLoadBalance) - bucketCounts_gScan.begin());
+            //std::cout<<rank<<" Searching: "<<idealLoadBalance<<"found: "<<loc<<std::endl;
 
             if(abs(bucketCounts_gScan[loc]-idealLoadBalance) > toleranceLoadBalance)
             {
+
                 if(splitBucketIndex.empty()  || splitBucketIndex.back()!=loc)
                     splitBucketIndex.push_back(loc);
-                 /*if(!rank)
-                   std::cout<<"Bucket index :  "<<loc << " Needs a split "<<std::endl;*/
+                /*if(!rank)
+                  std::cout<<"Bucket index :  "<<loc << " Needs a split "<<std::endl;*/
+            }else
+            {
+                if ((loc + 1) < bucketSplitter.size())
+                    localSplitter[i] = bucketSplitter[loc + 1];
+                else
+                    localSplitter[i] = bucketSplitter[loc];
             }
 
-             if(loc+1<bucketCounts_gScan.size())
+            /* if(loc+1<bucketCounts_gScan.size())
                  begin_loc=loc+1;
              else
-                 begin_loc=loc;
+                 begin_loc=loc;*/
 
         }
-        DendroIntL* localSplitter=new DendroIntL[npes];
+        localSplitter[npes-1]=pNodes.size();
+
 
 #ifdef DEBUG_TREE_SORT
         for(int i=0;i<splitBucketIndex.size()-1;i++)
@@ -2338,8 +2659,8 @@ namespace par {
 
                         index = HILBERT_TABLE[NUM_CHILDREN_3D * tmp.rot_id + hindex];
                         NodeInfo1<T> bucket(index, (tmp.lev + 1), splitterTemp[hindex], splitterTemp[hindexN]);
-//                        newBucketInfo[8 * k + i] = bucket;
-//                        newBucketSplitters[8 * k + i] = splitterTemp[hindex];
+//                          newBucketInfo[8 * k + i] = bucket;
+//                          newBucketSplitters[8 * k + i] = splitterTemp[hindex];
                         newBucketInfo.push_back(bucket);
                         newBucketSplitters.push_back(splitterTemp[hindex]);
 #ifdef DEBUG_TREE_SORT
@@ -2443,7 +2764,7 @@ namespace par {
                 //begin_loc=0;
                 for (unsigned int i = 0; i < npes-1; i++) {
                     idealLoadBalance += ((i + 1) * globalSz / npes - i * globalSz / npes);
-                    DendroIntL toleranceLoadBalance = ((i + 1) * globalSz / npes - i * globalSz / npes) * loadFlexibility;
+                    DendroIntL toleranceLoadBalance = (((i + 1) * globalSz / npes - i * globalSz / npes) * loadFlexibility);
                     unsigned int loc = (std::lower_bound(bucketCounts_gScan.begin(), bucketCounts_gScan.end(), idealLoadBalance) -
                                         bucketCounts_gScan.begin());
 
@@ -2460,10 +2781,10 @@ namespace par {
 
                     }
 
-                     if(loc+1<bucketCounts_gScan.size())
+                    /* if(loc+1<bucketCounts_gScan.size())
                          begin_loc=loc+1;
                      else
-                         begin_loc=loc;
+                         begin_loc=loc;*/
 
                 }
                 localSplitter[npes-1]=pNodes.size();
@@ -2485,10 +2806,10 @@ namespace par {
                     else
                         localSplitter[i] = bucketSplitter[loc];
 
-                     if(loc+1<bucketCounts_gScan.size())
+                    /* if(loc+1<bucketCounts_gScan.size())
                          begin_loc=loc+1;
                      else
-                         begin_loc=loc;
+                         begin_loc=loc;*/
 
                 }
                 localSplitter[npes-1]=pNodes.size();
@@ -2540,6 +2861,7 @@ namespace par {
 
 
         MPI_Alltoall(sendCounts, 1, MPI_INT,recvCounts,1,MPI_INT,comm);
+        //std::cout<<"rank "<<rank<<" MPI_ALL TO ALL END"<<std::endl;
 
         int * sendDispl =new  int [npes];
         int * recvDispl =new  int [npes];
@@ -2558,19 +2880,29 @@ namespace par {
 
 
 #ifdef DEBUG_TREE_SORT
-        if (!rank) std::cout << rank << " : send = " << sendCounts[0] << ", " << sendCounts[1] << std::endl;
-        if (!rank) std::cout << rank << " : recv = " << recvCounts[0] << ", " << recvCounts[1] << std::endl;
+        /*if (!rank)*/ std::cout << rank << " : send = " << sendCounts[0] << ", " << sendCounts[1] << std::endl;
+        /*if (!rank)*/ std::cout << rank << " : recv = " << recvCounts[0] << ", " << recvCounts[1] << std::endl;
 
-        if (!rank) std::cout << rank << " : send offset  = " << sendDispl[0] << ", " << sendDispl[1] << std::endl;
-        if (!rank) std::cout << rank << " : recv offset  = " << recvDispl[0] << ", " << recvDispl[1] << std::endl;
+       /* if (!rank) std::cout << rank << " : send offset  = " << sendDispl[0] << ", " << sendDispl[1] << std::endl;
+        if (!rank) std::cout << rank << " : recv offset  = " << recvDispl[0] << ", " << recvDispl[1] << std::endl;*/
 #endif
 
-        std::vector<T> pNodesRecv(recvDispl[npes-1]+recvCounts[npes-1]);
+        DendroIntL totalRecv=recvDispl[npes-1]+recvCounts[npes-1]-recvCounts[rank];
+        DendroIntL totalSend=sendDispl[npes-1]+sendCounts[npes-1]-sendCounts[rank];
 
-        par::Mpi_Alltoallv(&pNodes[0],sendCounts,sendDispl,&pNodesRecv[0],recvCounts,recvDispl,comm);
+        std::vector<T> pNodesRecv;
+        DendroIntL recvTotalCnt=recvDispl[npes-1]+recvCounts[npes-1];
+        if(recvTotalCnt) pNodesRecv.resize(recvTotalCnt);
 
 
-//        MPI_Alltoallv(&pNodes[0],sendCounts,sendDispl,MPI_TREENODE,&pNodesRecv[0],recvCounts,recvDispl,MPI_TREENODE,comm);
+
+        //par::Mpi_Alltoallv(&pNodes[0],sendCounts,sendDispl,&pNodesRecv[0],recvCounts,recvDispl,comm);
+
+        // MPI_Alltoallv(&pNodes[0],sendCounts,sendDispl,MPI_TREENODE,&pNodesRecv[0],recvCounts,recvDispl,MPI_TREENODE,comm);
+
+        par::Mpi_Alltoallv_Kway(&pNodes[0],sendCounts,sendDispl,&pNodesRecv[0],recvCounts,recvDispl,comm);
+
+
 #ifdef DEBUG_TREE_SORT
         if(!rank) std::cout<<"All2All Communication Ended "<<std::endl;
 #endif
@@ -2588,10 +2920,25 @@ namespace par {
         delete[](recvCounts);
         delete[](recvDispl);
 
-        seq::SFC_3D_TreeSort(pNodes);
+        localSz=pNodes.size();
+
+
+
+
+        //SFC::seqSort::SFC_3D_Sort(pNodes,pMaxDepth);
+        seq::SFC_3D_msd_sort(&(*(pNodes.begin())), pNodes.size(),0, pMaxDepth);
+
+
+
+
+
+
+
+
 
 
     }
+
 
 
 }//end namespace

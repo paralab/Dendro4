@@ -12,6 +12,7 @@
 #include "dendro.h"
 //@milinda Data Structure needed for tree sort.
 #define NUM_CHILDREN_3D 8
+#define ROTATION_OFFSET 16
 
 template <typename T>
 struct NodeInfo1
@@ -64,6 +65,17 @@ namespace seq {
 
     template<typename T>
     void SFC_3D_TreeSort(std::vector<T> &pNodes);
+
+    /*@author: Hari Sundar
+     * */
+    template<typename T>
+    void SFC_3D_lsd_sort(std::vector<T> &pNodes, std::vector<T> &buffer, unsigned int pMaxDepth);
+
+    /*@author: Hari Sundar
+     * */
+    template<typename T>
+    void SFC_3D_msd_sort(T *pNodes, unsigned int n, unsigned int rot_id,unsigned int pMaxDepth);
+
 
 
   /** 

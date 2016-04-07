@@ -1067,7 +1067,7 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
      if(size==1)
          return;
 
-     std::cout <<"1_::"<<std::endl;
+
 
      // Node Information
 
@@ -1277,7 +1277,9 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
          std::cout<<"PreGhost:\t"<<preGhost[0]<<"\t"<<preGhost[1]<<"\t"<<preGhost[2]<<std::endl;
          std::cout<<"Independent(mine):\t"<<indNodes[0]<<"\t"<<indNodes[1]<<"\t"<<indNodes[2]<<std::endl;
          std::cout<<"PostGhost:\t"<<postGhost[0]<<"\t"<<postGhost[1]<<"\t"<<postGhost[2]<<std::endl;
-         std::cout<<"ODA COMMUNICATION STATISTICS (min mean max)"<<std::endl;
+
+
+         std::cout<<"===================ODA COMMUNICATION STATISTICS (min mean max)===================="<<std::endl;
          std::cout<<"SendProcessorCnt:\t"<<sendProcCnt[0]<<"\t"<<sendProcCnt[1]<<"\t"<<sendProcCnt[2]<<std::endl;
 
          std::cout<<"SendDataCnt(total):\t"<<sendDataCnt[0]<<"\t"<<sendDataCnt[1]<<"\t"<<sendDataCnt[2]<<std::endl;

@@ -535,8 +535,9 @@ namespace ot {
       } else if (!isSorted) {
         std::vector<TreeNode> tmpOut;
 #ifdef TREE_SORT
-        par::SFC_3D_TreeSort(out,TOLLERANCE_OCT,comm);
-        std::swap(out,tmpOut);
+        tmpOut=out;
+        par::SFC_3D_TreeSort(tmpOut,TOLLERANCE_OCT,comm);
+        //std::swap(out,tmpOut);
 #else
         par::sampleSort<ot::TreeNode>(out, tmpOut, comm);
 #endif
@@ -858,8 +859,9 @@ namespace ot {
 
     //unsigned int maxDepth=nodes[0].getMaxDepth();
 #ifdef TREE_SORT
-    par::SFC_3D_TreeSort(nodes,TOLLERANCE_OCT,comm);
-    std::swap(nodes,tmpNodes);
+    tmpNodes=nodes;
+    par::SFC_3D_TreeSort(tmpNodes,TOLLERANCE_OCT,comm);
+    //std::swap(nodes,tmpNodes);
 #else
     par::sampleSort<ot::TreeNode>(nodes, tmpNodes, comm);
      //std::cout << rank << "after sample sort: " << tmpNodes.size() << std::endl;

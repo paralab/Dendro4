@@ -16,6 +16,10 @@
 #include <cstring>
 #include "externVars.h"
 #include "dendro.h"
+#include <iostream>
+#include <string>
+#include <stdio.h>
+#include <time.h>
 
 
 #include "genPts_par.h"
@@ -46,6 +50,20 @@ int Jac1FinestMultEvent;
 
 double**** LaplacianType2Stencil; 
 double**** MassType2Stencil;
+
+
+const std::string currentDateTime() {
+  time_t     now = time(0);
+  struct tm  tstruct;
+  char       buf[80];
+  tstruct = *localtime(&now);
+  // Visit http://en.cppreference.com/w/cpp/chrono/c/strftime
+  // for more information about date/time format
+  strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
+
+  return buf;
+}
+
 
 
 
@@ -158,7 +176,7 @@ int main(int argc, char ** argv ) {
 if(!genRegGrid) {
 
   if (genPts) {
-    genGauss(0.15, grainSize, dim, argv[1], MPI_COMM_WORLD);
+    genGauss(0.5, grainSize, dim, argv[1], MPI_COMM_WORLD);
 
   }
 
@@ -218,8 +236,9 @@ if(!genRegGrid) {
   locSz = linOct.size();
   par::Mpi_Reduce<DendroIntL>(&locSz, &totalSz, 1, MPI_SUM, 0, MPI_COMM_WORLD);
   if (rank == 0) {
-    std::cout << "# pts= " << totalSz << std::endl;
+    std::cout << " # pts= " << totalSz << std::endl;
   }
+  //std::cout << rank<<" # pts= " << totalSz << std::endl;
   //std::cout<<"linOct:"<<linOct.size()<<std::endl;
   pts.resize(3 * (linOct.size()));
   ptsLen = (3 * (linOct.size()));

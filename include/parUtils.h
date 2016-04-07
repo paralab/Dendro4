@@ -23,7 +23,7 @@
 #include "mpi.h"
 #include <vector>
 #include "dendro.h"
-#define TOLLERANCE_OCT 0.001
+#define TOLLERANCE_OCT 0.0001
 //#include "seqUtils.h"
 
 #ifdef PETSC_USE_LOG
@@ -333,7 +333,14 @@ namespace par {
     int Mpi_Alltoallv_dense(T* sendbuf, int* sendcnts, int* sdispls, 
         T* recvbuf, int* recvcnts, int* rdispls, MPI_Comm comm);
 
-  /**
+
+    template <typename T>
+    int Mpi_Alltoallv_Kway(T* sbuff_, int* s_cnt_, int* sdisp_,
+                           T* rbuff_, int* r_cnt_, int* rdisp_, MPI_Comm c);
+
+
+
+    /**
     @brief Re-distributes a STL vector, preserving the relative ordering of the
     elements. 
     @author Rahul S. Sampath
@@ -580,7 +587,7 @@ namespace par {
 
 
     template <typename T>
-    void SFC_3D_TreeSort(std::vector<T> &pNodes, double loadFlexibility, MPI_Comm comm);
+    void SFC_3D_TreeSort(std::vector<T> &pNodes, double loadFlexibility, MPI_Comm pcomm);
 
 
 
