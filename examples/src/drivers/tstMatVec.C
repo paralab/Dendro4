@@ -482,8 +482,9 @@ int papi_events[]={PAPI_L1_TCM,PAPI_L2_DCM,PAPI_L2_DCH};
 
   time ( &rawtime );
 
-  ptm = gmtime ( &rawtime );
+
 std::this_thread::sleep_for(std::chrono::milliseconds(60000));
+ ptm = gmtime ( &rawtime );
  if(!rank) std::cout<<" MatVec Begin: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
 #endif
 
@@ -493,6 +494,8 @@ std::this_thread::sleep_for(std::chrono::milliseconds(60000));
   }
 
 #ifdef POWER_MEASUREMENT_TIMESTEP
+  time ( &rawtime );
+  ptm = gmtime ( &rawtime );
   if(!rank) std::cout<<" MatVec Begin: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
 #endif
 #ifdef __PAPI_PROFILING__
