@@ -59,6 +59,34 @@ void genGauss(const double& sd, const long int numPts, int dim, char * filePrefi
 }
 
 
+void genGauss(const double& sd, const DendroIntL numPts, int dim, std::vector<double> &xyz)
+{
+
+    std::random_device rd;
+    std::mt19937_64 gen(rd());
+    //std::mt19937 gen;
+
+
+    std::normal_distribution<> d(0.5,sd);
+    //long int ptsSize=numPts;
+    double temp=0;
+    DendroIntL totPts=numPts*dim;
+    for(DendroIntL i=0;i<totPts;i++)
+    {
+        temp=(double)d(gen);
+
+        if(temp<0) temp=-1*temp;
+        if(temp>=1) temp=1.0/(2*temp);
+
+        xyz.push_back(temp);
+
+    }
+    return ;
+
+}
+
+
+
 void genLogarithmicGauss(const double& sd, const int numPts, int dim, char * filePrefix,MPI_Comm comm)
 {
 

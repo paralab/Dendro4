@@ -179,38 +179,10 @@ int main(int argc, char ** argv ) {
 
 
 
-if(!genRegGrid) {
 
-  if (genPts) {
-    genGauss(0.5, grainSize, dim, argv[1], MPI_COMM_WORLD);
-
-  }
-
-
-
-
-  strcpy(bFile, argv[1]);
-  ot::int2str(rank, Kstr);
-  strcat(bFile, Kstr);
-  strcat(bFile, "_\0");
-  ot::int2str(size, Kstr);
-  strcat(bFile, Kstr);
-  strcpy(pFile, bFile);
-  strcpy(uFile, bFile);
-  strcat(bFile, "_Bal.ot\0");
-  strcat(pFile, ".pts\0");
-  strcat(uFile, ".sol\0");
-
-  //Points2Octree....
-  if (!rank) {
-    std::cout << " reading  " << pFile << std::endl; // Point size
-  }
-  ot::readPtsFromFile(pFile, pts);
-  if (!rank) {
-    std::cout << " finished reading  " << pFile << std::endl; // Point size
-  }
-  ptsLen = pts.size();
-  MPI_Barrier(MPI_COMM_WORLD);
+  genGauss(0.5, grainSize, dim,pts);
+  ptsLen=pts.size();
+  //std::cout<<"pts size : "<<pts.size()<<std::endl;
   std::vector<ot::TreeNode> tmpNodes;
   for (int i = 0; i < ptsLen; i += 3) {
     if ((pts[i] > 0.0) &&
@@ -308,26 +280,7 @@ if(!genRegGrid) {
     std::cout << "# of Balanced Octants: " << totalSz << std::endl;
     std::cout << "bal Time: " << totalTime << std::endl;
   }
-}else
-{
-  if(!rank)
-    std::cout<<"Generating Regular Grid"<<std::endl;
 
-  /*assert(regLev<=maxDepth);
-  ot::createRegularOctree(balOct,regLev,dim,maxDepth,MPI_COMM_WORLD);*/
-
-
-  DendroIntL localSz=balOct.size();
-  DendroIntL sizeG=0;
-
-  par::Mpi_Reduce(&localSz,&sizeG,1,MPI_SUM,0,MPI_COMM_WORLD);
-
-
-  if(!rank)
-    std::cout<<"Bal Oct Size:"<<sizeG<<std::endl;
-
-
-}
 
   //par::SFC_3D_TreeSort(balOct,tol,MPI_COMM_WORLD);
 
