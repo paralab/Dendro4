@@ -194,7 +194,7 @@ if(BUILD_DA_EXAMPLES)
     target_link_libraries(flexPartition dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
     add_executable(tstMatVec include/hcurvedata.h src/hcurvedata.cpp examples/src/drivers/tstMatVec.C examples/src/backend/odaJac.C examples/src/backend/handleType2Stencils.C examples/include/genPts_par.h examples/src/drivers/genPts_par.C)
-    target_link_libraries(tstMatVec dendroDA dendro petsc papi ${MPI_LIBRARIES} m)
+    target_link_libraries(tstMatVec dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
     add_executable(buildDA examples/src/drivers/buildDA.C include/hcurvedata.h examples/include/octreeStatistics.h examples/src/drivers/octreeStatistics.cpp)
     target_link_libraries(buildDA dendroDA dendro petsc ${MPI_LIBRARIES} m)
