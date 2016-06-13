@@ -19,7 +19,7 @@
 
 #include "dynamicPartition.h"
 
-
+#include "sfcSort.h"
 
 //Don't want time to be synchronized. Need to check load imbalance.
 #ifdef MPI_WTIME_IS_GLOBAL
@@ -271,8 +271,12 @@ int main(int argc, char **argv) {
   assert(par::test::isSorted(tmpNodes,MPI_COMM_WORLD));*/
 
 
+#ifdef TREE_SORT
   par::removeDuplicates<ot::TreeNode>(tmpNodes, false,MPI_COMM_WORLD);
-
+#else
+  SFC::parSort::SFC_Sort_RemoveDuplicates(tmpNodes,TOLLERANCE_OCT,maxDepth,false,MPI_COMM_WORLD);
+#endif
+  
   linOct = tmpNodes;
   tmpNodes.clear();
   // std::cout << rank << "partition" << std::endl;

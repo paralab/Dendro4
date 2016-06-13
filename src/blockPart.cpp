@@ -10,6 +10,7 @@
 #include "parUtils.h"
 #include <omp.h>
 #include <ompUtils.h>
+#include <sfcSort.h>
 #include "testUtils.h"
 #ifdef __DEBUG__
 #ifndef __DEBUG_OCT__
@@ -660,7 +661,7 @@ namespace ot {
 
     //Sorting is necessary here since bPartcomparator is different from <.
     //sort(localBlocks.begin(), localBlocks.end());
-    seq::SFC_3D_TreeSort(localBlocks);
+    SFC::seqSort::SFC_3D_msd_sort_rd(&(*(localBlocks.begin())),localBlocks.size(),0,maxDepth,maxDepth);//seq::SFC_3D_TreeSort(localBlocks);
 
     // 3. Call nodes2Oct on these cells to generate the 
     //    globalCoarse octree ...

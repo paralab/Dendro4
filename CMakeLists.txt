@@ -53,10 +53,24 @@ option(BUILD_TESTS "Build test applications" ON)
 option(BUILD_DA_EXAMPLES "Build examples using dendro::DA" ON)
 option(BUILD_MG_EXAMPLES "Build test applications using dendro::MG" ON)
 option(ALLTOALLV_FIX "Use K-way all to all v" ON)
-option(ROTATION_STACK_ENABLE "Calculate the rotation pattern using the stack implementation" ON)
+option(ROTATION_STACK_ENABLE "Calculate the rotation pattern using the stack implementation" OFF)
 option(POWER_MEASUREMENT_TIMESTEP "Print the time step for mat vec loops" OFF)
+option (SPLITTER_SELECTION_FIX "use the splitter fix for the treeSort" ON)
+option (DIM_2 "To enable DIM2 version of Sorting. Tree sort part is tested and works wioth DIM 2 but rest of the dendro might not " OFF)
+option (REMOVE_DUPLICATES "Enables the remove duplocates and multilevel Sorting. " ON)
 set(KWAY 128 CACHE INT 128)
+set(NUM_NPES_THRESHOLD 16 CACHE INT 16)
 
+
+if(REMOVE_DUPLICATES)
+    add_definitions(-DREMOVE_DUPLICATES)
+endif()
+
+
+if(SPLITTER_SELECTION_FIX)
+    add_definitions(-DSPLITTER_SELECTION_FIX)
+    add_definitions(-DNUM_NPES_THRESHOLD=${NUM_NPES_THRESHOLD})
+endif()
 
 if(USE_64BIT_INDICES)
     add_definitions(-DUSE_64BIT_INDICES)
@@ -80,6 +94,11 @@ endif()
 if(TREE_SORT)
     add_definitions(-DTREE_SORT)
 endif()
+
+if(DIM_2)
+    add_definitions(-DDIM_2)
+endif()
+
 
 if(ALLTOALLV_FIX)
     add_definitions(-DALLTOALLV_FIX)
@@ -183,23 +202,23 @@ target_link_libraries(testConBalAndCoarsen dendro petsc ${MPI_LIBRARIES} m)
 ##    Dendro DA APPS
 ##---------------------------------------------------------------------------------------
 if(BUILD_DA_EXAMPLES)
-    add_executable(testPartition examples/src/drivers/testPartition.C include/hcurvedata.h src/hcurvedata.cpp examples/include/octreeStatistics.h examples/src/drivers/octreeStatistics.cpp include/test/testUtils.h src/test/testUtils.C examples/include/genPts_par.h examples/src/drivers/genPts_par.C include/dynamicPartition.h src/dynamicPartition.C
+    add_executable(testPartition include/sfcSort.h examples/src/drivers/testPartition.C include/hcurvedata.h src/hcurvedata.cpp examples/include/octreeStatistics.h examples/src/drivers/octreeStatistics.cpp include/test/testUtils.h src/test/testUtils.C examples/include/genPts_par.h examples/src/drivers/genPts_par.C include/dynamicPartition.h src/dynamicPartition.C
             )
     target_link_libraries(testPartition dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
-    add_executable(diffOctree examples/src/drivers/diff_morton_hilbert.C include/hcurvedata.h src/hcurvedata.cpp examples/include/octreeStatistics.h examples/src/drivers/octreeStatistics.cpp include/test/testUtils.h src/test/testUtils.C )
+    add_executable(diffOctree include/sfcSort.h examples/src/drivers/diff_morton_hilbert.C include/hcurvedata.h src/hcurvedata.cpp examples/include/octreeStatistics.h examples/src/drivers/octreeStatistics.cpp include/test/testUtils.h src/test/testUtils.C )
     target_link_libraries(diffOctree dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
-    add_executable(flexPartition examples/src/drivers/flexPartition.C include/hcurvedata.h src/hcurvedata.cpp examples/include/octreeStatistics.h examples/src/drivers/octreeStatistics.cpp include/test/testUtils.h src/test/testUtils.C)
+    add_executable(flexPartition include/sfcSort.h examples/src/drivers/flexPartition.C include/hcurvedata.h src/hcurvedata.cpp examples/include/octreeStatistics.h examples/src/drivers/octreeStatistics.cpp include/test/testUtils.h src/test/testUtils.C)
     target_link_libraries(flexPartition dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
-    add_executable(tstMatVec include/hcurvedata.h src/hcurvedata.cpp examples/src/drivers/tstMatVec.C examples/src/backend/odaJac.C examples/src/backend/handleType2Stencils.C examples/include/genPts_par.h examples/src/drivers/genPts_par.C)
+    add_executable(tstMatVec include/sfcSort.h include/hcurvedata.h src/hcurvedata.cpp examples/src/drivers/tstMatVec.C examples/src/backend/odaJac.C examples/src/backend/handleType2Stencils.C examples/include/genPts_par.h examples/src/drivers/genPts_par.C)
     target_link_libraries(tstMatVec dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
-    add_executable(buildDA examples/src/drivers/buildDA.C include/hcurvedata.h examples/include/octreeStatistics.h examples/src/drivers/octreeStatistics.cpp)
+    add_executable(buildDA include/sfcSort.h examples/src/drivers/buildDA.C include/hcurvedata.h examples/include/octreeStatistics.h examples/src/drivers/octreeStatistics.cpp)
     target_link_libraries(buildDA dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
-    add_executable(buildRgDA examples/src/drivers/buildRgDA.C)
+    add_executable(buildRgDA include/sfcSort.h examples/src/drivers/buildRgDA.C)
     target_link_libraries(buildRgDA dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
     #add_executable(octLaplacian examples/src/drivers/octLaplacian.C)

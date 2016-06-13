@@ -23,7 +23,7 @@
 #include "mpi.h"
 #include <vector>
 #include "dendro.h"
-#define TOLLERANCE_OCT 0.0001
+#define TOLLERANCE_OCT 0.1
 //#include "seqUtils.h"
 
 #ifdef PETSC_USE_LOG
@@ -576,20 +576,6 @@ namespace par {
     */
   template <typename T>
     void bitonicSort(std::vector<T> & in, MPI_Comm comm) ;
-
-
-    /*
-      *
-      * @author Milinda Shayamal
-      * Parallel version of the tree sort algorithm.
-      *
-      * */
-
-
-    template <typename T>
-    void SFC_3D_TreeSort(std::vector<T> &pNodes, double loadFlexibility, MPI_Comm pcomm);
-
-
 
 }//end namespace
 

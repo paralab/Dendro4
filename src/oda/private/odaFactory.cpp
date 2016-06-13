@@ -9,6 +9,7 @@
 #include "colors.h"
 #include "testUtils.h"
 #include "dendro.h"
+#include "sfcSort.h"
 
 #ifdef __DEBUG__
 #ifndef __DEBUG_DA__
@@ -171,7 +172,7 @@ void DA::DA_FactoryPart1(std::vector<ot::TreeNode>& in) {
   std::vector<ot::TreeNode> tmpTN;
 #ifdef TREE_SORT
   tmpTN=in;
-  par::SFC_3D_TreeSort(tmpTN,TOLLERANCE_OCT,m_mpiCommActive);
+  SFC::parSort::SFC_3D_Sort(tmpTN,TOLLERANCE_OCT,(m_uiMaxDepth+1),m_mpiCommActive);//SFC::parSort::SFC_3D_Sort(tmpTN,TOLLERANCE_OCT,m_uiMaxDepth,m_mpiCommActive);//par::SFC_3D_TreeSort(tmpTN,TOLLERANCE_OCT,m_mpiCommActive);
   //std::swap(in,tmpTN);
 #else
   par::sampleSort(in,tmpTN,m_mpiCommActive);
@@ -199,7 +200,7 @@ void DA::DA_FactoryPart1(std::vector<ot::TreeNode>& in) {
 
 #ifdef TREE_SORT
     tmpVecTN=positiveBoundaryOctants;
-    par::SFC_3D_TreeSort(tmpVecTN,TOLLERANCE_OCT,bdyComm);
+    SFC::parSort::SFC_3D_Sort(tmpVecTN,TOLLERANCE_OCT,m_uiMaxDepth,bdyComm);//par::SFC_3D_TreeSort(tmpVecTN,TOLLERANCE_OCT,bdyComm);
     //std::swap(positiveBoundaryOctants,tmpVecTN);
 #else
     par::sampleSort<ot::TreeNode>(positiveBoundaryOctants, tmpVecTN, bdyComm);

@@ -16,6 +16,7 @@
 #include "odaUtils.h" 
 #include "parUtils.h"
 #include <iostream>
+#include <sfcSort.h>
 #include "dendro.h"
 
 #ifndef iC
@@ -1473,7 +1474,7 @@ namespace ot {
       std::vector<ot::TreeNode > tmpVecTN;
 #ifdef TREE_SORT
       tmpVecTN=positiveBoundaries;
-      par::SFC_3D_TreeSort(tmpVecTN,TOLLERANCE_OCT,bdyComm);
+      SFC::parSort::SFC_3D_Sort(tmpVecTN,TOLLERANCE_OCT,maxDepth,bdyComm);//par::SFC_3D_TreeSort(tmpVecTN,TOLLERANCE_OCT,bdyComm);
       //std::swap(positiveBoundaries,tmpVecTN);
 #else
       par::sampleSort<ot::TreeNode>(tmpVecTN, tmpVecTN, bdyComm);
@@ -1501,7 +1502,7 @@ namespace ot {
           std::vector<ot::TreeNode > tmpVecTN;
 #ifdef TREE_SORT
           tmpVecTN=positiveBoundaries;
-          par::SFC_3D_TreeSort(tmpVecTN,TOLLERANCE_OCT,bdyComm);
+          SFC::parSort::SFC_3D_Sort(tmpVecTN,TOLLERANCE_OCT,maxDepth,bdyComm);//par::SFC_3D_TreeSort(tmpVecTN,TOLLERANCE_OCT,bdyComm);
           //std::swap(positiveBoundaries,tmpVecTN);
 #else
           par::sampleSort<ot::TreeNode>(positiveBoundaries, tmpVecTN, bdyComm);

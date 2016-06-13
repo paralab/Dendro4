@@ -16,7 +16,7 @@
 #include "testUtils.h"
 
 #include "treenode2vtk.h"
-
+#include "sfcSort.h"
 #ifdef __DEBUG__
 #ifndef __DEBUG_OCT__
 #define __DEBUG_OCT__
@@ -536,7 +536,7 @@ namespace ot {
         std::vector<TreeNode> tmpOut;
 #ifdef TREE_SORT
         tmpOut=out;
-        par::SFC_3D_TreeSort(tmpOut,TOLLERANCE_OCT,comm);
+        SFC::parSort::SFC_3D_Sort(tmpOut,TOLLERANCE_OCT,maxDepth,comm);//par::SFC_3D_TreeSort(tmpOut,TOLLERANCE_OCT,comm);
         //std::swap(out,tmpOut);
 #else
         par::sampleSort<ot::TreeNode>(out, tmpOut, comm);
@@ -860,7 +860,7 @@ namespace ot {
     //unsigned int maxDepth=nodes[0].getMaxDepth();
 #ifdef TREE_SORT
     tmpNodes=nodes;
-    par::SFC_3D_TreeSort(tmpNodes,TOLLERANCE_OCT,comm);
+    SFC::parSort::SFC_3D_Sort(tmpNodes,TOLLERANCE_OCT,maxDepth,comm);//par::SFC_3D_TreeSort(tmpNodes,TOLLERANCE_OCT,comm);
     //std::swap(nodes,tmpNodes);
 #else
     par::sampleSort<ot::TreeNode>(nodes, tmpNodes, comm);

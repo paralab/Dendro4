@@ -10,35 +10,6 @@
 
 #include <vector>
 #include "dendro.h"
-//@milinda Data Structure needed for tree sort.
-#define NUM_CHILDREN_3D 8
-#define ROTATION_OFFSET 16
-
-template <typename T>
-struct NodeInfo1
-{
-    unsigned char rot_id;
-    unsigned char lev;
-    DendroIntL begin;
-    DendroIntL end;
-
-    NodeInfo1()
-    {
-      rot_id=0;
-      lev=0;
-
-    }
-
-    NodeInfo1(unsigned char p_rot_id,unsigned char p_lev,DendroIntL p_begin, DendroIntL p_end)
-    {
-      rot_id=p_rot_id;
-      lev=p_lev;
-      begin=p_begin;
-      end=p_end;
-
-    }
-
-};
 
 
 /**
@@ -48,37 +19,7 @@ struct NodeInfo1
   */
 namespace seq {
 
-    /*
-        * @author: Milinda Shayamal
-        * Seq: Tree sort bucketting function
-        * */
-
-    template<typename T>
-    void SFC_3D_Bucketting(std::vector<T> &pNodes, int lev, int maxDepth, unsigned char rot_id,
-                           DendroIntL &begin, DendroIntL &end, DendroIntL *splitters, bool *updateState);
-
-   /*
-   * @author Milinda Shayamal
-   * Sequential Tree sort implementation
-   *
-   * */
-
-    template<typename T>
-    void SFC_3D_TreeSort(std::vector<T> &pNodes);
-
-    /*@author: Hari Sundar
-     * */
-    template<typename T>
-    void SFC_3D_lsd_sort(std::vector<T> &pNodes, std::vector<T> &buffer, unsigned int pMaxDepth);
-
-    /*@author: Hari Sundar
-     * */
-    template<typename T>
-    void SFC_3D_msd_sort(T *pNodes, unsigned int n, unsigned int rot_id,unsigned int pMaxDepth);
-
-
-
-  /** 
+   /**
    * @brief Flash sort algo to sort an array in O(n).
    * 
    * @param a    The array to be sorted
