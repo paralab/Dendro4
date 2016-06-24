@@ -194,8 +194,8 @@ add_executable(testConAndBal examples/src/drivers/testConAndBal)
 target_link_libraries(testConAndBal dendro petsc ${MPI_LIBRARIES} m)
 
 add_executable(testConBalAndCoarsen
-  examples/src/drivers/testConBalAndCoarsen)
-target_link_libraries(testConBalAndCoarsen dendro petsc ${MPI_LIBRARIES} m)
+  examples/src/drivers/testConBalAndCoarsen) 
+target_link_libraries(testConBalAndCoarsen dendro dendroDA petsc ${MPI_LIBRARIES} m)
 ##---------------------------------------------------------------------------------------
 
 ##---------------------------------------------------------------------------------------
@@ -352,13 +352,13 @@ if(BUILD_TESTS)
     target_link_libraries(downSample dendroMG dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
     add_executable(checkResults src/test/checkResults.C)
-    target_link_libraries(checkResults dendroTest dendro petsc ${MPI_LIBRARIES} m)
+    target_link_libraries(checkResults dendroTest dendro dendroDA  petsc ${MPI_LIBRARIES} m)
 
     add_executable(checkScatterValues src/test/checkScatterValues.C)
     target_link_libraries(checkScatterValues dendroMG dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
     add_executable(checkCoarsening src/test/checkCoarsening.C)
-    target_link_libraries(checkCoarsening dendroTest dendro petsc ${MPI_LIBRARIES} m)
+    target_link_libraries(checkCoarsening dendroTest dendro dendroDA  petsc ${MPI_LIBRARIES} m)
 
     add_executable(justCoarsen examples/src/drivers/justCoarsen.C)
     target_link_libraries(justCoarsen dendroDA dendro petsc ${MPI_LIBRARIES} m)
