@@ -164,7 +164,26 @@ int main(int argc, char ** argv )
     }
 
 
-    genGauss(0.5, grainSize, dim,pts);
+    if(genPts==1)
+    {
+        genGauss(0.5,grainSize,dim,argv[1],globalComm);
+    }
+
+
+    sprintf(pFile, "%s%d_%d.pts", argv[1], rank, npes);
+    //std::cout<<"Attempt to Read "<<ptsFileName<<std::endl;
+
+    //Read pts from files
+    if (!rank) {
+        std::cout << RED " Reading  " << argv[1] << NRM << std::endl; // Point size
+    }
+    ot::readPtsFromFile(pFile, pts);
+
+    if (!rank) {
+        std::cout << GRN " Finished reading  " << argv[1] << NRM << std::endl; // Point size
+    }
+
+
     ptsLen=pts.size();
     std::vector<ot::TreeNode> tmpNodes;
     DendroIntL totPts=grainSize*dim;
