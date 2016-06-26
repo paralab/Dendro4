@@ -100,7 +100,7 @@ int main(int argc, char ** argv )
 
     ot::RegisterEvents();
     ot::DA_Initialize(globalComm);
-
+    PetscErrorPrintf = PetscErrorPrintfNone;
 
     MPI_Comm_size(globalComm,&npes);
     MPI_Comm_rank(globalComm,&rank);
