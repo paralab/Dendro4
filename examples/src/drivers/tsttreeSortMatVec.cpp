@@ -369,7 +369,7 @@ std::this_thread::sleep_for(std::chrono::milliseconds(60000));
 #ifdef POWER_MEASUREMENT_TIMESTEP
     time ( &rawtime );
   ptm = gmtime ( &rawtime );
-  if(!rank) std::cout<<" MatVec Begin: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
+  if(!rank) std::cout<<" MatVec End: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
 #endif
 
     VecDestroy(&in);
