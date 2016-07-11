@@ -158,6 +158,9 @@ namespace ot {
   class TreeNode;
   class DA;
 
+  void writeCommCountMapToFile(char * fileName, const std::vector<unsigned int>& commProcs, const std::vector<unsigned int>& commCounts, MPI_Comm comm);
+
+
   /**
     @brief A function that maps a given child number and hanging mask to one of the 18 standard hanging configurations.
     @param hnMask The hanging mask returned using the function getHangingNodeIndex()

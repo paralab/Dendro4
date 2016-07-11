@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <iostream>
 #include <cassert>
+#include <iomanip>
 #include "oda.h"
 #include "parUtils.h"
 #include "seqUtils.h"
@@ -2009,6 +2010,55 @@ namespace ot {
 
     return 1;
   }//end of function
+
+  void writeCommCountMapToFile(char * fileName, const std::vector<unsigned int>& commProcs, const std::vector<unsigned int>& commCounts, MPI_Comm comm)
+  {
+
+      int rank=0,npes=0;
+      MPI_Comm_rank(comm,&rank);
+      MPI_Comm_size(comm,&npes);
+
+      unsigned int * commMap = new unsigned int[npes];
+
+      for(unsigned int i=0;i<npes;i++)
+        commMap[i]=0;
+
+      for(unsigned int i=0;i<commProcs.size();i++)
+          commMap[commProcs[i]]=commCounts[i];
+
+      unsigned int * commMapAll=new unsigned int[npes*npes];
+
+      par::Mpi_Gather(commMap,commMapAll,npes,0,comm);
+
+      if(!rank) {
+
+          std::ofstream myfile;
+          myfile.open(fileName);
+
+          myfile<<"Labels";
+          for(unsigned int i=0;i<npes;i++)
+          {
+              myfile<<"\tP"<<std::setw(2)<<std::setfill('0')<<i;
+          }
+          myfile<<std::endl;
+          for(unsigned int i=0;i<npes;i++)
+          {
+              myfile<<"P"<<std::setw(2)<<std::setfill('0')<<i;
+              for(unsigned int j=0;j<npes;j++)
+              {
+                 myfile<<"\t"<<commMapAll[i*npes+j];
+              }
+              myfile<<std::endl;
+          }
+
+          myfile.close();
+
+      }
+
+  }// end of the function
+
+
+
 
 }//end namespace
 

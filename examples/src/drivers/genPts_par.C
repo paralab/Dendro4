@@ -38,7 +38,6 @@ void genGauss(const double& sd, const long int numPts, int dim, char * filePrefi
     for(long i=0;i<(long)dim*numPts;i++)
     {
         temp=(double)d(gen);
-
         if(temp<0) temp=-1*temp;
         if(temp>=1) temp=1.0/(2*temp);
 

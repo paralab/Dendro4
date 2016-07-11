@@ -865,9 +865,8 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
 
 
 
-
-
-
+  writeCommCountMapToFile("sendCommMap.csv",m_uipSendProcs,m_uipSendCounts,m_mpiCommActive);
+  writeCommCountMapToFile("recvCommMap.csv",m_uipRecvProcs,m_uipRecvCounts,m_mpiCommActive);
 
 
   PROF_BUILD_DA_STAGE9_END

@@ -228,7 +228,7 @@ int main(int argc, char **argv) {
 
   if(enable_pts_io==1)
   {
-    genGauss(0.15,grainSize,dim,argv[1],MPI_COMM_WORLD);
+    genGauss(0.1,grainSize,dim,argv[1],MPI_COMM_WORLD);
 
   }
 
@@ -432,6 +432,9 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
     std::cout << "# of Balanced Octants: " << totalSz << std::endl;
     std::cout << "bal Time: " << totalTime << std::endl;
   }
+
+  treeNodesTovtk(balOct,rank,"balOct_dendro");
+
 
   double stat_af_bal[3];
   calculateBoundaryFaces(balOct,num_pseudo_proc,stat_af_bal);

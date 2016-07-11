@@ -166,7 +166,7 @@ int main(int argc, char ** argv )
 
     if(genPts==1)
     {
-        genGauss(0.5,grainSize,dim,argv[1],globalComm);
+        genGauss(0.15,grainSize,dim,argv[1],globalComm);
     }
 
 
@@ -226,7 +226,7 @@ int main(int argc, char ** argv )
 
     //par::partitionW(linOct,NULL,globalComm);
 
-    SFC::parSort::SFC_3D_Sort(linOct,tol,maxDepth,globalComm);
+    //SFC::parSort::SFC_3D_Sort(linOct,tol,maxDepth,globalComm);
 
 
     locSz = linOct.size();
@@ -254,7 +254,7 @@ int main(int argc, char ** argv )
     endTime = MPI_Wtime();
 
 
-    SFC::parSort::SFC_3D_Sort(linOct,tol,maxDepth,globalComm);
+    //SFC::parSort::SFC_3D_Sort(linOct,tol,maxDepth,globalComm);
 
 
     localTime = endTime - startTime;
@@ -287,6 +287,8 @@ int main(int argc, char ** argv )
         std::cout << "# of Balanced Octants: " << totalSz << std::endl;
         std::cout << "bal Time: " << totalTime << std::endl;
     }
+
+    //treeNodesTovtk(balOct,rank,"balOCt_dendro");
 
     startTime = MPI_Wtime();
     ot::DA da(balOct, MPI_COMM_WORLD, MPI_COMM_WORLD, compressLut);
