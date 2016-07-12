@@ -158,10 +158,10 @@ int main(int argc, char ** argv )
         std::cout << BLU << "===============================================" << NRM << std::endl;
         std::cout << " Input Parameters" << std::endl;
         std::cout << " Input File Prefix:" << argv[1] << std::endl;
-        std::cout << " Gen Pts files:: " << genPts << std::endl;
-        std::cout << " Number of Points per process:: " << grainSize << std::endl;
+        std::cout << " Gen Pts files: " << genPts << std::endl;
+        std::cout << " Number of Points per process: " << grainSize << std::endl;
         std::cout << " Dim: "<<dim<<std::endl;
-        std::cout << " Max Depth:" << maxDepth << std::endl;
+        std::cout << " Max Depth: " << maxDepth << std::endl;
         std::cout << " Tol: "<<tol<<std::endl;
         std::cout << " MatVec number of iterations: "<<numLoops<<std::endl;
         std::cout << BLU << "===============================================" << NRM << std::endl;
