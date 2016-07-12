@@ -154,6 +154,12 @@ int main(int argc, char ** argv )
 #endif
     _InitializeHcurve(dim);
 
+#ifdef POWER_MEASUREMENT_TIMESTEP
+    time_t rawtime;
+    struct tm * ptm;
+#endif
+
+
     if (!rank) {
         std::cout << BLU << "===============================================" << NRM << std::endl;
         std::cout << " Input Parameters" << std::endl;
@@ -261,12 +267,22 @@ int main(int argc, char ** argv )
     gSize[0] = 1.;
     gSize[1] = 1.;
     gSize[2] = 1.;
-
+#ifdef POWER_MEASUREMENT_TIMESTEP
+    time ( &rawtime );
+    //std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+    ptm = gmtime ( &rawtime );
+    if(!rank) std::cout<<" points2Octree Begin: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
+#endif
 
     startTime = MPI_Wtime();
     ot::points2Octree(pts, gSize, linOct, dim, maxDepth, maxNumPts, MPI_COMM_WORLD);
     endTime = MPI_Wtime();
-
+#ifdef POWER_MEASUREMENT_TIMESTEP
+    time ( &rawtime );
+    //std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+    ptm = gmtime ( &rawtime );
+    if(!rank) std::cout<<" points2Octree End: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
+#endif
 
     //SFC::parSort::SFC_3D_Sort(linOct,tol,maxDepth,globalComm);
 
@@ -284,10 +300,22 @@ int main(int argc, char ** argv )
     }
     pts.clear();
 
+#ifdef POWER_MEASUREMENT_TIMESTEP
+    time ( &rawtime );
+    //std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+    ptm = gmtime ( &rawtime );
+    if(!rank) std::cout<<" balOCt Begin: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
+#endif
 
     startTime = MPI_Wtime();
     ot::balanceOctree(linOct, balOct, dim, maxDepth, incCorner, MPI_COMM_WORLD, NULL, NULL);
     endTime = MPI_Wtime();
+#ifdef POWER_MEASUREMENT_TIMESTEP
+    time ( &rawtime );
+    //std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+    ptm = gmtime ( &rawtime );
+    if(!rank) std::cout<<" balOCt End: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
+#endif
 
     SFC::parSort::SFC_3D_Sort(balOct,tol,maxDepth,globalComm);
 
@@ -304,9 +332,23 @@ int main(int argc, char ** argv )
 
     //treeNodesTovtk(balOct,rank,"balOCt_dendro");
 
+#ifdef POWER_MEASUREMENT_TIMESTEP
+    time ( &rawtime );
+    //std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+    ptm = gmtime ( &rawtime );
+    if(!rank) std::cout<<" oda Begin: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
+#endif
+
     startTime = MPI_Wtime();
     ot::DA da(balOct, MPI_COMM_WORLD, MPI_COMM_WORLD, compressLut);
     endTime = MPI_Wtime();
+
+#ifdef POWER_MEASUREMENT_TIMESTEP
+    time ( &rawtime );
+    //std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+    ptm = gmtime ( &rawtime );
+    if(!rank) std::cout<<" oda End: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
+#endif
 
 
     balOct.clear();
@@ -364,15 +406,10 @@ int main(int argc, char ** argv )
 
 #ifdef POWER_MEASUREMENT_TIMESTEP
 
-    time_t rawtime;
-  struct tm * ptm;
-
-  time ( &rawtime );
-
-
-std::this_thread::sleep_for(std::chrono::milliseconds(60000));
- ptm = gmtime ( &rawtime );
- if(!rank) std::cout<<" MatVec Begin: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
+    time ( &rawtime );
+    //std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+    ptm = gmtime ( &rawtime );
+    if(!rank) std::cout<<" MatVec Begin: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
 #endif
 
     for(unsigned int i=0;i<numLoops;i++) {
@@ -381,7 +418,7 @@ std::this_thread::sleep_for(std::chrono::milliseconds(60000));
     }
 
 #ifdef POWER_MEASUREMENT_TIMESTEP
-    time ( &rawtime );
+  time ( &rawtime );
   ptm = gmtime ( &rawtime );
   if(!rank) std::cout<<" MatVec End: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
 #endif
