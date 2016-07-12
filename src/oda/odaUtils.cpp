@@ -2011,7 +2011,7 @@ namespace ot {
     return 1;
   }//end of function
 
-  void writeCommCountMapToFile(char * fileName, const std::vector<unsigned int>& commProcs, const std::vector<unsigned int>& commCounts, MPI_Comm comm)
+    void writeCommCountMapToFile(char * fileName, const std::vector<unsigned int>& commProcs, const std::vector<unsigned int>& commCounts, MPI_Comm comm,double threshold)
   {
 
       int rank=0,npes=0;
@@ -2030,7 +2030,24 @@ namespace ot {
 
       par::Mpi_Gather(commMap,commMapAll,npes,0,comm);
 
+
+
+
       if(!rank) {
+
+
+          unsigned int max=0;
+          for(unsigned int i=0;i<npes;i++)
+          {
+              for(unsigned int j=0;j<npes;j++)
+              {
+                  if(max<commMapAll[i*npes+j])
+                  {
+                      max=commMapAll[i*npes+j];
+                  }
+              }
+          }
+
 
           std::ofstream myfile;
           myfile.open(fileName);
@@ -2046,7 +2063,10 @@ namespace ot {
               myfile<<"P"<<std::setw(2)<<std::setfill('0')<<i;
               for(unsigned int j=0;j<npes;j++)
               {
-                 myfile<<"\t"<<commMapAll[i*npes+j];
+                 if((commMapAll[i*npes+j]/(double)max)<threshold)
+                    myfile<<"\t"<<0;
+                 else
+                   myfile<<"\t"<<commMapAll[i*npes+j];
               }
               myfile<<std::endl;
           }

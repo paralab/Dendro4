@@ -8,6 +8,11 @@
 #ifndef __ODAUTILS_H__
 #define __ODAUTILS_H__
 
+// @milinda used to dump out the send and recv communication matrices. externs are defined at tstTreeSortMatvec. Remove after done debugging. 
+extern char sendComMapFileName[256];
+extern char recvComMapFileName[256];
+
+
 #include "mpi.h"
 #include <vector>
 #include "petscvec.h"
@@ -158,7 +163,7 @@ namespace ot {
   class TreeNode;
   class DA;
 
-  void writeCommCountMapToFile(char * fileName, const std::vector<unsigned int>& commProcs, const std::vector<unsigned int>& commCounts, MPI_Comm comm);
+    void writeCommCountMapToFile(char * fileName, const std::vector<unsigned int>& commProcs, const std::vector<unsigned int>& commCounts, MPI_Comm comm,double threshold=0);
 
 
   /**

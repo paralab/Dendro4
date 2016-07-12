@@ -44,6 +44,8 @@ int Jac1FinestDiagEvent;
 int Jac1FinestMultEvent;
 #endif
 
+char sendComMapFileName[256];
+char recvComMapFileName[256];
 
 
 const std::string currentDateTime() {
@@ -63,6 +65,8 @@ const std::string currentDateTime() {
 
 int main(int argc, char ** argv )
 {
+
+
 
     int npes, rank;
     bool incCorner = 1;
@@ -161,6 +165,16 @@ int main(int argc, char ** argv )
         std::cout << " Tol: "<<tol<<std::endl;
         std::cout << " MatVec number of iterations: "<<numLoops<<std::endl;
         std::cout << BLU << "===============================================" << NRM << std::endl;
+
+#ifdef HILBERT_ORDERING
+        sprintf(sendComMapFileName,"sendCommMap_H_tol_%f_npes_%d_pts_%d.csv",tol,npes,grainSize);
+        sprintf(recvComMapFileName,"recvCommMap_H_tol_%f_npes_%d_pts_%d.csv",tol,npes,grainSize);
+
+#else
+        sprintf(sendComMapFileName,"sendCommMap_M_tol_%f_npes_%d_pts_%d.csv",tol,npes,grainSize);
+        sprintf(recvComMapFileName,"recvCommMap_M_tol_%f_npes_%d_pts_%d.csv",tol,npes,grainSize);
+
+#endif
     }
 
 
