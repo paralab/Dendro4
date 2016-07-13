@@ -172,7 +172,7 @@ void DA::DA_FactoryPart1(std::vector<ot::TreeNode>& in) {
   std::vector<ot::TreeNode> tmpTN;
 #ifdef TREE_SORT
   tmpTN=in;
-  SFC::parSort::SFC_3D_Sort(tmpTN,TOLLERANCE_OCT,(m_uiMaxDepth+1),m_mpiCommActive);//SFC::parSort::SFC_3D_Sort(tmpTN,TOLLERANCE_OCT,m_uiMaxDepth,m_mpiCommActive);//par::SFC_3D_TreeSort(tmpTN,TOLLERANCE_OCT,m_mpiCommActive);
+  SFC::parSort::SFC_3D_Sort(tmpTN,m_uiTreeSortTol,(m_uiMaxDepth+1),m_mpiCommActive);//SFC::parSort::SFC_3D_Sort(tmpTN,TOLLERANCE_OCT,m_uiMaxDepth,m_mpiCommActive);//par::SFC_3D_TreeSort(tmpTN,TOLLERANCE_OCT,m_mpiCommActive);
   //std::swap(in,tmpTN);
 #else
   par::sampleSort(in,tmpTN,m_mpiCommActive);
