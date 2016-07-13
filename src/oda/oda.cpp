@@ -174,8 +174,8 @@ namespace ot {
   }//end function
 
   //***************Constructor*****************//
-  DA::DA(std::vector<ot::TreeNode> &in, MPI_Comm comm, MPI_Comm activeInputComm,
-      bool compressLut, const std::vector<ot::TreeNode>* blocksPtr, bool* iAmActive ) {
+  DA::DA(std::vector<ot::TreeNode> &in, MPI_Comm comm, MPI_Comm activeInputComm,double tol,
+      bool compressLut, const std::vector<ot::TreeNode>* blocksPtr,bool* iAmActive ) {
 
 #ifdef __PROF_WITH_BARRIER__
     MPI_Barrier(comm);
@@ -187,6 +187,8 @@ namespace ot {
       int rank;
       MPI_Comm_rank(comm,&rank);
 
+      m_uiTreeSortTol=tol;
+      //if(!rank) std::cout <<"oda tolerance "<<tol<<std::endl;
       DA_FactoryPart0(in, comm, activeInputComm, compressLut, iAmActive);
 
 

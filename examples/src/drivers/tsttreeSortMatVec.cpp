@@ -340,7 +340,7 @@ int main(int argc, char ** argv )
 #endif
 
     startTime = MPI_Wtime();
-    ot::DA da(balOct, MPI_COMM_WORLD, MPI_COMM_WORLD, compressLut);
+    ot::DA da(balOct, MPI_COMM_WORLD, MPI_COMM_WORLD,tol,compressLut);
     endTime = MPI_Wtime();
 
 #ifdef POWER_MEASUREMENT_TIMESTEP

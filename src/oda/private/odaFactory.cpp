@@ -200,7 +200,7 @@ void DA::DA_FactoryPart1(std::vector<ot::TreeNode>& in) {
 
 #ifdef TREE_SORT
     tmpVecTN=positiveBoundaryOctants;
-    SFC::parSort::SFC_3D_Sort(tmpVecTN,TOLLERANCE_OCT,m_uiMaxDepth,bdyComm);//par::SFC_3D_TreeSort(tmpVecTN,TOLLERANCE_OCT,bdyComm);
+    SFC::parSort::SFC_3D_Sort(tmpVecTN,m_uiTreeSortTol,m_uiMaxDepth,bdyComm);//par::SFC_3D_TreeSort(tmpVecTN,TOLLERANCE_OCT,bdyComm);
     //std::swap(positiveBoundaryOctants,tmpVecTN);
 #else
     par::sampleSort<ot::TreeNode>(positiveBoundaryOctants, tmpVecTN, bdyComm);

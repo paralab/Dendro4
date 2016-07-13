@@ -507,6 +507,7 @@ namespace ot {
         // The maximum depth of the octree discretization. Is usually obtained from
         // the octree generation and balancing procedure.
         unsigned int                    m_uiMaxDepth;
+        double  m_uiTreeSortTol;
 
         // The MPI Communication context. 
         MPI_Comm                        m_mpiCommAll;
@@ -606,7 +607,7 @@ namespace ot {
           The constructor builds the DA based on the input octree. It constructs all the required neighbour 
           information and also (optionally) compresses the structure to reduce the memory footprint.
           */
-        DA(std::vector<ot::TreeNode> &in, MPI_Comm comm, MPI_Comm inputActiveComm,  
+        DA(std::vector<ot::TreeNode> &in, MPI_Comm comm, MPI_Comm inputActiveComm,double tol,
             bool compressLut = false, const std::vector<ot::TreeNode> *blocksPtr = NULL,
             bool *iAmActive = NULL);
 
