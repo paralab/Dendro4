@@ -297,7 +297,7 @@ namespace ot {
 
   int DA_blockPartStage2(std::vector<TreeNode> &nodes,
       std::vector<TreeNode> &globalCoarse,
-      unsigned int dim, unsigned int maxDepth, MPI_Comm commActive);
+      unsigned int dim, unsigned int maxDepth, MPI_Comm commActive,double tol=0.1);
 
   int DA_blockPartStage3(std::vector<TreeNode> &nodes,
       std::vector<TreeNode>& globalCoarse, std::vector<ot::TreeNode>& minsAllBlocks,

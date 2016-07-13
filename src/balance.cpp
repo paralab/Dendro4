@@ -5,6 +5,7 @@
   @author Hari Sundar, hsundar@gmail.com
   */
 
+#include <sfcSort.h>
 #include "parUtils.h"
 #include "seqUtils.h"
 #include "TreeNode.h"
@@ -2225,7 +2226,7 @@ PROF_RIPPLE_BAL_END
 
   int parallelRippleType1(std::vector<TreeNode> &nodes,
                           bool incCorners, bool checkBailOut, bool rePart,
-                          unsigned int dim, unsigned int maxDepth, MPI_Comm comm) {
+                          unsigned int dim, unsigned int maxDepth, MPI_Comm comm,double tol) {
     PROF_PAR_RIPPLE_TYPE1_BEGIN
 
     TreeNode root(dim, maxDepth);
@@ -2367,8 +2368,14 @@ PROF_RIPPLE_BAL_END
       //level.
       //
 
-      par::removeDuplicates<ot::TreeNode>(allKeys,
+#ifdef TREE_SORT
+        SFC::parSort::SFC_Sort_RemoveDuplicates(allKeys, tol,maxDepth,false,comm);
+#else
+        par::removeDuplicates<ot::TreeNode>(allKeys,
                                           false, comm);
+#endif
+
+
       unsigned int keyLen = allKeys.size();
 
 #ifdef __DEBUG_OCT__

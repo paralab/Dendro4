@@ -1315,6 +1315,7 @@ namespace par {
 
   template<typename T>
   int partitionW(std::vector<T> &nodeList, unsigned int (*getWeight)(const T *), MPI_Comm comm) {
+
 #ifdef __PROFILE_WITH_BARRIER__
     MPI_Barrier(comm);
 #endif

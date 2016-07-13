@@ -516,7 +516,7 @@ namespace ot {
   int completeOctree(const std::vector<TreeNode> &inp,
                      std::vector<TreeNode> &out,
                      unsigned int dim, unsigned int maxDepth, bool isUnique,
-                     bool isSorted, bool assertNoEmptyProcs, MPI_Comm comm) {
+                     bool isSorted, bool assertNoEmptyProcs, MPI_Comm comm,double tol) {
 
       TreeNode root(dim, maxDepth);
 
@@ -531,12 +531,20 @@ namespace ot {
       out = inp;
       //Sort and remove duplicate leaves.
       if (!isUnique) {
+
+#ifdef TREE_SORT
+        SFC::parSort::SFC_Sort_RemoveDuplicates(out,tol,maxDepth,isSorted,comm);
+#else
         par::removeDuplicates<ot::TreeNode>(out, isSorted, comm);
+#endif
+
+
+
       } else if (!isSorted) {
         std::vector<TreeNode> tmpOut;
 #ifdef TREE_SORT
         tmpOut=out;
-        SFC::parSort::SFC_3D_Sort(tmpOut,TOLLERANCE_OCT,maxDepth,comm);//par::SFC_3D_TreeSort(tmpOut,TOLLERANCE_OCT,comm);
+        SFC::parSort::SFC_3D_Sort(tmpOut,tol,maxDepth,comm);//par::SFC_3D_TreeSort(tmpOut,TOLLERANCE_OCT,comm);
         //std::swap(out,tmpOut);
 #else
         par::sampleSort<ot::TreeNode>(out, tmpOut, comm);

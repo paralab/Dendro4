@@ -563,7 +563,7 @@ namespace ot {
   //Assumes that nodes are globally sorted, linear, complete, unique.
   //No processor must call this with an empty input.
   int blockPartStage1(std::vector<TreeNode> &nodes, std::vector<TreeNode> &blocks,
-      unsigned int dim, unsigned int maxDepth,  MPI_Comm comm) {
+      unsigned int dim, unsigned int maxDepth,  MPI_Comm comm,double tol) {
 #ifdef __PROF_WITH_BARRIER__
     MPI_Barrier(comm);
 #endif
@@ -573,7 +573,11 @@ namespace ot {
     MPI_Comm_rank(comm,&rank);
     MPI_Comm_size(comm,&npes);
 
-    par::partitionW<ot::TreeNode>(nodes, NULL,comm);
+#ifdef TREE_SORT
+      SFC::parSort::SFC_3D_Sort(nodes,tol,maxDepth,comm);
+#else
+      par::partitionW<ot::TreeNode>(nodes, NULL,comm);
+#endif
 
 
     //std::cout << rank << ": " << __func__ << ":Block Part Node Size:" <<nodes.size()<< std::endl;
@@ -670,7 +674,7 @@ namespace ot {
 
     //treeNodesTovtk(localBlocks,rank,"local_blocks");
 
-    completeOctree(localBlocks, blocks, dim, maxDepth, true,true,true, comm);
+    completeOctree(localBlocks, blocks, dim, maxDepth, true,true,true, comm,tol);
     //assert(par::test::isUniqueAndSorted(blocks, comm));
     //treeNodesTovtk(blocks,rank,"af_complete_octree");
     localBlocks.clear();
@@ -682,7 +686,7 @@ namespace ot {
 
   int blockPartStage2(std::vector<TreeNode> &nodes, std::vector<TreeNode> &globalCoarse,
       std::vector<ot::TreeNode>& minsAllBlocks, unsigned int dim, unsigned int maxDepth,
-      MPI_Comm comm) {
+      MPI_Comm comm,double tol) {
 #ifdef __PROF_WITH_BARRIER__
     MPI_Barrier(comm);
 #endif
@@ -955,8 +959,12 @@ namespace ot {
       std::cout << rank << ": C[" << q++ << "] " << x << ", wt = " << x.getWeight() << std::endl;
     }
     */
+#ifdef TREE_SORT
+      SFC::parSort::SFC_3D_Sort(globalCoarse,tol,maxDepth,comm);
+#else
+      par::partitionW<ot::TreeNode>(globalCoarse,getNodeWeight,comm);
+#endif
 
-    par::partitionW<ot::TreeNode>(globalCoarse,getNodeWeight,comm);
 
     /*
     std::cout << RED " After Partition" NRM << std::endl;

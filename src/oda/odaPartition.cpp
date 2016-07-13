@@ -6,6 +6,7 @@
   @author Hari Sundar, hsundar@gmail.com
   */
 
+#include <sfcSort.h>
 #include "oda.h"
 #include "parUtils.h"
 #include "seqUtils.h"
@@ -156,7 +157,7 @@ namespace ot {
 #else
 
   int DA_blockPartStage2(std::vector<TreeNode> &nodes, std::vector<TreeNode> &globalCoarse,
-      unsigned int dim, unsigned int maxDepth, MPI_Comm commActive) {
+      unsigned int dim, unsigned int maxDepth, MPI_Comm commActive,double tol) {
 #ifdef __PROF_WITH_BARRIER__
     MPI_Barrier(commActive);
 #endif
@@ -478,8 +479,12 @@ namespace ot {
     }//end if npes > 1
 
     isSingular.clear();
+#ifdef TREE_SORT
+      SFC::parSort::SFC_3D_Sort(globalCoarse,tol,maxDepth,commActive);
+#else
+      par::partitionW<ot::TreeNode>(globalCoarse, getNodeWeight, commActive);
+#endif
 
-    par::partitionW<ot::TreeNode>(globalCoarse, getNodeWeight, commActive);
 
     //Reset weights
     for (unsigned int i=0;i<globalCoarse.size(); i++) {

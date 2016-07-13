@@ -751,7 +751,7 @@ namespace ot {
   int parallelRippleType1(std::vector<TreeNode> & nodes,
       bool incCorners, bool checkBailOut, bool rePart,
       unsigned int dim, unsigned int maxDepth,
-      MPI_Comm comm);
+      MPI_Comm comm,double tol=0.1);
 
   /**
     @author Rahul Sampath
@@ -803,7 +803,7 @@ namespace ot {
     */
   int completeOctree (const std::vector<TreeNode > &in, std::vector<TreeNode > &out,
       unsigned int dim, unsigned int maxDepth, bool isUnique, bool isSorted,
-      bool assertNoEmptyProcs, MPI_Comm comm);
+      bool assertNoEmptyProcs, MPI_Comm comm,double tol=0.1);
 
   /**
     @author Rahul Sampath
@@ -873,12 +873,12 @@ namespace ot {
 
   //nodes are partitioned (Used for balancing and meshing)
   int blockPartStage1(std::vector<TreeNode> &nodes, std::vector<TreeNode> &blocks,
-      unsigned int dim, unsigned int maxDepth, MPI_Comm comm);
+      unsigned int dim, unsigned int maxDepth, MPI_Comm comm,double tol=0.1);
 
   //nodes and blocks are partitioned.
   int blockPartStage2(std::vector<TreeNode> &nodes, std::vector<TreeNode> &blocks,
       std::vector<ot::TreeNode>& minsAllBlocks, 
-      unsigned int dim, unsigned int maxDepth, MPI_Comm comm);
+      unsigned int dim, unsigned int maxDepth, MPI_Comm comm,double tol=0.1);
 
   int balanceBlocks (const std::vector<TreeNode> &inp,
       const std::vector<TreeNode> &blocks,

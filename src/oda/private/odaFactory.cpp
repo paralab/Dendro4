@@ -165,9 +165,15 @@ void DA::DA_FactoryPart1(std::vector<ot::TreeNode>& in) {
   //it will be sorted even on 1 processor.
   assert(par::test::isUniqueAndSorted(in,m_mpiCommActive));
   addBoundaryNodesType1(in, positiveBoundaryOctants, m_uiDimension, m_uiMaxDepth);
-  //@hari: After Boundary nodes calculation the in won't be sorted due to embedding the current octree in one level higher. Hence we need to sort it using sample sort. This is a must.
 
+  in.insert(in.end(),positiveBoundaryOctants.begin(),positiveBoundaryOctants.end());
+  m_uiMaxDepth=m_uiMaxDepth+1;
+  SFC::parSort::SFC_3D_Sort(in,m_uiTreeSortTol,(m_uiMaxDepth),m_mpiCommActive);
 
+/*
+ * old code:
+ *
+ * //@hari: After Boundary nodes calculation the in won't be sorted due to embedding the current octree in one level higher. Hence we need to sort it using sample sort. This is a must.
 #ifdef HILBERT_ORDERING
   std::vector<ot::TreeNode> tmpTN;
 #ifdef TREE_SORT
@@ -222,7 +228,11 @@ void DA::DA_FactoryPart1(std::vector<ot::TreeNode>& in) {
   assert(par::test::isUniqueAndSorted(positiveBoundaryOctants,m_mpiCommActive));
   par::concatenate<ot::TreeNode>(in, positiveBoundaryOctants, m_mpiCommActive);
   positiveBoundaryOctants.clear();
-  assert(par::test::isUniqueAndSorted(in,m_mpiCommActive));
+  assert(par::test::isUniqueAndSorted(in,m_mpiCommActive));*/
+
+
+
+
 
   PROF_BUILD_DA_STAGE1_END
 
@@ -270,6 +280,8 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
   //Partition in and create blocks (blocks must be globally sorted).
   std::vector<ot::TreeNode> blocks;
   if(blocksPtr == NULL) {
+
+   // std::cout<<"oda stage 3: rank: "<<rank<<"block ptr is NULL"<<std::endl;
 
     //min grain size = 1000
  /*   const DendroIntL THOUSAND = 1000;
@@ -335,7 +347,7 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
 
 
     //treeNodesTovtk(in,m_iRankActive,"oda_in");
-    ot::blockPartStage1(in, blocks, m_uiDimension, m_uiMaxDepth, m_mpiCommActive);
+    ot::blockPartStage1(in, blocks, m_uiDimension, m_uiMaxDepth, m_mpiCommActive,m_uiTreeSortTol);
     //treeNodesTovtk(blocks,m_iRankActive,"oda_blocks_1");
 //    if(!m_iRankActive)
 //       std::cout<<GRN<<"ot::blockPartStage1 is completed."<<NRM<<std::endl;
@@ -344,7 +356,7 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
 
       PROF_DA_BPART2_BEGIN
 
-    DA_blockPartStage2(in, blocks, m_uiDimension, m_uiMaxDepth, m_mpiCommActive);
+    DA_blockPartStage2(in, blocks, m_uiDimension, m_uiMaxDepth, m_mpiCommActive,m_uiTreeSortTol);
     //treeNodesTovtk(blocks,m_iRankActive,"oda_blocks_2");
 //    if(!m_iRankActive)
 //      std::cout<<GRN<<"DA_blockPartStage2 is completed."<<NRM<<std::endl;
