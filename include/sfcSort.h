@@ -1805,7 +1805,7 @@ namespace SFC
 
             //par::Mpi_Alltoallv(&pNodes[0],sendCounts,sendDispl,&pNodesRecv[0],recvCounts,recvDispl,comm);
             // MPI_Alltoallv(&pNodes[0],sendCounts,sendDispl,MPI_TREENODE,&pNodesRecv[0],recvCounts,recvDispl,MPI_TREENODE,comm);
-            par::Mpi_Alltoallv_Kway(&pNodes[0],sendCounts,sendDispl,&pNodesRecv[0],recvCounts,recvDispl,comm);
+            par::Mpi_Alltoallv_Kway(&(*(pNodes.begin())),sendCounts,sendDispl,&(*(pNodesRecv.begin())),recvCounts,recvDispl,comm);
 
 
 #ifdef DEBUG_TREE_SORT
