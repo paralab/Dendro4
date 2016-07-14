@@ -317,7 +317,7 @@ int main(int argc, char ** argv )
     if(!rank) std::cout<<" balOCt End: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
 #endif
 
-    SFC::parSort::SFC_3D_Sort(balOct,tol,maxDepth,globalComm);
+    //SFC::parSort::SFC_3D_Sort(balOct,tol,maxDepth,globalComm);
 
 
     locSz = balOct.size();
