@@ -2052,21 +2052,21 @@ namespace ot {
           std::ofstream myfile;
           myfile.open(fileName);
 
-          myfile<<"Labels";
+          /*myfile<<"Labels";
           for(unsigned int i=0;i<npes;i++)
           {
               myfile<<"\tP"<<std::setw(2)<<std::setfill('0')<<i;
           }
-          myfile<<std::endl;
+          myfile<<std::endl;*/
           for(unsigned int i=0;i<npes;i++)
           {
-              myfile<<"P"<<std::setw(2)<<std::setfill('0')<<i;
+              //myfile<<"P"<<std::setw(2)<<std::setfill('0')<<i;
               for(unsigned int j=0;j<npes;j++)
               {
                  if((commMapAll[i*npes+j]/(double)max)<threshold)
-                    myfile<<"\t"<<0;
+                    myfile<<"0\t";//myfile<<"\t"<<0;
                  else
-                   myfile<<"\t"<<commMapAll[i*npes+j];
+                     myfile<<commMapAll[i*npes+j]<<"\t";//myfile<<"\t"<<commMapAll[i*npes+j];
               }
               myfile<<std::endl;
           }
