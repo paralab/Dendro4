@@ -1248,14 +1248,18 @@ namespace SFC
         void SFC_3D_Sort(std::vector<T> &pNodes, double loadFlexibility, unsigned int pMaxDepth,MPI_Comm pcomm) {
 
 
+
+
+            MPI_Comm iActive;
+            par::splitComm2way(pNodes.empty(),&iActive,pcomm);
+
+            MPI_Comm comm=iActive;
+
+
             int rank, npes;
-            MPI_Comm_rank(pcomm, &rank);
-            MPI_Comm_size(pcomm, &npes);
 
-            MPI_Comm comm=pcomm;
             //std::vector<double> stats_sf; // all reduce is used to fill this up due to the splitter comm.
-
-            SFC_3D_SplitterFix(pNodes,pMaxDepth,loadFlexibility,pcomm,&comm);
+            SFC_3D_SplitterFix(pNodes,pMaxDepth,loadFlexibility,iActive,&comm);
 
 
             MPI_Comm_rank(comm, &rank);
@@ -1318,8 +1322,7 @@ namespace SFC
                 tmp = nodeStack[0];
                 nodeStack.erase(nodeStack.begin());
                 //std::cout<<"Rank "<<rank<<" nlb "<<numLeafBuckets<<" lev: "<<(int)tmp.lev<<" node_ss "<< nodeStack.size()<<std::endl;
-                //std::vector<T> pNodes_cpy=pNodes;
-                //SFC::seqSort::SFC_3D_Bucketting(pNodes_cpy, tmp.lev, pMaxDepth, tmp.rot_id, tmp.begin, tmp.end, spliterstemp,updateState);
+
 #ifdef REMOVE_DUPLICATES
                 #pragma message ("Remove Duplicates ON")
                 SFC::seqSort::SFC_3D_MSD_Bucketting_rd((&(*(pNodes.begin()))),tmp.lev, pMaxDepth,  tmp.rot_id, tmp.begin, tmp.end, spliterstemp);
@@ -1348,19 +1351,6 @@ namespace SFC
                     NodeInfo1<T> child(index, (tmp.lev + 1), spliterstemp[hindex], spliterstemp[hindexN]);
                     nodeStack.push_back(child);
 
-
-                    /*if(spliterstemp[hindexN]-spliterstemp[hindex]>1) {
-                        NodeInfo1<T> child(index, (tmp.lev + 1), spliterstemp[hindex], spliterstemp[hindexN]);
-                        nodeStack.push_back(child);
-                    }else if(tmp.lev<(firstSplitLevel-1))
-                    {
-                        NodeInfo1<T> bucket(index, (tmp.lev + 1), spliterstemp[hindex], spliterstemp[hindexN]);
-                        bucketCounts.push_back((spliterstemp[hindexN] - spliterstemp[hindex]));
-                        bucketSplitter.push_back(spliterstemp[hindex]);
-                        bucketInfo.push_back(bucket);
-                        numLeafBuckets++;
-
-                    }*/
 
                     if(tmp.lev==(firstSplitLevel-1))
                     {
@@ -1779,11 +1769,6 @@ namespace SFC
             sendDispl[0] = 0;
             recvDispl[0] = 0;
 
-            for(int i=1;i<npes;i++)
-            {
-                sendDispl[i] = sendCounts[i-1] + sendDispl[i - 1];
-                recvDispl[i] =recvCounts[i-1] +recvDispl[i-1];
-            }
 
 
 #ifdef DEBUG_TREE_SORT
@@ -1794,13 +1779,10 @@ namespace SFC
         if (!rank) std::cout << rank << " : recv offset  = " << recvDispl[0] << ", " << recvDispl[1] << std::endl;*/
 #endif
 
-            DendroIntL totalRecv=recvDispl[npes-1]+recvCounts[npes-1]-recvCounts[rank];
-            DendroIntL totalSend=sendDispl[npes-1]+sendCounts[npes-1]-sendCounts[rank];
 
-            std::vector<T> pNodesRecv;
-            DendroIntL recvTotalCnt=recvDispl[npes-1]+recvCounts[npes-1];
-            if(recvTotalCnt) pNodesRecv.resize(recvTotalCnt);
-
+            omp_par::scan(sendCounts,sendDispl,npes);
+            omp_par::scan(recvCounts,recvDispl,npes);
+            std::vector<T> pNodesRecv(recvDispl[npes-1]+recvCounts[npes-1]);
 
 
             //par::Mpi_Alltoallv(&pNodes[0],sendCounts,sendDispl,&pNodesRecv[0],recvCounts,recvDispl,comm);
@@ -1816,8 +1798,7 @@ namespace SFC
             localSplitter=NULL;
 
 
-            pNodes.clear();
-            pNodes=pNodesRecv;
+            std::swap(pNodes,pNodesRecv);
             pNodesRecv.clear();
 
             delete[](sendCounts);

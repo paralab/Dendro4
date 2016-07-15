@@ -186,7 +186,7 @@ int main(int argc, char ** argv )
 
     if(genPts==1)
     {
-        genGauss(0.5,grainSize,dim,argv[1],globalComm);
+        genGauss(0.15,grainSize,dim,argv[1],globalComm);
     }
 
 
