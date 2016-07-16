@@ -671,6 +671,7 @@ namespace SFC
 
             if (!isSorted) {
                 SFC_3D_Sort(pNodes,loadFlexibility,pMaxDepth,pcomm);
+
             }
 
             //Remove duplicates locally
@@ -702,10 +703,8 @@ namespace SFC
 
                 //communicate end to the next processor.
                 MPI_Status status;
-
                 par::Mpi_Sendrecv<T, T>(&end, 1, ((new_rank < (new_size - 1)) ? (new_rank + 1) : 0), 1, &endRecv,
                                         1, ((new_rank > 0) ? (new_rank - 1) : (new_size - 1)), 1, new_comm, &status);
-
                 //Remove endRecv if it exists (There can be no more than one copy of this)
                 if (new_rank) {
                     typename std::vector<T>::iterator Iter = std::find(pNodes.begin(), pNodes.end(), endRecv);
@@ -714,6 +713,7 @@ namespace SFC
                     }//end if found
                 }//end if p not 0
             }//end if not empty
+
 
         }
 
@@ -1250,16 +1250,16 @@ namespace SFC
 
 
 
-            MPI_Comm iActive;
-            par::splitComm2way(pNodes.empty(),&iActive,pcomm);
+//            MPI_Comm iActive;
+//            par::splitComm2way(pNodes.empty(),&iActive,pcomm);
 
-            MPI_Comm comm=iActive;
+            MPI_Comm comm=pcomm;
 
 
             int rank, npes;
 
             //std::vector<double> stats_sf; // all reduce is used to fill this up due to the splitter comm.
-            SFC_3D_SplitterFix(pNodes,pMaxDepth,loadFlexibility,iActive,&comm);
+            SFC_3D_SplitterFix(pNodes,pMaxDepth,loadFlexibility,pcomm,&comm);
 
 
             MPI_Comm_rank(comm, &rank);
