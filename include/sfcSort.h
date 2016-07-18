@@ -235,26 +235,31 @@ namespace SFC
 
           DendroIntL loc[NUM_CHILDREN];
           T unsorted[NUM_CHILDREN];
-          unsigned int live = 0;
+          int live = 0;
 
           for (unsigned int i=0; i<(NUM_CHILDREN); ++i) {
             cnum=(rotations[ROTATION_OFFSET * rot_id+i] - '0');
             (i>0)? cnum_prev = ((rotations[ROTATION_OFFSET * rot_id+i-1] - '0')+1) : cnum_prev=0;
             loc[cnum]=count[cnum_prev];
             count[cnum+1] += count[cnum_prev];
-            unsorted[live] = pNodes[loc[cnum]];
+            if(loc[cnum]<n) unsorted[live] = pNodes[loc[cnum]];
             if (loc[cnum] < count[cnum+1]) {live++; /*std::cout<<i<<" Live: "<<live<<std::endl;*/}
           }
           live--;
 
-          for (DendroIntL i=0; i<n; ++i) {
-                //std::cout << i << " Live: " << live << " qqunsorted live " <<unsorted[live]<<std::endl;
-                cnum = (((unsorted[live].getZ() >> pMaxDepth) & 1u) << 2u) |  (((unsorted[live].getY() >> pMaxDepth) & 1u) << 1u) |  ((unsorted[live].getX() >> pMaxDepth) & 1u);
-                pNodes[loc[cnum]++] = unsorted[live];
-                unsorted[live] = pNodes[loc[cnum]];
-                if ((loc[cnum] == count[cnum + 1])) {
-                    live--;
-                }
+          if(live>=0) {
+              for (DendroIntL i = 0; i < n; ++i) {
+                  //std::cout << i << " Live: " << live << " qqunsorted live " <<unsorted[live]<<std::endl;
+                  cnum = (((unsorted[live].getZ() >> pMaxDepth) & 1u) << 2u) |
+                         (((unsorted[live].getY() >> pMaxDepth) & 1u) << 1u) |
+                         ((unsorted[live].getX() >> pMaxDepth) & 1u);
+                  pNodes[loc[cnum]++] = unsorted[live];
+                  if(loc[cnum]<n)unsorted[live] = pNodes[loc[cnum]];
+                  if ((loc[cnum] == count[cnum + 1])) {
+                      live--;
+                  }
+                  if(live<0) break;
+              }
           }
 
           if (pMaxDepth>0) {
@@ -302,7 +307,7 @@ namespace SFC
 
             DendroIntL loc[NUM_CHILDREN+1];
             T unsorted[NUM_CHILDREN+1];
-            unsigned int live = 0;
+            int live = 0;
 
 
             for (unsigned int i=0; i<(NUM_CHILDREN+1); ++i) {
@@ -310,7 +315,7 @@ namespace SFC
                 {
                   loc[0]=count[0];
                   count[1]+=count[0];
-                  unsorted[live] = pNodes[loc[0]];
+                  if(loc[0]<n) unsorted[live] = pNodes[loc[0]];
                   if (loc[0] < count[1]) {live++; /*std::cout<<i<<" Live: "<<live<<std::endl;*/}
                 }else
                 {
@@ -318,33 +323,37 @@ namespace SFC
                     (i>1) ? cnum_prev = ((rotations[ROTATION_OFFSET * rot_id+i-2] - '0')+2): cnum_prev=1;
                     loc[cnum+1]=count[cnum_prev];
                     count[cnum+2] += count[cnum_prev];
-                    unsorted[live] = pNodes[loc[cnum+1]];
+                    if(loc[cnum+1]<n) unsorted[live] = pNodes[loc[cnum+1]];
                     if (loc[cnum+1] < count[cnum+2]) {live++; /*std::cout<<i<<" Live: "<<live<<std::endl;*/}
                 }
 
             }
             live--;
+            if(live>=0) {
+                for (DendroIntL i = 0; i < n; ++i) {
 
-            for (DendroIntL i=0; i < n ; ++i) {
+                    if (lev == unsorted[live].getLevel()) {
+                        pNodes[loc[0]++] = unsorted[live];
+                        if(loc[0]<n) unsorted[live] = pNodes[loc[0]];
+                        if ((loc[0] == count[1])) {
+                            live--;
+                        }
 
-                if(lev==unsorted[live].getLevel())
-                {
-                    pNodes[loc[0]++] = unsorted[live];
-                    unsorted[live] = pNodes[loc[0]];
-                    if ((loc[0] == count[1])) {
-                        live--;
+                    } else {
+
+                        cnum = (((unsorted[live].getZ() >> pMaxDepthBit) & 1u) << 2u) |
+                               (((unsorted[live].getY() >> pMaxDepthBit) & 1u) << 1u) |
+                               ((unsorted[live].getX() >> pMaxDepthBit) & 1u);
+                        pNodes[loc[(cnum + 1)]++] = unsorted[live];
+                        if(loc[cnum+1]<n) unsorted[live] = pNodes[loc[cnum + 1]];
+                        if ((loc[cnum + 1] == count[cnum + 2])) {
+                            live--;
+                        }
                     }
 
-                }else{
+                    if(live<0) break;
 
-                    cnum = (((unsorted[live].getZ() >> pMaxDepthBit) & 1u) << 2u) | (((unsorted[live].getY() >> pMaxDepthBit) & 1u) << 1u) | ((unsorted[live].getX() >> pMaxDepthBit) & 1u);
-                    pNodes[loc[(cnum + 1)]++] = unsorted[live];
-                    unsorted[live] = pNodes[loc[cnum+1]];
-                    if ((loc[cnum+1] == count[cnum + 2])) {
-                        live--;
-                    }
                 }
-
             }
 
 
@@ -424,7 +433,7 @@ namespace SFC
 
             DendroIntL loc[NUM_CHILDREN];
             T unsorted[NUM_CHILDREN];
-            unsigned int live = 0;
+            int live = 0;
 
             //std::cout<<"Initial Count Ended"<<std::endl;
 
@@ -456,19 +465,25 @@ namespace SFC
                 (i>0)? cnum_prev = ((rotations[ROTATION_OFFSET * rot_id+i-1] - '0')+1) : cnum_prev=0;
                 loc[cnum]=count[cnum_prev];
                 count[cnum+1] += count[cnum_prev];
-                unsorted[live] = pNodes[loc[cnum]];
+                if(loc[cnum]<end) unsorted[live] = pNodes[loc[cnum]];
                 if (loc[cnum] < count[cnum+1]) {live++; /*std::cout<<i<<" Live: "<<live<<std::endl;*/}
             }
 
             live--;
 
-            for (DendroIntL i=begin; i<end; ++i) {
-                //std::cout << i << " Live: " << live << " qqunsorted live " <<unsorted[live]<<std::endl;
-                cnum =((((unsorted[live].getZ() & (1u << mid_bit)) >> mid_bit) << 2u) | (((unsorted[live].getY() & (1u << mid_bit)) >> mid_bit) << 1u) | ((unsorted[live].getX() & (1u << mid_bit)) >> mid_bit)); //(((unsorted[live].getZ() >> pMaxDepth) & 1u) << 2u) |  (((unsorted[live].getY() >> pMaxDepth) & 1u) << 1u) |  ((unsorted[live].getX() >> pMaxDepth) & 1u);
-                pNodes[loc[cnum]++] = unsorted[live];
-                unsorted[live] = pNodes[loc[cnum]];
-                if ((loc[cnum] == count[cnum + 1])) {
-                    live--;
+            if(live>=0) {
+                for (DendroIntL i = begin; i < end; ++i) {
+                    //std::cout << i << " Live: " << live << " qqunsorted live " <<unsorted[live]<<std::endl;
+                    cnum = ((((unsorted[live].getZ() & (1u << mid_bit)) >> mid_bit) << 2u) |
+                            (((unsorted[live].getY() & (1u << mid_bit)) >> mid_bit) << 1u) |
+                            ((unsorted[live].getX() & (1u << mid_bit)) >>
+                             mid_bit)); //(((unsorted[live].getZ() >> pMaxDepth) & 1u) << 2u) |  (((unsorted[live].getY() >> pMaxDepth) & 1u) << 1u) |  ((unsorted[live].getX() >> pMaxDepth) & 1u);
+                    pNodes[loc[cnum]++] = unsorted[live];
+                    if (loc[cnum] < end) unsorted[live] = pNodes[loc[cnum]];
+                    if ((loc[cnum] == count[cnum + 1])) {
+                        live--;
+                    }
+                    if (live < 0) break;
                 }
             }
 
@@ -540,7 +555,7 @@ namespace SFC
 
             DendroIntL loc[NUM_CHILDREN+1];
             T unsorted[NUM_CHILDREN+1];
-            unsigned int live = 0;
+            int live = 0;
 
             //std::cout<<"Initial Count Ended"<<std::endl;
 
@@ -574,7 +589,7 @@ namespace SFC
                 {
                     loc[0]=count[0];
                     count[1]+=count[0];
-                    unsorted[live] = pNodes[loc[0]];
+                    if(loc[0]<end) unsorted[live] = pNodes[loc[0]];
                     if (loc[0] < count[1]) {live++; /*std::cout<<i<<" Live: "<<live<<std::endl;*/}
                 }else {
 
@@ -582,40 +597,40 @@ namespace SFC
                     (i > 1) ? cnum_prev = ((rotations[ROTATION_OFFSET * rot_id + i - 2] - '0') + 2) : cnum_prev = 1;
                     loc[cnum+1] = count[cnum_prev];
                     count[cnum + 2] += count[cnum_prev];
-                    unsorted[live] = pNodes[loc[(cnum+1)]];
+                    if(loc[cnum+1]<end) unsorted[live] = pNodes[loc[(cnum+1)]];
                     if (loc[cnum+1] < count[cnum + 2]) { live++; /*std::cout<<i<<" Live: "<<live<<std::endl;*/}
                 }
             }
 
             live--;
 
-            for (DendroIntL i=begin; i<end; ++i) {
-                //std::cout << i << " Live: " << live << " qqunsorted live " <<unsorted[live]<<std::endl;
+            if(live >=0) {
+                for (DendroIntL i = begin; i < end; ++i) {
+                    //std::cout << i << " Live: " << live << " qqunsorted live " <<unsorted[live]<<std::endl;
 
-                if(lev==unsorted[live].getLevel())
-                {
-                    pNodes[loc[0]++] = unsorted[live];
-                    unsorted[live] = pNodes[loc[0]];
-                    if ((loc[0] == count[1])) {
-                        live--;
+                    if (lev == unsorted[live].getLevel()) {
+                        pNodes[loc[0]++] = unsorted[live];
+                        if(loc[0]<end) unsorted[live] = pNodes[loc[0]];
+                        if ((loc[0] == count[1])) {
+                            live--;
+                        }
+
+                    } else {
+                        cnum = ((((unsorted[live].getZ() & (1u << mid_bit)) >> mid_bit) << 2u) |
+                                (((unsorted[live].getY() & (1u << mid_bit)) >> mid_bit) << 1u) |
+                                ((unsorted[live].getX() & (1u << mid_bit)) >> mid_bit));
+                        pNodes[loc[(cnum + 1)]++] = unsorted[live];
+                        if((loc[(cnum+1)])<end) unsorted[live] = pNodes[loc[cnum + 1]];
+                        if ((loc[cnum + 1] == count[cnum + 2])) {
+                            live--;
+
+                        }
                     }
 
-                }else {
-                    cnum =((((unsorted[live].getZ() & (1u << mid_bit)) >> mid_bit) << 2u) | (((unsorted[live].getY() & (1u << mid_bit)) >> mid_bit) << 1u) | ((unsorted[live].getX() & (1u << mid_bit)) >> mid_bit));
-                    pNodes[loc[(cnum + 1)]++] = unsorted[live];
-                    unsorted[live] = pNodes[loc[cnum+1]];
-                    if ((loc[cnum+1] == count[cnum + 2])) {
-                        live--;
-                    }
+                    if(live<0) break;
+
+
                 }
-
-                /*cnum =((((unsorted[live].getZ() & (1u << mid_bit)) >> mid_bit) << 2u) | (((unsorted[live].getY() & (1u << mid_bit)) >> mid_bit) << 1u) | ((unsorted[live].getX() & (1u << mid_bit)) >> mid_bit));
-                //(((unsorted[live].getZ() >> pMaxDepth) & 1u) << 2u) |  (((unsorted[live].getY() >> pMaxDepth) & 1u) << 1u) |  ((unsorted[live].getX() >> pMaxDepth) & 1u);
-                pNodes[loc[cnum]++] = unsorted[live];
-                unsorted[live] = pNodes[loc[cnum]];
-                if ((loc[cnum] == count[cnum + 1])) {
-                    live--;
-                }*/
             }
 
         }

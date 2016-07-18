@@ -31,6 +31,7 @@
 #include <chrono>
 #include <thread>
 #include "sfcSort.h"
+#include "testUtils.h"
 
 
 double**** LaplacianType2Stencil;
@@ -186,9 +187,10 @@ int main(int argc, char ** argv )
 
     if(genPts==1)
     {
-        genGauss(0.15,grainSize,dim,argv[1],globalComm);
+    genGauss(0.15,grainSize,dim,argv[1],globalComm);
     }
 
+    //genGauss(0.15,grainSize,dim,pts);
 
     sprintf(pFile, "%s%d_%d.pts", argv[1], rank, npes);
     //std::cout<<"Attempt to Read "<<ptsFileName<<std::endl;
@@ -243,6 +245,9 @@ int main(int argc, char ** argv )
 
     SFC::parSort::SFC_Sort_RemoveDuplicates(tmpNodes,tol,maxDepth,false,globalComm);
     std::swap(linOct,tmpNodes);
+
+    //assert( par::test::isUniqueAndSorted(linOct,globalComm));
+
 
     //par::partitionW(linOct,NULL,globalComm);
 
