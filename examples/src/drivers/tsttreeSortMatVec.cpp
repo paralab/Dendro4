@@ -173,16 +173,20 @@ int main(int argc, char ** argv )
         std::cout << " MatVec number of iterations: "<<numLoops<<std::endl;
         std::cout << BLU << "===============================================" << NRM << std::endl;
 
+
+    }
+
+
 #ifdef HILBERT_ORDERING
-        sprintf(sendComMapFileName,"sendCommMap_H_tol_%f_npes_%d_pts_%d.csv",tol,npes,grainSize);
-        sprintf(recvComMapFileName,"recvCommMap_H_tol_%f_npes_%d_pts_%d.csv",tol,npes,grainSize);
+    sprintf(sendComMapFileName,"sendCommMap_H_tol_%f_npes_%d_pts_%d_ps%d_%d.csv",tol,npes,grainSize,rank,npes);
+    sprintf(recvComMapFileName,"recvCommMap_H_tol_%f_npes_%d_pts_%d_ps%d_%d.csv",tol,npes,grainSize,rank,npes);
 
 #else
-        sprintf(sendComMapFileName,"sendCommMap_M_tol_%f_npes_%d_pts_%d.csv",tol,npes,grainSize);
-        sprintf(recvComMapFileName,"recvCommMap_M_tol_%f_npes_%d_pts_%d.csv",tol,npes,grainSize);
+    sprintf(sendComMapFileName,"sendCommMap_M_tol_%f_npes_%d_pts_%d_ps%d_%d.csv",tol,npes,grainSize,rank,npes);
+        sprintf(recvComMapFileName,"recvCommMap_M_tol_%f_npes_%d_pts_%d_ps%d_%d.csv",tol,npes,grainSize,rank,npes);
 
 #endif
-    }
+
 
 
     if(genPts==1)

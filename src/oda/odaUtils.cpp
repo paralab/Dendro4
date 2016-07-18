@@ -2026,54 +2026,22 @@ namespace ot {
       for(unsigned int i=0;i<commProcs.size();i++)
           commMap[commProcs[i]]=commCounts[i];
 
-      unsigned int * commMapAll=new unsigned int[npes*npes];
-
-      par::Mpi_Gather(commMap,commMapAll,npes,0,comm);
-
-
-
-
-      if(!rank) {
-
-
-          unsigned int max=0;
-          for(unsigned int i=0;i<npes;i++)
-          {
-              for(unsigned int j=0;j<npes;j++)
-              {
-                  if(max<commMapAll[i*npes+j])
-                  {
-                      max=commMapAll[i*npes+j];
-                  }
-              }
-          }
+ /*     unsigned int * commMapAll=new unsigned int[npes*npes];
+      par::Mpi_Gather(commMap,commMapAll,npes,0,comm);*/
 
 
           std::ofstream myfile;
           myfile.open(fileName);
 
-          /*myfile<<"Labels";
           for(unsigned int i=0;i<npes;i++)
           {
-              myfile<<"\tP"<<std::setw(2)<<std::setfill('0')<<i;
-          }
-          myfile<<std::endl;*/
-          for(unsigned int i=0;i<npes;i++)
-          {
-              //myfile<<"P"<<std::setw(2)<<std::setfill('0')<<i;
-              for(unsigned int j=0;j<npes;j++)
-              {
-                 if((commMapAll[i*npes+j]/(double)max)<threshold)
-                    myfile<<"0\t";//myfile<<"\t"<<0;
-                 else
-                     myfile<<commMapAll[i*npes+j]<<"\t";//myfile<<"\t"<<commMapAll[i*npes+j];
-              }
-              myfile<<std::endl;
+              myfile<<commMap[i]<<"\t";
+
           }
 
           myfile.close();
 
-      }
+
 
   }// end of the function
 
