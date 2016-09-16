@@ -326,7 +326,14 @@ int main(int argc, char ** argv )
     if(!rank) std::cout<<" balOCt End: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
 #endif
 
-    //SFC::parSort::SFC_3D_Sort(balOct,tol,maxDepth,globalComm);
+    SFC::parSort::SFC_3D_Sort(balOct,tol,maxDepth,globalComm);
+    assert(par::test::isSorted(balOct,globalComm));
+
+    /*char balOctName[256];
+    sprintf(balOctName,"balOct_%f",tol);
+    treeNodesTovtk(balOct,rank,balOctName);*/
+
+
 
 
     locSz = balOct.size();

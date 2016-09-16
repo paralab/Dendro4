@@ -26,6 +26,7 @@
 #include "externVars.h"
 
 /** Print a demangled stack backtrace of the caller function to FILE* out. */
+/*
 void handler (int sig) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -135,7 +136,7 @@ void handler (int sig) {
   // fclose(out);
 
   exit(1);
-}
+}*/
 
 
 
@@ -302,8 +303,8 @@ int main(int argc, char* argv[]) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 
-  signal(SIGSEGV, handler);   // install our handler
-  signal(SIGTERM, handler);   // install our handler
+ /* signal(SIGSEGV, handler);   // install our handler
+  signal(SIGTERM, handler);   // install our handler*/
 
   double slack = atof(argv[2]);
   // @hari is this total number of procs or npes = size*q ?
