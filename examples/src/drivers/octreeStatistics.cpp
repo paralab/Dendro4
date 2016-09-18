@@ -242,11 +242,11 @@ void flexiblePartitionCalculation(std::vector<ot::TreeNode>& balOct,double slack
 // Contains the functions to calculate the mesh statistics.
 // This function is to calculate the boundary faces
 // Assume that the given octree vector is sorted.
-void calculateBoundaryFaces(const std::vector<ot::TreeNode> &partition, int q, double* stat) {
+void calculateBoundaryFaces(const std::vector<ot::TreeNode> &partition, int q, double* stat, MPI_Comm comm) {
 
 
     int com_size=0;
-    MPI_Comm_size(MPI_COMM_WORLD,&com_size);
+    MPI_Comm_size(comm,&com_size);
     int local_sz= partition.size();
 
 //    stat[3]=0;  //min SVR : Surface to Volume Ratio
@@ -350,9 +350,9 @@ void calculateBoundaryFaces(const std::vector<ot::TreeNode> &partition, int q, d
 
     unsigned long global_sum, global_max, global_min;
 
-    MPI_Reduce(&total_boundary_faces, &global_sum, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&max_faces, &global_max, 1, MPI_UNSIGNED_LONG, MPI_MAX, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&min_faces, &global_min, 1, MPI_UNSIGNED_LONG, MPI_MIN, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&total_boundary_faces, &global_sum, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, comm);
+    MPI_Reduce(&total_boundary_faces, &global_max, 1, MPI_UNSIGNED_LONG, MPI_MAX, 0, comm);
+    MPI_Reduce(&total_boundary_faces, &global_min, 1, MPI_UNSIGNED_LONG, MPI_MIN, 0, comm);
 
     stat[0]=global_min;
     stat[1]=global_max;

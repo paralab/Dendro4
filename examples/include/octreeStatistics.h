@@ -30,7 +30,7 @@
 
 void flexiblePartitionCalculation(std::vector<ot::TreeNode>& balOct,double slack,int q,MPI_Comm comm);
 
-void calculateBoundaryFaces(const std::vector<ot::TreeNode> &partition, int q, double* stat);
+void calculateBoundaryFaces(const std::vector<ot::TreeNode> &partition, int q, double* stat,MPI_Comm comm);
 int calculateBoundaryFaces(const std::vector<ot::TreeNode>::const_iterator &beg, const std::vector<ot::TreeNode>::const_iterator &end);
 
 

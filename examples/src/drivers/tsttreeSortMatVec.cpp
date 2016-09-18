@@ -32,6 +32,7 @@
 #include <thread>
 #include "sfcSort.h"
 #include "testUtils.h"
+#include "octreeStatistics.h"
 
 
 double**** LaplacianType2Stencil;
@@ -354,6 +355,34 @@ int main(int argc, char ** argv )
     ptm = gmtime ( &rawtime );
     if(!rank) std::cout<<" oda Begin: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
 #endif
+
+
+    // octree statistics computation.
+    locSz = balOct.size();
+    DendroIntL minSz,maxSz;
+    double ld_imb=0;
+
+    par::Mpi_Reduce<DendroIntL>(&locSz, &maxSz, 1, MPI_MAX, 0, MPI_COMM_WORLD);
+    par::Mpi_Reduce<DendroIntL>(&locSz, &minSz, 1, MPI_MIN, 0, MPI_COMM_WORLD);
+
+    ld_imb=maxSz/(double)minSz;
+    double bdy_surfaces[3];
+    calculateBoundaryFaces(balOct,1,bdy_surfaces,MPI_COMM_WORLD);
+
+    if(!rank)
+    {
+        std::cout<<"=================================="<<std::endl;
+        std::cout<<"        OCTREE STAT"<<std::endl;
+        std::cout<<"=================================="<<std::endl;
+        std::cout<<"npes\ttol\tlocalSz_min\tlocalSz_max\tld_imb\tbdy_min\tbdy_mean\tbdy_max"<<std::endl;
+        std::cout<<npes<<"\t"<<tol<<"\t"<<minSz<<"\t"<<maxSz<<"\t"<<ld_imb<<"\t"<<bdy_surfaces[0]<<"\t"<<bdy_surfaces[2]<<"\t"<<bdy_surfaces[1]<<std::endl;
+
+    }
+
+
+
+
+
 
     startTime = MPI_Wtime();
     ot::DA da(balOct, MPI_COMM_WORLD, MPI_COMM_WORLD,tol,compressLut);
