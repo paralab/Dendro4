@@ -2023,8 +2023,29 @@ namespace ot {
       for(unsigned int i=0;i<npes;i++)
         commMap[i]=0;
 
-      for(unsigned int i=0;i<commProcs.size();i++)
-          commMap[commProcs[i]]=commCounts[i];
+      DendroIntL sum=0;
+      for(unsigned int i=0;i<commProcs.size();i++) {
+
+          commMap[commProcs[i]] = commCounts[i];
+          sum+=commCounts[i];
+      }
+
+      DendroIntL stat[3];
+
+      par::Mpi_Reduce(&sum,stat,1,MPI_MIN,0,comm);
+      par::Mpi_Reduce(&sum,stat+1,1,MPI_SUM,0,comm);
+      par::Mpi_Reduce(&sum,stat+2,1,MPI_MAX,0,comm);
+
+      if(!rank)
+      {
+
+          std::cout<<"==============================================="<<std::endl;
+          std::cout<<"      Data Communicated (min total mean max)         "<<std::endl;
+          std::cout<<stat[0]<<"\t"<<stat[1]<<"\t"<<stat[1]/((double)npes)<<"\t"<<stat[2]<<std::endl;
+          std::cout<<"==============================================="<<std::endl;
+      }
+
+
 
  /*     unsigned int * commMapAll=new unsigned int[npes*npes];
       par::Mpi_Gather(commMap,commMapAll,npes,0,comm);*/
