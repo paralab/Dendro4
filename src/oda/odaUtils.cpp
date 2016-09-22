@@ -2024,10 +2024,20 @@ namespace ot {
         commMap[i]=0;
 
       DendroIntL sum=0;
+      unsigned int deg=0;
       for(unsigned int i=0;i<commProcs.size();i++) {
 
           commMap[commProcs[i]] = commCounts[i];
-          sum+=commCounts[i];
+
+      }
+
+      for (unsigned int i =0; i< npes;i++)
+      {
+          sum+=commMap[i];
+          if(commMap[i]!=0)
+          {
+              deg++;
+          }
       }
 
       DendroIntL stat[3];
@@ -2047,11 +2057,28 @@ namespace ot {
 
 
 
+      unsigned int stat1[3];
+
+      par::Mpi_Reduce(&deg,stat1,1,MPI_MIN,0,comm);
+      par::Mpi_Reduce(&deg,stat1+1,1,MPI_SUM,0,comm);
+      par::Mpi_Reduce(&deg,stat1+2,1,MPI_MAX,0,comm);
+
+      if(!rank)
+      {
+
+          std::cout<<"==============================================="<<std::endl;
+          std::cout<<" Degreee each connected to  (min total mean max) "<<std::endl;
+          std::cout<<stat1[0]<<"\t"<<stat1[1]<<"\t"<<stat1[1]/((double)npes)<<"\t"<<stat1[2]<<std::endl;
+          std::cout<<"==============================================="<<std::endl;
+      }
+
+
+
  /*     unsigned int * commMapAll=new unsigned int[npes*npes];
       par::Mpi_Gather(commMap,commMapAll,npes,0,comm);*/
 
 
-          std::ofstream myfile;
+       /*   std::ofstream myfile;
           myfile.open(fileName);
 
           for(unsigned int i=0;i<npes;i++)
@@ -2060,7 +2087,7 @@ namespace ot {
 
           }
 
-          myfile.close();
+          myfile.close();*/
 
 
 
