@@ -363,7 +363,7 @@ int main(int argc, char **argv) {
   }
 
   double stat_bf_bal[3];
-  calculateBoundaryFaces(linOct,num_pseudo_proc,stat_bf_bal);
+  calculateBoundaryFaces(linOct,num_pseudo_proc,stat_bf_bal,MPI_COMM_WORLD);
   total_boundary_faces=(int)stat_bf_bal[3]*num_pseudo_proc*size;
 
 
@@ -374,7 +374,6 @@ int main(int argc, char **argv) {
     std::cout << RED " Boundary Surfaces (mean):"<<stat_bf_bal[2]<< NRM << std::endl;
     std::cout << BLU << "===============================================" << NRM << std::endl;
   }
-
     // reduce and only print the total ...
   localSz = linOct.size();
  // std::cout<<"Local unbalanced oct: "<<rank<<"\t # of oct:"<<localSz<<std::endl;
@@ -437,7 +436,7 @@ assert(par::test::isUniqueAndSorted(linOct,MPI_COMM_WORLD));
 
 
   double stat_af_bal[3];
-  calculateBoundaryFaces(balOct,num_pseudo_proc,stat_af_bal);
+  calculateBoundaryFaces(balOct,num_pseudo_proc,stat_af_bal,MPI_COMM_WORLD);
 
   if (!rank) {
     std::cout << BLU << "===============================================" << NRM << std::endl;

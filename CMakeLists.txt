@@ -52,7 +52,7 @@ option(USE_NCA_PROPERTY "Use the NCA based approach" ON)
 option(BUILD_TESTS "Build test applications" ON)
 option(BUILD_DA_EXAMPLES "Build examples using dendro::DA" ON)
 option(BUILD_MG_EXAMPLES "Build test applications using dendro::MG" ON)
-option(ALLTOALLV_FIX "Use K-way all to all v" ON)
+option(ALLTOALLV_FIX "Use K-way all to all v" OFF)
 option(ROTATION_STACK_ENABLE "Calculate the rotation pattern using the stack implementation" OFF)
 option(POWER_MEASUREMENT_TIMESTEP "Print the time step for mat vec loops" OFF)
 option (SPLITTER_SELECTION_FIX "use the splitter fix for the treeSort" ON)
@@ -119,12 +119,12 @@ include_directories(${PROJECT_BINARY_DIR}
                     ${MPI_INCLUDE_PATH}
                     include
                     include/fem
-                    include/oda 
-                    include/omg 
-                    include/test 
-                    examples/include 
-                    $ENV{PETSC_DIR}/include 
-                    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/include 
+                    include/oda
+                    include/omg
+                    include/test
+                    examples/include
+                    $ENV{PETSC_DIR}/include
+                    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/include
                     )
 
 link_directories($ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
@@ -144,14 +144,14 @@ file(GLOB DENDRO_TEMPLATES include/*.tcc)
 set(DENDRO_LIBS dendroMG dendroDA dendroTest dendro)
 
 add_library(dendroMG ${OMG_SOURCES})
-add_library(dendroDA ${ODA_SOURCES} ${ODA_PRIVATE_SOURCES} include/hcurvedata.h)
+add_library(dendroDA ${ODA_SOURCES} ${ODA_PRIVATE_SOURCES} include/hcurvedata.h src/pickBdy.cpp src/blockPart.cpp src/construct.cpp)
 add_library(dendroTest src/test/testUtils.C)
 
-add_library(dendro ${DENDRO_SOURCES} 
+add_library(dendro ${DENDRO_SOURCES}
                    ${DENDRO_HEADERS}
-                   ${DENDRO_TEMPLATES} include/hcurvedata.h src/hcurvedata.cpp)
+                   ${DENDRO_TEMPLATES} include/hcurvedata.h src/hcurvedata.cpp src/blockPart.cpp)
 
-## executables 
+## executables
 
 ##---------------------------------------------------------------------------------------
 ##  Helper APPS
@@ -160,7 +160,7 @@ add_executable(genGauss scripts/genGaussSeq.C)
 add_executable(splitPoints scripts/splitPoints.C)
 
 add_executable(gen2spheres scripts/gen2spheres.C)
-target_link_libraries(gen2spheres dendro ${MPI_LIBRARIES} m)
+target_link_libraries(gen2spheres dendro petsc ${MPI_LIBRARIES} m)
 
 add_executable(genPrlFBMpts scripts/genPrlFBMpts.C)
 target_link_libraries(genPrlFBMpts ${MPI_LIBRARIES} m)
@@ -184,7 +184,7 @@ target_link_libraries(rippleBal dendro petsc ${MPI_LIBRARIES} m)
 add_executable(seqRipple examples/src/drivers/seqRipple.C)
 target_link_libraries(seqRipple dendro petsc ${MPI_LIBRARIES} m)
 
-add_executable(seqRipplePtr examples/src/drivers/seqRipplePtr.C)
+add_executable(seqRipplePtr src/pickBdy.cpp examples/src/drivers/seqRipplePtr.C)
 target_link_libraries(seqRipplePtr dendro petsc ${MPI_LIBRARIES} m)
 
 add_executable(justBal examples/src/drivers/justBal.C)
@@ -194,7 +194,7 @@ add_executable(testConAndBal examples/src/drivers/testConAndBal)
 target_link_libraries(testConAndBal dendro petsc ${MPI_LIBRARIES} m)
 
 add_executable(testConBalAndCoarsen
-  examples/src/drivers/testConBalAndCoarsen) 
+  examples/src/drivers/testConBalAndCoarsen)
 target_link_libraries(testConBalAndCoarsen dendro dendroDA petsc ${MPI_LIBRARIES} m)
 ##---------------------------------------------------------------------------------------
 
@@ -202,7 +202,7 @@ target_link_libraries(testConBalAndCoarsen dendro dendroDA petsc ${MPI_LIBRARIES
 ##    Dendro DA APPS
 ##---------------------------------------------------------------------------------------
 if(BUILD_DA_EXAMPLES)
-    add_executable(testPartition include/sfcSort.h examples/src/drivers/testPartition.C include/hcurvedata.h src/hcurvedata.cpp examples/include/octreeStatistics.h examples/src/drivers/octreeStatistics.cpp include/test/testUtils.h src/test/testUtils.C examples/include/genPts_par.h examples/src/drivers/genPts_par.C include/dynamicPartition.h src/dynamicPartition.C
+    add_executable(testPartition include/sfcSort.h examples/src/drivers/testPartition.C examples/include/octreeStatistics.h examples/src/drivers/octreeStatistics.cpp include/hcurvedata.h src/hcurvedata.cpp examples/include/octreeStatistics.h examples/src/drivers/octreeStatistics.cpp include/test/testUtils.h src/test/testUtils.C examples/include/genPts_par.h examples/src/drivers/genPts_par.C include/dynamicPartition.h src/dynamicPartition.C
             )
     target_link_libraries(testPartition dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
@@ -291,7 +291,8 @@ add_executable(omgNeumann_ex2   examples/src/drivers/omgNeumann_ex2.C
                                 examples/src/backend/handleType2Stencils.C )
 target_link_libraries(omgNeumann_ex2 dendroMG dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
-add_executable(omgNeumann_ex3   examples/src/drivers/omgNeumann_ex3.C
+add_executable(omgNeumann_ex3   src/pickBdy.cpp
+                                examples/src/drivers/omgNeumann_ex3.C
                                 examples/src/backend/omgNeumann.C
                                 examples/src/backend/handleType2Stencils.C )
 target_link_libraries(omgNeumann_ex3 dendroMG dendroDA dendro petsc ${MPI_LIBRARIES} m)
@@ -330,7 +331,7 @@ add_executable(pts2Mesh examples/src/drivers/pts2Mesh.C
                         examples/src/backend/handleType2Stencils.C )
 target_link_libraries(pts2Mesh dendroMG dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
-add_executable(createCoarser    examples/src/drivers/createCoarser.C)
+add_executable(createCoarser  src/pickBdy.cpp  examples/src/drivers/createCoarser.C)
 target_link_libraries(createCoarser dendroMG dendroDA dendro petsc ${MPI_LIBRARIES} m)
 endif()
 ##---------------------------------------------------------------------------------------
@@ -342,16 +343,16 @@ if(BUILD_TESTS)
     add_executable(checkNl  src/test/compareNlFiles.C)
     target_link_libraries(checkNl dendro petsc ${MPI_LIBRARIES} m)
 
-    add_executable(checkMl  src/test/compareMFiles.C)
+    add_executable(checkMl  src/pickBdy.cpp src/test/compareMFiles.C)
     target_link_libraries(checkMl dendro petsc ${MPI_LIBRARIES} m)
 
-    add_executable(dumpMesh examples/src/drivers/dumpMesh.C)
+    add_executable(dumpMesh src/pickBdy.cpp examples/src/drivers/dumpMesh.C)
     target_link_libraries(dumpMesh dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
     add_executable(downSample examples/src/drivers/downSample.C)
     target_link_libraries(downSample dendroMG dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
-    add_executable(checkResults src/test/checkResults.C)
+    add_executable(checkResults src/pickBdy.cpp src/test/checkResults.C)
     target_link_libraries(checkResults dendroTest dendro dendroDA  petsc ${MPI_LIBRARIES} m)
 
     add_executable(checkScatterValues src/test/checkScatterValues.C)
@@ -360,14 +361,14 @@ if(BUILD_TESTS)
     add_executable(checkCoarsening src/test/checkCoarsening.C)
     target_link_libraries(checkCoarsening dendroTest dendro dendroDA  petsc ${MPI_LIBRARIES} m)
 
-    add_executable(justCoarsen examples/src/drivers/justCoarsen.C)
+    add_executable(justCoarsen src/pickBdy.cpp examples/src/drivers/justCoarsen.C)
     target_link_libraries(justCoarsen dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
     add_executable(testNodeAndVals src/test/testNodeAndVals.C)
     target_link_libraries(testNodeAndVals dendroTest dendro petsc ${MPI_LIBRARIES} m)
 
-    add_executable(testPetscInt src/test/testPetscInt.C)
-    target_link_libraries(testPetscInt dendroTest dendro petsc ${MPI_LIBRARIES} m)
+    #add_executable(testPetscInt src/pickBdy.cpp src/blockPart.cpp src/test/testPetscInt.C)
+    #target_link_libraries(testPetscInt dendroTest dendro dendroDA petsc ${MPI_LIBRARIES} m)
 
 
     add_executable(tstFBM   examples/src/drivers/tstFBM.C
@@ -388,7 +389,9 @@ if(BUILD_TESTS)
                             examples/src/backend/handleType1Stencils.C )
     target_link_libraries(tstFBM2 dendroMG dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
-    add_executable(tstDirichlet examples/src/drivers/tstDirichlet.C
+    add_executable(tstDirichlet src/pickBdy.cpp
+                                src/blockPart.cpp
+                                examples/src/drivers/tstDirichlet.C
                                 examples/src/backend/omgJac.C
                                 examples/src/backend/matProp.C
                                 examples/src/backend/odaJac.C
