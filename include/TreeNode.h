@@ -14,13 +14,11 @@
 #include "octUtils.h"
 #include "Point.h"
 #include "binUtils.h"
-
+#include "hcurvedata.h"
 #include <iostream>
 #include <cassert>
 
 
-#include "hilbert.h"
-#include "morton.h"
 
 
 //#include "../visualization/treenode2vtk.h"

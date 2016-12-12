@@ -168,67 +168,18 @@ void DA::DA_FactoryPart1(std::vector<ot::TreeNode>& in) {
 
   in.insert(in.end(),positiveBoundaryOctants.begin(),positiveBoundaryOctants.end());
   m_uiMaxDepth=m_uiMaxDepth+1;
-  SFC::parSort::SFC_3D_Sort(in,m_uiTreeSortTol,(m_uiMaxDepth),m_mpiCommActive);
 
-/*
- * old code:
- *
- * //@hari: After Boundary nodes calculation the in won't be sorted due to embedding the current octree in one level higher. Hence we need to sort it using sample sort. This is a must.
-#ifdef HILBERT_ORDERING
-  std::vector<ot::TreeNode> tmpTN;
-#ifdef TREE_SORT
-  tmpTN=in;
-  SFC::parSort::SFC_3D_Sort(tmpTN,m_uiTreeSortTol,(m_uiMaxDepth+1),m_mpiCommActive);//SFC::parSort::SFC_3D_Sort(tmpTN,TOLLERANCE_OCT,m_uiMaxDepth,m_mpiCommActive);//par::SFC_3D_TreeSort(tmpTN,TOLLERANCE_OCT,m_mpiCommActive);
-  //std::swap(in,tmpTN);
-#else
-  par::sampleSort(in,tmpTN,m_mpiCommActive);
-#endif
-  in.clear();
-  in=tmpTN;
-  tmpTN.clear();
-#endif
+  std::vector<ot::TreeNode> tmp;
 
-
-  //treeNodesTovtk(positiveBoundaryOctants,rank,"positive_bdy_octs");
-  // Update the maxDepth ...
-  m_uiMaxDepth = m_uiMaxDepth + 1;
-
-  //Most processors will not add any positive boundaries. So, there is no need
-  //to unnecessarily distribute positive boundaries on all procs just for
-  //sorting. So only the few processors touching the positive boundary will
-  //participate in the parallel sort
-  MPI_Comm bdyComm;
-  par::splitComm2way((positiveBoundaryOctants.empty()), &bdyComm, m_mpiCommActive);
-
-  if(!(positiveBoundaryOctants.empty())) {
-    //Call Sample Sort  
-    std::vector<ot::TreeNode > tmpVecTN;
 
 #ifdef TREE_SORT
-    tmpVecTN=positiveBoundaryOctants;
-    SFC::parSort::SFC_3D_Sort(tmpVecTN,m_uiTreeSortTol,m_uiMaxDepth,bdyComm);//par::SFC_3D_TreeSort(tmpVecTN,TOLLERANCE_OCT,bdyComm);
-    //std::swap(positiveBoundaryOctants,tmpVecTN);
+  ot::TreeNode root=ot::TreeNode(m_uiDim,m_uiMaxDepth);
+  SFC::parSort::SFC_treeSort(in,tmp,tmp,tmp,m_uiTreeSortTol,m_uiMaxDepth,root,0,1,0,NUM_NPES_THRESHOLD,m_mpiCommActive);
 #else
-    par::sampleSort<ot::TreeNode>(positiveBoundaryOctants, tmpVecTN, bdyComm);
+  par::sampleSort(in,tmp,m_mpiCommActive);
+  std::swap(in,tmp);
+  tmp.clear();
 #endif
-    positiveBoundaryOctants = tmpVecTN;
-    tmpVecTN.clear();
-#ifdef  __DEBUG_DA__
-    for(int i=0;i<in.size();i++)
-    {
-       if(in[i]>=positiveBoundaryOctants[0])
-        {
-         std::cout<<"Input octnat is larger than : "<<in[i]<<" postiveBoundary:"<<positiveBoundaryOctants[0]<<std::endl;
-         assert(false);
-        }
-    }
-#endif
- }
-
-  assert(par::test::isUniqueAndSorted(positiveBoundaryOctants,m_mpiCommActive));
-  par::concatenate<ot::TreeNode>(in, positiveBoundaryOctants, m_mpiCommActive);
-  positiveBoundaryOctants.clear();
-  assert(par::test::isUniqueAndSorted(in,m_mpiCommActive));*/
 
 
 
@@ -280,77 +231,14 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
   //Partition in and create blocks (blocks must be globally sorted).
   std::vector<ot::TreeNode> blocks;
   if(blocksPtr == NULL) {
-
-   // std::cout<<"oda stage 3: rank: "<<rank<<"block ptr is NULL"<<std::endl;
-
-    //min grain size = 1000
- /*   const DendroIntL THOUSAND = 1000;
-//    if(!m_iRankActive)
-//      std::cout<<"globalSizeBefore:"<<globalSizeBefore<<std::endl;
-    if (globalSizeBefore < (THOUSAND*m_iNpesActive)) {
-      int splittingSize = (globalSizeBefore/THOUSAND); 
-      if(splittingSize == 0) {
-        splittingSize = 1; 
-      }
-
-      unsigned int avgLoad = (globalSizeBefore / splittingSize);
-      int leftOvers = (globalSizeBefore % splittingSize);
-
-      std::vector<TreeNode> tmpIn;
-      if(m_iRankActive >= splittingSize) {
-        par::scatterValues<ot::TreeNode>(in, tmpIn, 0, m_mpiCommActive);
-      }else if(m_iRankActive < leftOvers) {
-        par::scatterValues<ot::TreeNode>(in, tmpIn, (avgLoad+1), m_mpiCommActive);
-      }else {
-        par::scatterValues<ot::TreeNode>(in, tmpIn, avgLoad, m_mpiCommActive);
-      }
-      in = tmpIn;
-      tmpIn.clear();
-
-
-
-      MPI_Comm newComm;
-      par::splitCommUsingSplittingRank(splittingSize, &newComm, m_mpiCommActive);
-      m_mpiCommActive = newComm;
-      MPI_Comm_size(m_mpiCommActive,&m_iNpesActive);
-      MPI_Comm_rank(m_mpiCommActive,&m_iRankActive);
-
-#ifdef HILBERT_ORDERING
-      std::vector<ot::TreeNode> tmp;
-      par::sampleSort(in,tmp,m_mpiCommActive);
-      in=tmp;
-      tmp.clear();
-#endif
-
-
-#ifndef __SILENT_MODE__
-      if(!m_iRankActive) {
-        std::cout<<" input to DA constructor is small("<<globalSizeBefore
-          <<") npes = "<<m_iNpesActive<<" splitting comm."<<std::endl;
-      }
-#endif
-
-      m_bIamActive = (!in.empty());   
-      if(iAmActive != NULL) {	
-        //Want the active state returned
-        (*iAmActive) = m_bIamActive;
-      }
-      if(!m_bIamActive) {
-        RESET_DA_BLOCK
-          PROF_BUILD_DA_STAGE3_END
-          return;
-      }
-    }//end check if total size is too small
-*/
+   /* MPI_Barrier(m_mpiCommActive);
+      if(!m_iRankActive)
+          std::cout<<GRN<<"ot::blockPartStage1 begin"<<NRM<<std::endl;*/
     PROF_DA_BPART1_BEGIN
-
-
-
-    //treeNodesTovtk(in,m_iRankActive,"oda_in");
     ot::blockPartStage1(in, blocks, m_uiDimension, m_uiMaxDepth, m_mpiCommActive,m_uiTreeSortTol);
-    //treeNodesTovtk(blocks,m_iRankActive,"oda_blocks_1");
-//    if(!m_iRankActive)
-//       std::cout<<GRN<<"ot::blockPartStage1 is completed."<<NRM<<std::endl;
+    /*MPI_Barrier(m_mpiCommActive);
+    if(!m_iRankActive)
+       std::cout<<GRN<<"ot::blockPartStage1 is completed."<<NRM<<std::endl;*/
 
     PROF_DA_BPART1_END
 
@@ -358,8 +246,9 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
 
     DA_blockPartStage2(in, blocks, m_uiDimension, m_uiMaxDepth, m_mpiCommActive,m_uiTreeSortTol);
     //treeNodesTovtk(blocks,m_iRankActive,"oda_blocks_2");
-//    if(!m_iRankActive)
-//      std::cout<<GRN<<"DA_blockPartStage2 is completed."<<NRM<<std::endl;
+    /*MPI_Barrier(m_mpiCommActive);
+    if(!m_iRankActive)
+      std::cout<<GRN<<"DA_blockPartStage2 is completed."<<NRM<<std::endl;*/
 
     PROF_DA_BPART2_END
   } else {

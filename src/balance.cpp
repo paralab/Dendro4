@@ -2369,10 +2369,12 @@ PROF_RIPPLE_BAL_END
       //
 
 #ifdef TREE_SORT
-        SFC::parSort::SFC_Sort_RemoveDuplicates(allKeys, tol,maxDepth,false,comm);
+        std::vector<ot::TreeNode> tmp;
+        SFC::parSort::SFC_treeSort(allKeys,tmp,tmp,tmp,tol,maxDepth,root,0,1,TS_REMOVE_DUPLICATES,NUM_NPES_THRESHOLD,comm);
+        std::swap(allKeys,tmp);
+        tmp.clear();
 #else
-        par::removeDuplicates<ot::TreeNode>(allKeys,
-                                          false, comm);
+        par::removeDuplicates<ot::TreeNode>(allKeys,false, comm);
 #endif
 
 

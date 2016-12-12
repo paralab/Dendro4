@@ -157,10 +157,6 @@ int main(int argc, char ** argv ) {
 
   if(argc >13) {genRegGrid=(bool)(atoi(argv[13])); regLev=atoi(argv[14]);}
 
-#ifdef HILBERT_ORDERING
-  G_MAX_DEPTH = maxDepth;
-  G_dim = dim;
-#endif
   _InitializeHcurve(dim);
 
 

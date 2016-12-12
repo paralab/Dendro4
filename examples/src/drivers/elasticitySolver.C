@@ -19,6 +19,7 @@
 #include <cstring>
 #include "externVars.h"
 #include "dendro.h"
+#include "hcurvedata.h"
 
 static char help[] = "Solves static Navier-Lame equations\
                       using FEM, MG, DA and Matrix-Free methods.\n\n";
@@ -90,12 +91,15 @@ int main(int argc, char ** argv ) {
   std::vector<ot::TreeNode> linOct, balOct;
   std::vector<double> pts;
   double mgLoadFac = 2.0;
-
+  _InitializeHcurve(dim);
   PetscInitialize(&argc,&argv,"optionsElasticity",help);
+  
+  if(!rank)std::cout << "register events" << std::endl;
   ot::RegisterEvents();
 
+  if(!rank) std::cout << "init damg" << std::endl;
   ot::DAMG_Initialize(MPI_COMM_WORLD);
-
+  PetscErrorPrintf = PetscErrorPrintfNone;
 #ifdef PETSC_USE_LOG
   PetscClassId classid;
   PetscClassIdRegister("Dendro",&classid);

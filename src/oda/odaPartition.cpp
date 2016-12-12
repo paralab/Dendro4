@@ -479,11 +479,8 @@ namespace ot {
     }//end if npes > 1
 
     isSingular.clear();
-#ifdef TREE_SORT
-      SFC::parSort::SFC_3D_Sort(globalCoarse,tol,maxDepth,commActive);
-#else
-      par::partitionW<ot::TreeNode>(globalCoarse, getNodeWeight, commActive);
-#endif
+    par::partitionW<ot::TreeNode>(globalCoarse, getNodeWeight, commActive);
+
 
 
     //Reset weights

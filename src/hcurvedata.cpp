@@ -31,10 +31,10 @@ if(pDim==2) {
 
 
 
-    strcpy(rotations + 0, "01230123");
-    strcpy(rotations + 8, "03210321");
-    strcpy(rotations + 16, "21032103");
-    strcpy(rotations + 24, "23012301");
+    strcpy(rotations + 0, "01230123\0");
+    strcpy(rotations + 8, "03210321\0");
+    strcpy(rotations + 16, "21032103\0");
+    strcpy(rotations + 24, "23012301\0");
 
 
 
@@ -76,7 +76,7 @@ if(pDim==2) {
     rotations = new char[8];
     HILBERT_TABLE = new char[4];
 
-    strcpy(rotations + 0, "0123401234");
+    strcpy(rotations + 0, "0123401234\0");
 
     HILBERT_TABLE[0] = 0;
     HILBERT_TABLE[1] = 0;
@@ -326,30 +326,30 @@ else if(pDim==3) {
 
     // Hilbert table based on the morton ordering.
 
-    strcpy(rotations + 0, "0231576403127465");
-    strcpy(rotations + 16, "0451376203741265");
-    strcpy(rotations + 32, "0264573107163425");
-    strcpy(rotations + 48, "6204513725163407");
-    strcpy(rotations + 64, "3751046243705261");
-    strcpy(rotations + 80, "5731026443527061");
-    strcpy(rotations + 96, "6237510465127403");
-    strcpy(rotations + 112, "0462375107341625");
-    strcpy(rotations + 128, "6402315725341607");
-    strcpy(rotations + 144, "6457310265741203");
-    strcpy(rotations + 160, "0154673201763245");
-    strcpy(rotations + 176, "3201546723105467");
-    strcpy(rotations + 192, "6754013245763201");
-    strcpy(rotations + 208, "5764023147563021");
-    strcpy(rotations + 224, "3267540167105423");
-    strcpy(rotations + 240, "5104623721563047");
-    strcpy(rotations + 256, "3762045147305621");
-    strcpy(rotations + 272, "6732015445327601");
-    strcpy(rotations + 288, "5401326723541067");
-    strcpy(rotations + 304, "3157640261705243");
-    strcpy(rotations + 320, "5137620461527043");
-    strcpy(rotations + 336, "0132675401327645");
-    strcpy(rotations + 352, "5467320167541023");
-    strcpy(rotations + 368, "3102645721305647");
+    strcpy(rotations + 0, "0231576403127465\0");
+    strcpy(rotations + 16, "0451376203741265\0");
+    strcpy(rotations + 32, "0264573107163425\0");
+    strcpy(rotations + 48, "6204513725163407\0");
+    strcpy(rotations + 64, "3751046243705261\0");
+    strcpy(rotations + 80, "5731026443527061\0");
+    strcpy(rotations + 96, "6237510465127403\0");
+    strcpy(rotations + 112, "0462375107341625\0");
+    strcpy(rotations + 128, "6402315725341607\0");
+    strcpy(rotations + 144, "6457310265741203\0");
+    strcpy(rotations + 160, "0154673201763245\0");
+    strcpy(rotations + 176, "3201546723105467\0");
+    strcpy(rotations + 192, "6754013245763201\0");
+    strcpy(rotations + 208, "5764023147563021\0");
+    strcpy(rotations + 224, "3267540167105423\0");
+    strcpy(rotations + 240, "5104623721563047\0");
+    strcpy(rotations + 256, "3762045147305621\0");
+    strcpy(rotations + 272, "6732015445327601\0");
+    strcpy(rotations + 288, "5401326723541067\0");
+    strcpy(rotations + 304, "3157640261705243\0");
+    strcpy(rotations + 320, "5137620461527043\0");
+    strcpy(rotations + 336, "0132675401327645\0");
+    strcpy(rotations + 352, "5467320167541023\0");
+    strcpy(rotations + 368, "3102645721305647\0");
 
 
     HILBERT_TABLE[0] = 1;
@@ -549,7 +549,7 @@ else if(pDim==3) {
     rotations = new char[16];
     HILBERT_TABLE = new char[8];
 
-    strcpy(rotations + 0, "0123456701234567");
+    strcpy(rotations + 0, "0123456701234567\0");
 
     HILBERT_TABLE[0] = 0;
     HILBERT_TABLE[1] = 0;

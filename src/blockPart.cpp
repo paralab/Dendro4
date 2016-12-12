@@ -574,13 +574,12 @@ namespace ot {
     MPI_Comm_size(comm,&npes);
 
 #ifdef TREE_SORT
-      SFC::parSort::SFC_3D_Sort(nodes,tol,maxDepth,comm);
+      SFC::parSort::SFC_PartitionW(nodes,tol,maxDepth,comm);
 #else
       par::partitionW<ot::TreeNode>(nodes, NULL,comm);
 #endif
-
-
-    //std::cout << rank << ": " << __func__ << ":Block Part Node Size:" <<nodes.size()<< std::endl;
+    /*MPI_Barrier(comm);
+    std::cout << rank << ": " << __func__ << ":Block Part Node Size:" <<nodes.size()<< std::endl;*/
     assert(nodes.size() > (1 << dim) ); 
 
 #ifdef __BLOCK_PART_EQUALS_MORTON_PART__
@@ -665,7 +664,14 @@ namespace ot {
 
     //Sorting is necessary here since bPartcomparator is different from <.
     //sort(localBlocks.begin(), localBlocks.end());
-    SFC::seqSort::SFC_3D_msd_sort_rd(&(*(localBlocks.begin())),localBlocks.size(),0,maxDepth,maxDepth);//seq::SFC_3D_TreeSort(localBlocks);
+#ifdef TREE_SORT
+    ot::TreeNode root(m_uiDim,maxDepth);
+    std::vector<ot::TreeNode> tmp;
+    SFC::seqSort::SFC_treeSort(&(*(localBlocks.begin())),localBlocks.size(),tmp,tmp,tmp,maxDepth,maxDepth,root,0,1,0);
+    tmp.clear();
+#else
+      std::sort(localBlocks.begin(),localBlocks.end());
+#endif
 
     // 3. Call nodes2Oct on these cells to generate the 
     //    globalCoarse octree ...
@@ -675,6 +681,7 @@ namespace ot {
     //treeNodesTovtk(localBlocks,rank,"local_blocks");
 
     completeOctree(localBlocks, blocks, dim, maxDepth, true,true,true, comm,tol);
+    MPI_Barrier(comm);
     //assert(par::test::isUniqueAndSorted(blocks, comm));
     //treeNodesTovtk(blocks,rank,"af_complete_octree");
     localBlocks.clear();
@@ -697,6 +704,7 @@ namespace ot {
     int npes, rank;
     MPI_Comm_rank(comm,&rank);
     MPI_Comm_size(comm,&npes);
+
 
 #ifdef __BLOCK_PART_EQUALS_MORTON_PART__
     //Just set minsAllBlocks. nodes and globalCoarse are already aligned.
@@ -960,10 +968,12 @@ namespace ot {
     }
     */
 #ifdef TREE_SORT
-      SFC::parSort::SFC_3D_Sort(globalCoarse,tol,maxDepth,comm);
+      SFC::parSort::SFC_PartitionW(globalCoarse,tol,maxDepth,comm);
 #else
-      par::partitionW<ot::TreeNode>(globalCoarse,getNodeWeight,comm);
+      par::partitionW<ot::TreeNode>(globalCoarse, NULL,comm);
 #endif
+
+
 
 
     /*
