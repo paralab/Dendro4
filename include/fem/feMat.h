@@ -9,20 +9,15 @@
 #define sh3 0.8943375672974064  //  ( 3 + psi(q1))/4
 #define sh4 0.6056624327025936  //  ( 3 + psi(q2))/4
 
-//#define sh1 1.577350269189626  //  ( 1 + psi(q1))
-//#define sh2 0.4226497308103743 //  ( 1 + psi(q2))
-//#define sh3 1.788675134594813  //   (3 + psi(q1))/2
-//#define sh4 1.211324865405187 //   (3 + psi(q2))/2
-
 
 class feMat {
   public:
   /// typedefs and enums
   enum daType {
     PETSC, OCT
-  }; 
+  };
 
-  /// Contructors 
+  /// Contructors
   feMat() { };
   feMat(daType da) {
 #ifdef __DEBUG__
@@ -35,7 +30,7 @@ class feMat {
   virtual ~feMat() {
 
   }
-  
+
   int getDAtype() {
     return m_daType;
   }
@@ -47,17 +42,17 @@ class feMat {
   ot::DA* getOctDA() { return m_octDA; }
   /**
    * 	@brief		The matrix-vector multiplication routine that is used by
-   * 				matrix-free methods. 
-   * 	@param		_in	PETSc Vec which is the input vector with whom the 
+   * 				matrix-free methods.
+   * 	@param		_in	PETSc Vec which is the input vector with whom the
    * 				product is to be calculated.
    * 	@param		_out PETSc Vec, the output of M*_in
    * 	@return		bool true if successful, false otherwise.
-   * 
-   *  The matrix-vector multiplication routine that is used by matrix-free 
+   *
+   *  The matrix-vector multiplication routine that is used by matrix-free
    * 	methods. The product is directly calculated from the elemental matrices,
    *  which are computed by the ElementalMatVec() function. Use the Assemble()
    *  function for matrix based methods.
-   **/ 
+   **/
   virtual bool MatVec(Vec _in, Vec _out, double scale=1.0) = 0;
   virtual bool MatGetDiagonal(Vec _diag, double scale=1.0) = 0;
 
@@ -72,7 +67,7 @@ class feMat {
 protected:
 
   daType          m_daType;
-	
+
   DA              m_DA;
   ot::DA*         m_octDA;
   /// The dimensions of the problem.
@@ -82,4 +77,3 @@ protected:
 };
 
 #endif
-
