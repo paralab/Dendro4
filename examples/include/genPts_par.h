@@ -20,12 +20,13 @@
 #include <iostream>
 #include <random>
 #include <dendro.h>
+#include "TreeNode.h"
 //#include <chrono>
 
 
 void genGauss(const double& sd, const long int numPts, int dim, char * filePrefix,MPI_Comm comm);
 void genGauss(const double& sd, const DendroIntL numPts, int dim, std::vector<double> & xyz);
 void genLogarithmicGauss(const double& sd, const int numPts, int dim, char * filePrefix,MPI_Comm comm);
-
+void pts2Octants(std::vector<ot::TreeNode> & pNodes,double * pts, DendroIntL totPts, unsigned int dim ,unsigned int maxDepth);
 
 #endif

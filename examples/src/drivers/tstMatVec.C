@@ -157,10 +157,6 @@ int main(int argc, char ** argv ) {
 
   if(argc >13) {genRegGrid=(bool)(atoi(argv[13])); regLev=atoi(argv[14]);}
 
-#ifdef HILBERT_ORDERING
-  G_MAX_DEPTH = maxDepth;
-  G_dim = dim;
-#endif
   _InitializeHcurve(dim);
 
 
@@ -206,7 +202,15 @@ int main(int argc, char ** argv ) {
 //    for(int i=0;i<tmpNodes.size();i++)
 //      std::cout<<"Node:"<<tmpNodes[i]<<std::endl;
 //  }
-  par::removeDuplicates<ot::TreeNode>(tmpNodes, false, MPI_COMM_WORLD);
+
+  startTime=MPI_Wtime();
+    par::removeDuplicates<ot::TreeNode>(tmpNodes, false, MPI_COMM_WORLD);
+  endTime=MPI_Wtime();
+    localTime = endTime - startTime;
+    par::Mpi_Reduce<double>(&localTime, &totalTime, 1, MPI_MAX, 0, MPI_COMM_WORLD);
+    if (!rank) {
+        std::cout << "RemoveDuplicates Time: " << totalTime << std::endl;
+    }
   linOct = tmpNodes;
   tmpNodes.clear();
   par::partitionW<ot::TreeNode>(linOct, NULL, MPI_COMM_WORLD);
@@ -263,6 +267,7 @@ int main(int argc, char ** argv ) {
   startTime = MPI_Wtime();
   ot::balanceOctree(linOct, balOct, dim, maxDepth, incCorner, MPI_COMM_WORLD, NULL, NULL);
   endTime = MPI_Wtime();
+
 #ifdef PETSC_USE_LOG
   PetscLogStagePop();
 #endif

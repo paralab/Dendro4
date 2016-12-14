@@ -149,11 +149,6 @@ int main(int argc, char ** argv )
         compressLut = atoi(argv[12]);
     }
 
-
-#ifdef HILBERT_ORDERING
-    G_MAX_DEPTH = maxDepth;
-    G_dim = dim;
-#endif
     _InitializeHcurve(dim);
 
 #ifdef POWER_MEASUREMENT_TIMESTEP
@@ -184,15 +179,15 @@ int main(int argc, char ** argv )
 
 #else
     sprintf(sendComMapFileName,"sendCommMap_M_tol_%f_npes_%d_pts_%d_ps%d_%d.csv",tol,npes,grainSize,rank,npes);
-        sprintf(recvComMapFileName,"recvCommMap_M_tol_%f_npes_%d_pts_%d_ps%d_%d.csv",tol,npes,grainSize,rank,npes);
+    sprintf(recvComMapFileName,"recvCommMap_M_tol_%f_npes_%d_pts_%d_ps%d_%d.csv",tol,npes,grainSize,rank,npes);
 
 #endif
 
-
+    ot::TreeNode root=ot::TreeNode(m_uiDim,maxDepth);
 
     if(genPts==1)
     {
-    genGauss(0.15,grainSize,dim,argv[1],globalComm);
+        genGauss(0.15,grainSize,dim,argv[1],globalComm);
     }
 
     //genGauss(0.15,grainSize,dim,pts);
@@ -215,39 +210,14 @@ int main(int argc, char ** argv )
     std::vector<ot::TreeNode> tmpNodes;
     DendroIntL totPts=grainSize*dim;
 
-#ifdef DIM_2
-
-    for (DendroIntL i = 0; i < totPts; i += 2) {
-        if ((pts[i] > 0.0) &&
-            (pts[i + 1] > 0.0) &&
-            (((unsigned int) (pts[i] * ((double) (1u << maxDepth)))) < (1u << maxDepth)) &&
-            (((unsigned int) (pts[i + 1] * ((double) (1u << maxDepth)))) < (1u << maxDepth)) ) {
-
-            tmpNodes.push_back(ot::TreeNode((unsigned int) (pts[i] * (double) (1u << maxDepth)),
-                                            (unsigned int) (pts[i + 1] * (double) (1u << maxDepth)),
-                                            0,maxDepth, dim, maxDepth));
-        }
-    }
-
-#else
-    for (DendroIntL i = 0; i < totPts; i += 3) {
-        if ((pts[i] > 0.0) &&
-            (pts[i + 1] > 0.0)
-            && (pts[i + 2] > 0.0) &&
-            (((unsigned int) (pts[i] * ((double) (1u << maxDepth)))) < (1u << maxDepth)) &&
-            (((unsigned int) (pts[i + 1] * ((double) (1u << maxDepth)))) < (1u << maxDepth)) &&
-            (((unsigned int) (pts[i + 2] * ((double) (1u << maxDepth)))) < (1u << maxDepth))) {
-
-            tmpNodes.push_back(ot::TreeNode((unsigned int) (pts[i] * (double) (1u << maxDepth)),
-                                            (unsigned int) (pts[i + 1] * (double) (1u << maxDepth)),
-                                            (unsigned int) (pts[i + 2] * (double) (1u << maxDepth)),
-                                            maxDepth, dim, maxDepth));
-        }
-    }
-#endif
-
+    pts2Octants(tmpNodes,&(*(pts.begin())),totPts,dim,maxDepth);
     pts.clear();
+    std::vector<ot::TreeNode> tmpSorted;
+    SFC::parSort::SFC_treeSort(tmpNodes,tmpSorted,tmpSorted,tmpSorted,tol,maxDepth,root,ROOT_ROTATION,1,TS_REMOVE_DUPLICATES,NUM_NPES_THRESHOLD,globalComm);
+    std::swap(tmpNodes,tmpSorted);
+    tmpSorted.clear();
 
+/*
     SFC::parSort::SFC_Sort_RemoveDuplicates(tmpNodes,tol,maxDepth,false,globalComm);
     std::swap(linOct,tmpNodes);
 
@@ -276,7 +246,7 @@ int main(int argc, char ** argv )
 
     gSize[0] = 1.;
     gSize[1] = 1.;
-    gSize[2] = 1.;
+    gSize[2] = 1.;*/
 #ifdef POWER_MEASUREMENT_TIMESTEP
     time ( &rawtime );
     //std::this_thread::sleep_for(std::chrono::milliseconds(10000));
@@ -285,7 +255,8 @@ int main(int argc, char ** argv )
 #endif
 
     startTime = MPI_Wtime();
-    ot::points2Octree(pts, gSize, linOct, dim, maxDepth, maxNumPts, MPI_COMM_WORLD);
+    SFC::parSort::SFC_treeSort(tmpNodes,linOct,linOct,linOct,tol,maxDepth,root,ROOT_ROTATION,1,TS_CONSTRUCT_OCTREE,NUM_NPES_THRESHOLD,globalComm);
+    tmpNodes.clear();
     endTime = MPI_Wtime();
 #ifdef POWER_MEASUREMENT_TIMESTEP
     time ( &rawtime );
@@ -318,7 +289,9 @@ int main(int argc, char ** argv )
 #endif
 
     startTime = MPI_Wtime();
-    ot::balanceOctree(linOct, balOct, dim, maxDepth, incCorner, MPI_COMM_WORLD, NULL, NULL);
+    SFC::parSort::SFC_treeSort(linOct,balOct,balOct,balOct,tol,maxDepth,root,ROOT_ROTATION,1,TS_BALANCE_OCTREE,NUM_NPES_THRESHOLD,globalComm);
+    linOct.clear();
+    //ot::balanceOctree(linOct, balOct, dim, maxDepth, incCorner, MPI_COMM_WORLD, NULL, NULL);
     endTime = MPI_Wtime();
 #ifdef POWER_MEASUREMENT_TIMESTEP
     time ( &rawtime );
@@ -326,15 +299,6 @@ int main(int argc, char ** argv )
     ptm = gmtime ( &rawtime );
     if(!rank) std::cout<<" balOCt End: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
 #endif
-
-    SFC::parSort::SFC_3D_Sort(balOct,tol,maxDepth,globalComm);
-    assert(par::test::isSorted(balOct,globalComm));
-
-    /*char balOctName[256];
-    sprintf(balOctName,"balOct_%f",tol);
-    treeNodesTovtk(balOct,rank,balOctName);*/
-
-
 
 
     locSz = balOct.size();

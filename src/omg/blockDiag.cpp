@@ -1309,11 +1309,11 @@ namespace ot {
       unsigned int dof, double loadFac,
       bool compressLut, bool incCorner) {
 
-    PROF_MG_SET_DA_BEGIN
+      PROF_MG_SET_DA_BEGIN
 
       PROF_SET_DA_STAGE1_BEGIN
-
       PetscErrorCode ierr;
+
     int rank, npes;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &npes);
@@ -1659,7 +1659,7 @@ namespace ot {
     } else {
 #ifndef __SILENT_MODE__
       if(!rank) {
-        std::cout<<"splitting Comm in SetDA (using comm) "<<npes<<" -> "<<maxProcsForThisLevel[0]<<std::endl; 
+        std::cout<<"splitting Comm in SetDA (using comm) "<<npes<<" -> "<<maxProcsForThisLevel[0]<<std::endl;
       }
 #endif
       par::splitCommUsingSplittingRank(maxProcsForThisLevel[0], activeComms, comm);
@@ -1908,6 +1908,7 @@ namespace ot {
 
         PROF_MG_SET_DA_END
       }//special case: single grid  
+
 
     //Start with the coarsest octree and mesh. 
     std::vector<ot::TreeNode>* blocksPtr = NULL;
@@ -2169,6 +2170,7 @@ namespace ot {
       }
     }
 
+
     if(blocksPtr != NULL) {
       blocksPtr->clear();
       delete blocksPtr;
@@ -2177,7 +2179,7 @@ namespace ot {
 
     PROF_SET_DA_STAGE6_END
 
-      ierr = DAMGSetUp(tmpDAMG); CHKERRQ(ierr); 
+    ierr = DAMGSetUp(tmpDAMG); CHKERRQ(ierr);
 
     PROF_MG_SET_DA_END
 
@@ -2187,7 +2189,7 @@ namespace ot {
   {
     PROF_MG_SETUP_BEGIN
 
-      int       i,nlevels = damg[0]->nlevels;
+      int i,nlevels = damg[0]->nlevels;
 
 
 #ifdef __DEBUG_MG__

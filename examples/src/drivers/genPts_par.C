@@ -130,3 +130,43 @@ void genLogarithmicGauss(const double& sd, const int numPts, int dim, char * fil
 
 
 }
+
+void pts2Octants(std::vector<ot::TreeNode> & pNodes,double * pts, DendroIntL totPts, unsigned int dim ,unsigned int maxDepth)
+{
+    pNodes.clear();
+#ifdef DIM_2
+
+    for (DendroIntL i = 0; i < totPts; i += 2) {
+        if ((pts[i] > 0.0) &&
+            (pts[i + 1] > 0.0) &&
+            (((unsigned int) (pts[i] * ((double) (1u << maxDepth)))) < (1u << maxDepth)) &&
+            (((unsigned int) (pts[i + 1] * ((double) (1u << maxDepth)))) < (1u << maxDepth)) ) {
+
+            pNodes.push_back(ot::TreeNode((unsigned int) (pts[i] * (double) (1u << maxDepth)),
+                                            (unsigned int) (pts[i + 1] * (double) (1u << maxDepth)),
+                                            0,maxDepth, dim, maxDepth));
+        }
+    }
+
+#else
+    for (DendroIntL i = 0; i < totPts; i += 3) {
+        if ((pts[i] > 0.0) &&
+            (pts[i + 1] > 0.0)
+            && (pts[i + 2] > 0.0) &&
+            (((unsigned int) (pts[i] * ((double) (1u << maxDepth)))) < (1u << maxDepth)) &&
+            (((unsigned int) (pts[i + 1] * ((double) (1u << maxDepth)))) < (1u << maxDepth)) &&
+            (((unsigned int) (pts[i + 2] * ((double) (1u << maxDepth)))) < (1u << maxDepth))) {
+
+            pNodes.push_back(ot::TreeNode((unsigned int) (pts[i] * (double) (1u << maxDepth)),
+                                          (unsigned int) (pts[i + 1] * (double) (1u << maxDepth)),
+                                          (unsigned int) (pts[i + 2] * (double) (1u << maxDepth)),
+                                          maxDepth, dim, maxDepth));
+        }
+    }
+#endif
+
+
+
+
+
+}

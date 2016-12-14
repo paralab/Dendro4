@@ -533,9 +533,12 @@ namespace ot {
       if (!isUnique) {
 
 #ifdef TREE_SORT
-        SFC::parSort::SFC_Sort_RemoveDuplicates(out,tol,maxDepth,isSorted,comm);
+          std::vector<ot::TreeNode> tmp;
+          SFC::parSort::SFC_treeSort(out,tmp,tmp,tmp,tol,maxDepth,root,0,1,TS_REMOVE_DUPLICATES,NUM_NPES_THRESHOLD,comm);
+          std::swap(out,tmp);
+          tmp.clear();
 #else
-        par::removeDuplicates<ot::TreeNode>(out, isSorted, comm);
+          par::removeDuplicates<ot::TreeNode>(out, isSorted, comm);
 #endif
 
 
@@ -543,10 +546,9 @@ namespace ot {
       } else if (!isSorted) {
         std::vector<TreeNode> tmpOut;
 #ifdef TREE_SORT
-        tmpOut=out;
-        SFC::parSort::SFC_3D_Sort(tmpOut,tol,maxDepth,comm);//par::SFC_3D_TreeSort(tmpOut,TOLLERANCE_OCT,comm);
-        //std::swap(out,tmpOut);
+        SFC::parSort::SFC_treeSort(out,tmpOut,tmpOut,tmpOut,tol,maxDepth,root,0, 1,0,NUM_NPES_THRESHOLD,comm);
 #else
+
         par::sampleSort<ot::TreeNode>(out, tmpOut, comm);
 #endif
         out = tmpOut;
@@ -751,7 +753,7 @@ namespace ot {
   } //end function
 
   int points2Octree(std::vector<double> &pts, double *gLens, std::vector<ot::TreeNode> &nodes,
-                    unsigned int dim, unsigned int maxDepth, unsigned int maxNumPts, MPI_Comm comm) {
+                    unsigned int dim, unsigned int maxDepth, unsigned int maxNumPts, MPI_Comm comm,double tol) {
 
     PROF_P2O_BEGIN
 
@@ -867,16 +869,15 @@ namespace ot {
 
     //unsigned int maxDepth=nodes[0].getMaxDepth();
 #ifdef TREE_SORT
-    tmpNodes=nodes;
-    SFC::parSort::SFC_3D_Sort(tmpNodes,TOLLERANCE_OCT,maxDepth,comm);//par::SFC_3D_TreeSort(tmpNodes,TOLLERANCE_OCT,comm);
-    //std::swap(nodes,tmpNodes);
+    SFC::parSort::SFC_treeSort(nodes,tmpNodes,tmpNodes,tmpNodes,tol,maxDepth,root,0, 1,0,NUM_NPES_THRESHOLD,comm);
+
 #else
     par::sampleSort<ot::TreeNode>(nodes, tmpNodes, comm);
+    nodes.clear();
+    nodes = tmpNodes;
      //std::cout << rank << "after sample sort: " << tmpNodes.size() << std::endl;
 #endif
-    nodes.clear();
 
-    nodes = tmpNodes;
 
     std::vector<ot::TreeNode> leaves;
     std::vector<ot::TreeNode> minsAllBlocks;

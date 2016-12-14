@@ -134,7 +134,7 @@ namespace ot {
 
 #ifdef HILBERT_ORDERING
         // NOTE: To work the Hilbert Ordering You need the Hilbert Table Initialized.
-
+        #pragma message "Hilbert"
         unsigned int x1 = m_uiX;
         unsigned int x2 = other.getX();
 
@@ -173,17 +173,6 @@ namespace ot {
         unsigned int ncaZ = ((z1>>maxDiffBinLen)<<maxDiffBinLen);
         unsigned int ncaLev = (maxDepth - maxDiffBinLen);
 
-//        if(ncaLev>std::min(this->getLevel(),other.getLevel()))
-//        {
-//
-//            std::cout<<"P1:"<<*(this)<<"\t P2:"<<other<<std::endl;
-//            std::cout<<"MaxDiff:"<<maxDiff<<std::endl;
-//            std::cout<<"MaxDiffLen:"<<maxDiffBinLen<<std::endl;
-//            std::cout<<"NCALEV:"<<ncaLev<<"\t this_lev:"<<this->getLevel()<<"\t other_lev:"<<other.getLevel()<<std::endl;
-//
-//            std::cout<<std::endl;
-//
-//        }
 
         unsigned int index1=0;
         unsigned int index2=0;
@@ -220,12 +209,7 @@ namespace ot {
         return rotations[rot_offset*current_rot+num_children+index1] < rotations[rot_offset*current_rot+num_children+index2];
 
 #else
-        //#ifdef USE_NCA_PROPERTY
-
-	      //  #pragma message "Morton NCA"
-	      //  return morton_order_NCA(p1,p2);
-        // #else
-	        #pragma message "Morton"
+	      #pragma message "Morton"
           // -- original Morton
           // first compare the x, y, and z to determine which one dominates ...
           //Ancestor is smaller.

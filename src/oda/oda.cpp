@@ -190,23 +190,21 @@ namespace ot {
       m_uiTreeSortTol=tol;
       //if(!rank) std::cout <<"oda tolerance "<<tol<<std::endl;
       DA_FactoryPart0(in, comm, activeInputComm, compressLut, iAmActive);
-
-
-      if(!rank)
+     /*if(!rank)
           std::cout<<"ODA Stage 0 completed"<<std::endl;
-
+*/
     if(m_bIamActive) {
       DA_FactoryPart1(in);
-        if(!rank)
-            std::cout<<"ODA Stage 1 completed"<<std::endl;
+  /*      if(!rank)
+            std::cout<<"ODA Stage 1 completed"<<std::endl;*/
       DA_FactoryPart2(in);
-        if(!rank)
-            std::cout<<"ODA Stage 2 completed"<<std::endl;
+        /*if(!rank)
+            std::cout<<"ODA Stage 2 completed"<<std::endl;*/
 
       DA_FactoryPart3(in, comm, compressLut, blocksPtr, iAmActive);
 
-       if(!rank)
-           std::cout<<"ODA Stage 3 completed"<<std::endl;
+       /*if(!rank)
+           std::cout<<"ODA Stage 3 completed"<<std::endl;*/
 
     }
 

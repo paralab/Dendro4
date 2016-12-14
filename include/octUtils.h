@@ -622,7 +622,7 @@ namespace ot {
     Points are cleared inside the function.
     */
   int points2Octree(std::vector<double>& points, double * gLens, std::vector<TreeNode> & nodes,
-      unsigned int dim, unsigned int maxDepth, unsigned int maxNumPtsPerOctant, MPI_Comm comm ) ;
+      unsigned int dim, unsigned int maxDepth, unsigned int maxNumPtsPerOctant, MPI_Comm comm,double tol=0.1 ) ;
 
   /**
     @author Rahul Sampath
