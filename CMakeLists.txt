@@ -204,7 +204,7 @@ if(BUILD_DA_EXAMPLES)
     add_executable(flexPartition include/sfcSort.h examples/src/drivers/flexPartition.C include/hcurvedata.h src/hcurvedata.cpp examples/include/octreeStatistics.h examples/src/drivers/octreeStatistics.cpp include/test/testUtils.h src/test/testUtils.C)
     target_link_libraries(flexPartition dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
-    add_executable(tstMatVec include/sfcSort.h include/hcurvedata.h src/hcurvedata.cpp examples/src/drivers/tstMatVec.C examples/src/backend/odaJac.C examples/src/backend/handleType2Stencils.C examples/include/genPts_par.h examples/src/drivers/genPts_par.C)
+    add_executable(tstMatVec include/sfcSort.h include/hcurvedata.h src/hcurvedata.cpp examples/src/drivers/tstMatVec.C examples/src/backend/odaJac.C examples/src/backend/handleType2Stencils.C examples/include/genPts_par.h examples/src/drivers/genPts_par.C include/test/testUtils.h include/test/testUtils.tcc src/test/testUtils.C )
     target_link_libraries(tstMatVec dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
     add_executable(tstTreeSortMatVec include/sfcSort.h include/hcurvedata.h src/hcurvedata.cpp examples/src/drivers/tsttreeSortMatVec.cpp examples/src/backend/odaJac.C examples/src/backend/handleType2Stencils.C examples/include/genPts_par.h examples/src/drivers/genPts_par.C examples/include/octreeStatistics.h examples/src/drivers/octreeStatistics.cpp)
