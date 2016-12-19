@@ -131,7 +131,7 @@ int main(int argc, char ** argv )
         tol = atof(argv[5]);
     }
     if(argc > 6) {
-        genPts = atoi(argv[6]);
+        genPts = (bool)atoi(argv[6]);
     }
     if(argc > 7) {
         solveU = atoi(argv[7]);

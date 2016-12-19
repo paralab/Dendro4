@@ -71,12 +71,12 @@ const std::string currentDateTime() {
 
 
 int main(int argc, char ** argv ) {	
-  int size, rank;
+  int npes, rank;
   bool incCorner = 1;  
   unsigned int numPts;
   unsigned int solveU = 0;
   unsigned int writeB = 0;
-  unsigned int numLoops = 100;
+  unsigned int numLoops = 1;
   char Kstr[20];
   char pFile[256],bFile[256],uFile[256];
   double gSize[3];
@@ -122,45 +122,52 @@ int main(int argc, char ** argv ) {
 
 
 
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  MPI_Comm_size(MPI_COMM_WORLD,&npes);
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  if(argc < 3) {
-    std::cerr << "Usage: " << argv[0] << "inpfile  maxDepth[30] solveU[0]\
-      writeB[0] dim[3] maxNumPtsPerOctant[1] incCorner[1] numLoops[100] compressLut[1] genPts[1] totalPts[10000] nlistFileName genRegGrid[false] regLev tol[0-1]" << std::endl;
+  if(argc < 6) {
+    std::cerr << "Usage: " << argv[0] << " inpfile totalPts[10000] dim[3] maxDepth[30] tol[0-1] genPts[1] solveU[0] writeB[0] maxNumPtsPerOctant[1] incCorner[1] numLoops[100] compressLut[1]" << std::endl;
     return -1;
   }
-  if(argc > 2) {
-    maxDepth = atoi(argv[2]);
-  }
-  if(argc > 3) {
-    solveU = atoi(argv[3]);
-  }
-  if(argc > 4) {
-    writeB = atoi(argv[4]);
-  }
-  if(argc > 5) {
-    dim = atoi(argv[5]);
-  }
-  if(argc > 6) {
-    maxNumPts = atoi(argv[6]);
-  }
 
-  double tol=0.001;
+  grainSize=atoi(argv[2]);
+  dim = atoi(argv[3]);
+  maxDepth = atoi(argv[4]);
+  double tol=atof(argv[5]);
+  genPts = (bool)(atoi(argv[6]));
 
-  if(argc > 7) { incCorner = (bool)(atoi(argv[7]));}
-  if(argc > 8) { numLoops = atoi(argv[8]); }
-  if(argc > 9) { compressLut = (bool)(atoi(argv[9]));}
-  if(argc > 10) { genPts = (bool)(atoi(argv[10]));}
-  if(argc >11 ) { grainSize =atol(argv[11]);}
-  if(argc >12) {tol=atof(argv[12]);}
-  sprintf(nlistFName, "%s_%d_%d_%d_%d.%s", argv[12], maxDepth, grainSize, rank, size, "bin");
+  if(argc > 7) { solveU = atoi(argv[7]);}
+  if(argc > 8) {  writeB = atoi(argv[8]);; }
+  if(argc > 9) { maxNumPts = atoi(argv[9]);}
+  if(argc > 10) { incCorner=(bool)(atoi(argv[10]));}
+  if(argc >11 ) { numLoops=atoi(argv[11]);}
+  if(argc >12) {compressLut=(bool)(atoi(argv[12]));}
 
-  if(argc >13) {genRegGrid=(bool)(atoi(argv[13])); regLev=atoi(argv[14]);}
 
   _InitializeHcurve(dim);
 
 
-  if (!rank) {
+
+    double t_rd=0;
+    double t_cons=0;
+    double t_bal=0;
+    double t_mesh=0;
+
+
+    double t_rd_g[3];
+    double t_cons_g[3];
+    double t_bal_g[3]; //0 -min 1-mean 2-Max
+    double t_mesh_g[3]; //0 -min 1-mean 2-Max
+
+    DendroIntL numUniqueOct;
+    DendroIntL numConsOct;
+    DendroIntL numBalOct;
+    DendroIntL localSz;
+    DendroIntL globalSz;
+
+    MPI_Comm comm =MPI_COMM_WORLD;
+
+
+    if (!rank) {
     std::cout << BLU << "===============================================" << NRM << std::endl;
     std::cout << " Input Parameters" << std::endl;
     std::cout << " Input File Prefix:" << argv[1] << std::endl;
@@ -178,7 +185,7 @@ int main(int argc, char ** argv ) {
 
   genGauss(0.5, grainSize, dim,pts);
   ptsLen=pts.size();
-  //std::cout<<"pts size : "<<pts.size()<<std::endl;
+  //std::cout<<"pts npes : "<<pts.npes()<<std::endl;
   std::vector<ot::TreeNode> tmpNodes;
   for (int i = 0; i < ptsLen; i += 3) {
     if ((pts[i] > 0.0) &&
@@ -198,30 +205,44 @@ int main(int argc, char ** argv ) {
   }
   pts.clear();
 //  if(!rank) {
-//    std::cout << "Number of Nodes Read:" << tmpNodes.size() << std::endl;
-//    for(int i=0;i<tmpNodes.size();i++)
+//    std::cout << "Number of Nodes Read:" << tmpNodes.npes() << std::endl;
+//    for(int i=0;i<tmpNodes.npes();i++)
 //      std::cout<<"Node:"<<tmpNodes[i]<<std::endl;
 //  }
 
   startTime=MPI_Wtime();
-    par::removeDuplicates<ot::TreeNode>(tmpNodes, false, MPI_COMM_WORLD);
+  par::removeDuplicates<ot::TreeNode>(tmpNodes, false, MPI_COMM_WORLD);
   endTime=MPI_Wtime();
-    localTime = endTime - startTime;
-    par::Mpi_Reduce<double>(&localTime, &totalTime, 1, MPI_MAX, 0, MPI_COMM_WORLD);
-    if (!rank) {
-        std::cout << "RemoveDuplicates Time: " << totalTime << std::endl;
+  t_rd = endTime - startTime;
+
+  par::Mpi_Reduce(&t_rd, t_rd_g, 1, MPI_MIN, 0, comm);
+  par::Mpi_Reduce(&t_rd, t_rd_g + 1, 1, MPI_SUM, 0, comm);
+  par::Mpi_Reduce(&t_rd, t_rd_g + 2, 1, MPI_MAX, 0, comm);
+  t_rd_g[1] = t_rd_g[1] / npes;
+
+  localSz=tmpNodes.size();
+  par::Mpi_Reduce(&localSz,&globalSz,1,MPI_SUM,0,comm);
+  numUniqueOct=globalSz;
+
+    if(!rank)
+    {
+        std::cout << YLW<< "Number of unique octants: "<<numUniqueOct<<NRM<<std::endl;
+        std::cout << YLW<< "Remove duplicates time(max): "<<t_rd_g[2]<<NRM<<std::endl;
     }
+
   linOct = tmpNodes;
   tmpNodes.clear();
+
   par::partitionW<ot::TreeNode>(linOct, NULL, MPI_COMM_WORLD);
   // reduce and only print the total ...
-  locSz = linOct.size();
+  /*locSz = linOct.size();
   par::Mpi_Reduce<DendroIntL>(&locSz, &totalSz, 1, MPI_SUM, 0, MPI_COMM_WORLD);
   if (rank == 0) {
     std::cout << " # pts= " << totalSz << std::endl;
-  }
-  //std::cout << rank<<" # pts= " << totalSz << std::endl;
-  //std::cout<<"linOct:"<<linOct.size()<<std::endl;
+  }*/
+
+   //std::cout << rank<<" # pts= " << totalSz << std::endl;
+  //std::cout<<"linOct:"<<linOct.npes()<<std::endl;
   pts.resize(3 * (linOct.size()));
   ptsLen = (3 * (linOct.size()));
   for (int i = 0; i < linOct.size(); i++) {
@@ -246,17 +267,23 @@ int main(int argc, char ** argv ) {
 #ifdef PETSC_USE_LOG
   PetscLogStagePop();
 #endif
-  localTime = endTime - startTime;
-  par::Mpi_Reduce<double>(&localTime, &totalTime, 1, MPI_MAX, 0, MPI_COMM_WORLD);
-  if (!rank) {
-    std::cout << "P2n Time: " << totalTime << std::endl;
+  t_cons = endTime - startTime;
+  par::Mpi_Reduce(&t_cons, t_cons_g, 1, MPI_MIN, 0, comm);
+  par::Mpi_Reduce(&t_cons, t_cons_g + 1, 1, MPI_SUM, 0, comm);
+  par::Mpi_Reduce(&t_cons, t_cons_g + 2, 1, MPI_MAX, 0, comm);
+  t_cons_g[1] = t_cons_g[1] / npes;
+
+
+  localSz=linOct.size();
+  par::Mpi_Reduce(&localSz,&globalSz,1,MPI_SUM,0,comm);
+  numConsOct=globalSz;
+  if(!rank)
+  {
+      std::cout << YLW<< "Number of unbalanced octants: "<<numConsOct<<NRM<<std::endl;
+      std::cout << YLW<< "Tree construction time(max): "<<t_cons_g[2]<<NRM<<std::endl;
   }
   // reduce and only print the total ...
-  locSz = linOct.size();
-  par::Mpi_Reduce<DendroIntL>(&locSz, &totalSz, 1, MPI_SUM, 0, MPI_COMM_WORLD);
-  if (rank == 0) {
-    std::cout << "# of Unbalanced Octants: " << totalSz << std::endl;
-  }
+
   pts.clear();
 
   //Balancing...
@@ -275,19 +302,23 @@ int main(int argc, char ** argv ) {
   if (writeB) {
     ot::writeNodesToFile(bFile, balOct);
   }
-  // compute total inp size and output size
-  locSz = balOct.size();
-  localTime = endTime - startTime;
-  par::Mpi_Reduce<DendroIntL>(&locSz, &totalSz, 1, MPI_SUM, 0, MPI_COMM_WORLD);
-  par::Mpi_Reduce<double>(&localTime, &totalTime, 1, MPI_MAX, 0, MPI_COMM_WORLD);
-
-  if (!rank) {
-    std::cout << "# of Balanced Octants: " << totalSz << std::endl;
-    std::cout << "bal Time: " << totalTime << std::endl;
-  }
+  // compute total inp npes and output npes
+  t_bal= endTime - startTime;
 
 
-  //par::SFC_3D_TreeSort(balOct,tol,MPI_COMM_WORLD);
+    par::Mpi_Reduce(&t_bal, t_bal_g, 1, MPI_MIN, 0, comm);
+    par::Mpi_Reduce(&t_bal, t_bal_g + 1, 1, MPI_SUM, 0, comm);
+    par::Mpi_Reduce(&t_bal, t_bal_g + 2, 1, MPI_MAX, 0, comm);
+    t_bal_g[1] = t_bal_g[1] / npes;
+
+    localSz=balOct.size();
+    par::Mpi_Reduce(&localSz,&globalSz,1,MPI_SUM,0,comm);
+    numBalOct=globalSz;
+
+    if(!rank) {
+        std::cout << YLW<<"Number of balanced octants: " << numBalOct <<NRM<< std::endl;
+        std::cout<< YLW<<" Tree balancing time (max): "<<t_bal_g[2]<<NRM<<std::endl;
+    }
 
   //ODA ...
   MPI_Barrier(MPI_COMM_WORLD);
@@ -302,16 +333,21 @@ int main(int argc, char ** argv ) {
   PetscLogStagePop();
 #endif
   balOct.clear();
-  // compute total inp size and output size
+  // compute total inp npes and output npes
   locSz = da.getNodeSize();
-  localTime = endTime - startTime;
+  t_mesh = endTime - startTime;
   par::Mpi_Reduce<DendroIntL>(&locSz, &totalSz, 1, MPI_SUM, 0, MPI_COMM_WORLD);
-  par::Mpi_Reduce<double>(&localTime, &totalTime, 1, MPI_MAX, 0, MPI_COMM_WORLD);
+
+  par::Mpi_Reduce(&t_mesh, t_mesh_g, 1, MPI_MIN, 0, comm);
+  par::Mpi_Reduce(&t_mesh, t_mesh_g + 1, 1, MPI_SUM, 0, comm);
+  par::Mpi_Reduce(&t_mesh, t_mesh_g + 2, 1, MPI_MAX, 0, comm);
+  t_mesh_g[1] = t_mesh_g[1] / npes;
 
   if(!rank) {
-    std::cout << "Total # Vertices: "<< totalSz << std::endl;       
-    std::cout << "Time to build ODA: "<<totalTime << std::endl;
+      std::cout<< YLW<<"Mesh generation time (max): "<<t_mesh_g[2]<<NRM<<std::endl;
+      std::cout << "Total # Vertices: "<< totalSz << std::endl;
   }
+
 
 #ifdef HILBERT_ORDERING
   da.computeHilbertRotations();
@@ -324,7 +360,6 @@ int main(int argc, char ** argv ) {
   //! Quality of the partition ...
 
   da.printODAStatistics();
-
   da.printODANodeListStatistics(nlistFName);
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////ODA STATISTICS////////////////////////////////////////////////////////////////////////////////////////////////////////////

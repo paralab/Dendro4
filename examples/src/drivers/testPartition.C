@@ -209,6 +209,10 @@ int main(int argc, char **argv) {
 
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  std::vector<ot::TreeNode> pSortedNodes;
+  std::vector<ot::TreeNode> pConstructedNodes;
+  std::vector<ot::TreeNode> pBalancedNodes;
+  ot::TreeNode root(0,0,0,0,m_uiDim,maxDepth);
   //std::cout<<"Com Size:"<<size<<std::endl;
 
   if (!rank) {
@@ -272,9 +276,9 @@ int main(int argc, char **argv) {
 
 
 #ifdef TREE_SORT
-  par::removeDuplicates<ot::TreeNode>(tmpNodes, false,MPI_COMM_WORLD);
+  SFC::parSort::SFC_treeSort(tmpNodes,pSortedNodes,pConstructedNodes,pBalancedNodes,slack,maxDepth,root,ROOT_ROTATION,1,TS_REMOVE_DUPLICATES,NUM_NPES_THRESHOLD,MPI_COMM_WORLD);
 #else
-  SFC::parSort::SFC_Sort_RemoveDuplicates(tmpNodes,TOLLERANCE_OCT,maxDepth,false,MPI_COMM_WORLD);
+  par::removeDuplicates<ot::TreeNode>(tmpNodes, false,MPI_COMM_WORLD);
 #endif
   
   linOct = tmpNodes;
