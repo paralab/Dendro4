@@ -85,9 +85,9 @@ bool feMatrix<T>::MatGetDiagonal(Vec _diag, double scale){
 		/* Get all corners*/
 		if (m_DA == NULL)
 			std::cerr << "Da is null" << std::endl;
-		ierr = DAGetCorners(m_DA, &x, &y, &z, &m, &n, &p); CHKERRQ(ierr);
+		ierr = DMDAGetCorners(m_DA, &x, &y, &z, &m, &n, &p); CHKERRQ(ierr);
 		/* Get Info*/
-		ierr = DAGetInfo(m_DA,0, &mx, &my, &mz, 0,0,0,0,0,0,0); CHKERRQ(ierr);
+		ierr = DMDAGetInfo(m_DA,0, &mx, &my, &mz, 0,0,0,0,0,0,0,0,0); CHKERRQ(ierr);
 
 		if (x+m == mx) {
 			xne=m-1;
@@ -105,14 +105,14 @@ bool feMatrix<T>::MatGetDiagonal(Vec _diag, double scale){
 			zne=p;
 		}
 
-		ierr = DAGetLocalVector(m_DA, &diagLocal); CHKERRQ(ierr);
+		ierr = DMGetLocalVector(m_DA, &diagLocal); CHKERRQ(ierr);
 		ierr = VecZeroEntries(diagLocal);
 
 		// ierr = DAGlobalToLocalBegin(m_DA, _diag, INSERT_VALUES, diagLocal); CHKERRQ(ierr);
 		// ierr = DAGlobalToLocalEnd(m_DA, _diag, INSERT_VALUES, diagLocal); CHKERRQ(ierr);
 
 
-		ierr = DAVecGetArray(m_DA, diagLocal, &diag);
+		ierr = DMDAVecGetArray(m_DA, diagLocal, &diag);
 
 		// Any derived class initializations ...
 		preMatVec();
@@ -128,13 +128,13 @@ bool feMatrix<T>::MatGetDiagonal(Vec _diag, double scale){
 
 		postMatVec();
 
-		ierr = DAVecRestoreArray(m_DA, diagLocal, &diag); CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(m_DA, diagLocal, &diag); CHKERRQ(ierr);
 
 
-		ierr = DALocalToGlobalBegin(m_DA, diagLocal, _diag); CHKERRQ(ierr);
-		ierr = DALocalToGlobalEnd(m_DA, diagLocal, _diag); CHKERRQ(ierr);
+		ierr = DMLocalToGlobalBegin(m_DA, diagLocal, ADD_VALUES,_diag); CHKERRQ(ierr);
+		ierr = DMLocalToGlobalEnd(m_DA, diagLocal, ADD_VALUES, _diag); CHKERRQ(ierr);
 
-		ierr = DARestoreLocalVector(m_DA, &diagLocal); CHKERRQ(ierr);
+		ierr = DMRestoreLocalVector(m_DA, &diagLocal); CHKERRQ(ierr);
 
 
 	} else {
@@ -148,7 +148,7 @@ bool feMatrix<T>::MatGetDiagonal(Vec _diag, double scale){
 		preMatVec();
 
 		// loop through all elements ...
-		for ( m_octDA->init<ot::DA::ALL>(); m_octDA->curr() < m_octDA->end<ot::DA::ALL>(); m_octDA->next<ot::DA::ALL>() ) {
+		for ( m_octDA->init<ot::DA_FLAGS::ALL>(); m_octDA->curr() < m_octDA->end<ot::DA_FLAGS::ALL>(); m_octDA->next<ot::DA_FLAGS::ALL>() ) {
 			ElementalMatGetDiagonal( m_octDA->curr(), diag, scale);
 		}//end
 
@@ -201,9 +201,9 @@ bool feMatrix<T>::MatVec(Vec _in, Vec _out, double scale){
 		/* Get all corners*/
 		if (m_DA == NULL)
 			std::cerr << "Da is null" << std::endl;
-		ierr = DAGetCorners(m_DA, &x, &y, &z, &m, &n, &p); CHKERRQ(ierr);
+		ierr = DMDAGetCorners(m_DA, &x, &y, &z, &m, &n, &p); CHKERRQ(ierr);
 		/* Get Info*/
-		ierr = DAGetInfo(m_DA,0, &mx, &my, &mz, 0,0,0,0,0,0,0); CHKERRQ(ierr);
+		ierr = DMDAGetInfo(m_DA,0, &mx, &my, &mz, 0,0,0,0,0,0,0,0,0); CHKERRQ(ierr);
 
 		if (x+m == mx) {
 			xne=m-1;
@@ -224,19 +224,19 @@ bool feMatrix<T>::MatVec(Vec _in, Vec _out, double scale){
 		// std::cout << x << "," << y << "," << z << " + " << xne <<","<<yne<<","<<zne<<std::endl;
 
 		// Get the local vector so that the ghost nodes can be accessed
-		ierr = DAGetLocalVector(m_DA, &inlocal); CHKERRQ(ierr);
-		ierr = DAGetLocalVector(m_DA, &outlocal); CHKERRQ(ierr);
+		ierr = DMGetLocalVector(m_DA, &inlocal); CHKERRQ(ierr);
+		ierr = DMGetLocalVector(m_DA, &outlocal); CHKERRQ(ierr);
 		// ierr = VecDuplicate(inlocal, &outlocal); CHKERRQ(ierr);
 
-		ierr = DAGlobalToLocalBegin(m_DA, _in, INSERT_VALUES, inlocal); CHKERRQ(ierr);
-		ierr = DAGlobalToLocalEnd(m_DA, _in, INSERT_VALUES, inlocal); CHKERRQ(ierr);
+		ierr = DMGlobalToLocalBegin(m_DA, _in, INSERT_VALUES, inlocal); CHKERRQ(ierr);
+		ierr = DMGlobalToLocalEnd(m_DA, _in, INSERT_VALUES, inlocal); CHKERRQ(ierr);
 		// ierr = DAGlobalToLocalBegin(m_DA, _out, INSERT_VALUES, outlocal); CHKERRQ(ierr);
 		// ierr = DAGlobalToLocalEnd(m_DA, _out, INSERT_VALUES, outlocal); CHKERRQ(ierr);
 
 		ierr = VecZeroEntries(outlocal);
 
-		ierr = DAVecGetArray(m_DA, inlocal, &in);
-		ierr = DAVecGetArray(m_DA, outlocal, &out);
+		ierr = DMDAVecGetArray(m_DA, inlocal, &in);
+		ierr = DMDAVecGetArray(m_DA, outlocal, &out);
 
 		// Any derived class initializations ...
 		preMatVec();
@@ -253,14 +253,14 @@ bool feMatrix<T>::MatVec(Vec _in, Vec _out, double scale){
 
 		postMatVec();
 
-		ierr = DAVecRestoreArray(m_DA, inlocal, &in); CHKERRQ(ierr);
-		ierr = DAVecRestoreArray(m_DA, outlocal, &out); CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(m_DA, inlocal, &in); CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(m_DA, outlocal, &out); CHKERRQ(ierr);
 
-		ierr = DALocalToGlobalBegin(m_DA, outlocal, _out); CHKERRQ(ierr);
-		ierr = DALocalToGlobalEnd(m_DA, outlocal, _out); CHKERRQ(ierr);
+		ierr = DMLocalToGlobalBegin(m_DA, outlocal, ADD_VALUES, _out); CHKERRQ(ierr);
+		ierr = DMLocalToGlobalEnd(m_DA, outlocal, ADD_VALUES, _out); CHKERRQ(ierr);
 
-		ierr = DARestoreLocalVector(m_DA, &inlocal); CHKERRQ(ierr);
-		ierr = DARestoreLocalVector(m_DA, &outlocal); CHKERRQ(ierr);
+		ierr = DMRestoreLocalVector(m_DA, &inlocal); CHKERRQ(ierr);
+		ierr = DMRestoreLocalVector(m_DA, &outlocal); CHKERRQ(ierr);
 		// ierr = VecDestroy(outlocal); CHKERRQ(ierr);
 
 	} else {
@@ -282,7 +282,7 @@ bool feMatrix<T>::MatVec(Vec _in, Vec _out, double scale){
 		preMatVec();
 
 		// Independent loop, loop through the nodes this processor owns..
-		for ( m_octDA->init<ot::DA::INDEPENDENT>(), m_octDA->init<ot::DA::WRITABLE>(); m_octDA->curr() < m_octDA->end<ot::DA::INDEPENDENT>(); m_octDA->next<ot::DA::INDEPENDENT>() ) {
+		for ( m_octDA->init<ot::DA_FLAGS::INDEPENDENT>(), m_octDA->init<ot::DA_FLAGS::WRITABLE>(); m_octDA->curr() < m_octDA->end<ot::DA_FLAGS::INDEPENDENT>(); m_octDA->next<ot::DA_FLAGS::INDEPENDENT>() ) {
 			ElementalMatVec( m_octDA->curr(), in, out, scale);
 		}//end INDEPENDENT
 
@@ -291,7 +291,7 @@ bool feMatrix<T>::MatVec(Vec _in, Vec _out, double scale){
 		m_octDA->ReadFromGhostsEnd<PetscScalar>(in);
 
 		// Dependent loop ...
-		for ( m_octDA->init<ot::DA::DEPENDENT>(), m_octDA->init<ot::DA::WRITABLE>(); m_octDA->curr() < m_octDA->end<ot::DA::DEPENDENT>(); m_octDA->next<ot::DA::DEPENDENT>() ) {
+		for ( m_octDA->init<ot::DA_FLAGS::DEPENDENT>(), m_octDA->init<ot::DA_FLAGS::WRITABLE>(); m_octDA->curr() < m_octDA->end<ot::DA_FLAGS::DEPENDENT>(); m_octDA->next<ot::DA_FLAGS::DEPENDENT>() ) {
 			ElementalMatVec( m_octDA->curr(), in, out, scale);
 		}//end DEPENDENT
 
@@ -334,9 +334,9 @@ bool feMatrix<T>::GetAssembledMatrix(Mat *J, MatType mtype) {
 		/* Get all corners*/
 		if (m_DA == NULL)
 			std::cerr << "Da is null" << std::endl;
-		ierr = DAGetCorners(m_DA, &x, &y, &z, &m, &n, &p); CHKERRQ(ierr);
+		ierr = DMDAGetCorners(m_DA, &x, &y, &z, &m, &n, &p); CHKERRQ(ierr);
 		/* Get Info*/
-		ierr = DAGetInfo(m_DA,0, &mx, &my, &mz, 0,0,0,0,0,0,0); CHKERRQ(ierr);
+		ierr = DMDAGetInfo(m_DA,0, &mx, &my, &mz, 0,0,0,0,0,0,0,0,0); CHKERRQ(ierr);
 
 		if (x+m == mx) {
 			xne=m-1;
@@ -356,7 +356,8 @@ bool feMatrix<T>::GetAssembledMatrix(Mat *J, MatType mtype) {
 
 		// Get the matrix from the DA ...
 		// DAGetMatrix(m_DA, mtype, &J);
-		DAGetMatrix(m_DA, MATAIJ, &K);
+		// DAGetMatrix(m_DA, MATAIJ, &K);
+		DMCreateMatrix(m_DA, &K);
 
 		MatZeroEntries(K);
 
@@ -406,7 +407,7 @@ bool feMatrix<T>::GetAssembledMatrix(Mat *J, MatType mtype) {
 		}
 		// Octree part ...
 		char matType[30];
-		PetscTruth typeFound;
+		PetscBool typeFound;
 		PetscOptionsGetString(PETSC_NULL, "-fullJacMatType", matType, 30, &typeFound);
 		if(!typeFound) {
 			std::cout<<"I need a MatType for the full Jacobian matrix!"<<std::endl;
@@ -419,7 +420,7 @@ bool feMatrix<T>::GetAssembledMatrix(Mat *J, MatType mtype) {
 
 		preMatVec();
 
-		for(m_octDA->init<ot::DA::WRITABLE>(); m_octDA->curr() < m_octDA->end<ot::DA::WRITABLE>();	m_octDA->next<ot::DA::WRITABLE>()) {
+		for(m_octDA->init<ot::DA_FLAGS::WRITABLE>(); m_octDA->curr() < m_octDA->end<ot::DA_FLAGS::WRITABLE>();	m_octDA->next<ot::DA_FLAGS::WRITABLE>()) {
 			GetElementalMatrix(m_octDA->curr(), records);
 			if(records.size() > 500) {
 				m_octDA->setValuesInMatrix(*J, records, 1, ADD_VALUES);
@@ -441,7 +442,7 @@ bool feMatrix<T>::GetAssembledMatrix(Mat *J, MatType mtype) {
 #undef __FUNCT__
 #define __FUNCT__ "alignElementAndVertices"
 template <typename T>
-PetscErrorCode feMatrix<T>::alignElementAndVertices(ot::DA * da, stdElemType & sType, ot::DA::index* indices) {
+PetscErrorCode feMatrix<T>::alignElementAndVertices(ot::DA * da, stdElemType & sType, unsigned int* indices) {
 	PetscFunctionBegin;
 
 	sType = ST_0;
@@ -471,9 +472,9 @@ PetscErrorCode feMatrix<T>::alignElementAndVertices(ot::DA * da, stdElemType & s
 #undef __FUNCT__
 #define __FUNCT__ "mapVtxAndFlagsToOrientation"
 template <typename T>
-PetscErrorCode feMatrix<T>::mapVtxAndFlagsToOrientation(int childNum, ot::DA::index* indices, unsigned char & mask) {
+PetscErrorCode feMatrix<T>::mapVtxAndFlagsToOrientation(int childNum, unsigned int* indices, unsigned char & mask) {
 	PetscFunctionBegin;
-	ot::DA::index tmp[8];
+	unsigned int tmp[8];
 	unsigned char tmpFlags = 0;
 	for (int i=0;i<8;i++) {
 		tmp[i] = indices[m_ucpLut[childNum][i]];
@@ -489,12 +490,12 @@ PetscErrorCode feMatrix<T>::mapVtxAndFlagsToOrientation(int childNum, ot::DA::in
 #undef __FUNCT__
 #define __FUNCT__ "reOrderIndices"
 template <typename T>
-PetscErrorCode feMatrix<T>::reOrderIndices(unsigned char eType, ot::DA::index* indices) {
+PetscErrorCode feMatrix<T>::reOrderIndices(unsigned char eType, unsigned int* indices) {
 #ifdef __DEBUG_1
 	std::cout << "Entering " << __func__ << std::endl;
 #endif
 	PetscFunctionBegin;
-	ot::DA::index tmp;
+	unsigned int tmp;
 	switch (eType) {
 	case  ET_N:
 		break;
@@ -640,9 +641,9 @@ bool feMatrix<T>::MatVec_new(Vec _in, Vec _out, double scale){
 		/* Get all corners*/
 		if (m_DA == NULL)
 			std::cerr << "Da is null" << std::endl;
-		ierr = DAGetCorners(m_DA, &x, &y, &z, &m, &n, &p); CHKERRQ(ierr);
+		ierr = DMDAGetCorners(m_DA, &x, &y, &z, &m, &n, &p); CHKERRQ(ierr);
 		/* Get Info*/
-		ierr = DAGetInfo(m_DA,0, &mx, &my, &mz, 0,0,0,0,0,0,0); CHKERRQ(ierr);
+		ierr = DMDAGetInfo(m_DA,0, &mx, &my, &mz, 0,0,0,0,0,0,0,0,0); CHKERRQ(ierr);
 
 		if (x+m == mx) {
 			xne=m-1;
@@ -663,19 +664,19 @@ bool feMatrix<T>::MatVec_new(Vec _in, Vec _out, double scale){
 		// std::cout << x << "," << y << "," << z << " + " << xne <<","<<yne<<","<<zne<<std::endl;
 
 		// Get the local vector so that the ghost nodes can be accessed
-		ierr = DAGetLocalVector(m_DA, &inlocal); CHKERRQ(ierr);
-		ierr = DAGetLocalVector(m_DA, &outlocal); CHKERRQ(ierr);
+		ierr = DMGetLocalVector(m_DA, &inlocal); CHKERRQ(ierr);
+		ierr = DMGetLocalVector(m_DA, &outlocal); CHKERRQ(ierr);
 		// ierr = VecDuplicate(inlocal, &outlocal); CHKERRQ(ierr);
 
-		ierr = DAGlobalToLocalBegin(m_DA, _in, INSERT_VALUES, inlocal); CHKERRQ(ierr);
-		ierr = DAGlobalToLocalEnd(m_DA, _in, INSERT_VALUES, inlocal); CHKERRQ(ierr);
+		ierr = DMGlobalToLocalBegin(m_DA, _in, INSERT_VALUES, inlocal); CHKERRQ(ierr);
+		ierr = DMGlobalToLocalEnd(m_DA, _in, INSERT_VALUES, inlocal); CHKERRQ(ierr);
 		// ierr = DAGlobalToLocalBegin(m_DA, _out, INSERT_VALUES, outlocal); CHKERRQ(ierr);
 		// ierr = DAGlobalToLocalEnd(m_DA, _out, INSERT_VALUES, outlocal); CHKERRQ(ierr);
 
 		ierr = VecZeroEntries(outlocal);
 
-		ierr = DAVecGetArray(m_DA, inlocal, &in);
-		ierr = DAVecGetArray(m_DA, outlocal, &out);
+		ierr = DMDAVecGetArray(m_DA, inlocal, &in);
+		ierr = DMDAVecGetArray(m_DA, outlocal, &out);
 
 		// Any derived class initializations ...
 		preMatVec();
@@ -697,7 +698,6 @@ bool feMatrix<T>::MatVec_new(Vec _in, Vec _out, double scale){
 								local_in[idx] = in[p][q][r];
 							}
 						}
-					}
 
 				  coords[0] = i*hx; coords[1] = j*hy; coords[2] = k*hz;
 					coords[3] = (i+1)*hx; coords[4] = j*hy; coords[5] = k*hz;
@@ -722,14 +722,14 @@ bool feMatrix<T>::MatVec_new(Vec _in, Vec _out, double scale){
 
 		postMatVec();
 
-		ierr = DAVecRestoreArray(m_DA, inlocal, &in); CHKERRQ(ierr);
-		ierr = DAVecRestoreArray(m_DA, outlocal, &out); CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(m_DA, inlocal, &in); CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(m_DA, outlocal, &out); CHKERRQ(ierr);
 
-		ierr = DALocalToGlobalBegin(m_DA, outlocal, _out); CHKERRQ(ierr);
-		ierr = DALocalToGlobalEnd(m_DA, outlocal, _out); CHKERRQ(ierr);
+		ierr = DMLocalToGlobalBegin(m_DA, outlocal, ADD_VALUES, _out); CHKERRQ(ierr);
+		ierr = DMLocalToGlobalEnd(m_DA, outlocal, ADD_VALUES, _out); CHKERRQ(ierr);
 
-		ierr = DARestoreLocalVector(m_DA, &inlocal); CHKERRQ(ierr);
-		ierr = DARestoreLocalVector(m_DA, &outlocal); CHKERRQ(ierr);
+		ierr = DMRestoreLocalVector(m_DA, &inlocal); CHKERRQ(ierr);
+		ierr = DMRestoreLocalVector(m_DA, &outlocal); CHKERRQ(ierr);
 		// ierr = VecDestroy(outlocal); CHKERRQ(ierr);
 
 	} else {
@@ -762,8 +762,8 @@ bool feMatrix<T>::MatVec_new(Vec _in, Vec _out, double scale){
 
 
 		// Independent loop, loop through the nodes this processor owns..
-		for ( m_octDA->init<ot::DA::INDEPENDENT>(), m_octDA->init<ot::DA::WRITABLE>(); m_octDA->curr() < m_octDA->end<ot::DA::INDEPENDENT>(); m_octDA->next<ot::DA::INDEPENDENT>() ) {
-			lev = m_octDA->getLevel(i);
+		for ( m_octDA->init<ot::DA_FLAGS::INDEPENDENT>(), m_octDA->init<ot::DA_FLAGS::WRITABLE>(); m_octDA->curr() < m_octDA->end<ot::DA_FLAGS::INDEPENDENT>(); m_octDA->next<ot::DA_FLAGS::INDEPENDENT>() ) {
+			lev = m_octDA->getLevel(m_octDA->curr());
 			hx = xFac*(1<<(maxD - lev));
 			hy = yFac*(1<<(maxD - lev));
 			hz = zFac*(1<<(maxD - lev));
@@ -781,24 +781,12 @@ bool feMatrix<T>::MatVec_new(Vec _in, Vec _out, double scale){
 			coords[21] = coords[0] + hx; coords[22] = coords[1]+hy; coords[23] = coords[2]+hz;
 
 			// copy and interpolate to local
+      // interp_global_to_local(glo, local_in, ot::DA* m_octDA);
 
-
-			for (int i=0; i<8; ++i) {
-				if (hangingMask&(1<<i) ) {
-					// interpolate
-					switch (i) {
-						case 0:	in_local[i] =
-					}
-
-				} else {
-					in_local[i] = in[idx[i]];
-				}
-			}
-
-
-			ElementalMatVec( local_in, local_out, coords, scale);
+			// ElementalMatVec( local_in, local_out, coords, scale);
 
 		  // copy to global
+      // interp_local_to_global(local_out, glo, ot::DA* m_octDA);
 
 
 		}//end INDEPENDENT
@@ -808,7 +796,7 @@ bool feMatrix<T>::MatVec_new(Vec _in, Vec _out, double scale){
 		m_octDA->ReadFromGhostsEnd<PetscScalar>(in);
 
 		// Dependent loop ...
-		for ( m_octDA->init<ot::DA::DEPENDENT>(), m_octDA->init<ot::DA::WRITABLE>(); m_octDA->curr() < m_octDA->end<ot::DA::DEPENDENT>(); m_octDA->next<ot::DA::DEPENDENT>() ) {
+		for ( m_octDA->init<ot::DA_FLAGS::DEPENDENT>(), m_octDA->init<ot::DA_FLAGS::WRITABLE>(); m_octDA->curr() < m_octDA->end<ot::DA_FLAGS::DEPENDENT>(); m_octDA->next<ot::DA_FLAGS::DEPENDENT>() ) {
 			ElementalMatVec( m_octDA->curr(), in, out, scale);
 		}//end DEPENDENT
 
@@ -820,18 +808,20 @@ bool feMatrix<T>::MatVec_new(Vec _in, Vec _out, double scale){
 
 	}
 
-	delete [] in_local;
-	delete [] out_local;
+	delete [] local_in;
+	delete [] local_out;
 	delete [] coords;
 
 	PetscFunctionReturn(0);
 }
 
-inline PetscErrorCode interp_global_to_local(PetscScalar* __restrict loc, PetscScalar* glo, ot::DA* m_octDA) {
-	ot::DA::index idx[8];
-	unsigned char hangingMask = m_octDA->getHangingNodeIndex(da->curr());
+
+template <typename T>
+PetscErrorCode feMatrix<T>::interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::DA* m_octDA) {
+	unsigned int idx[8];
+	unsigned char hangingMask = m_octDA->getHangingNodeIndex(m_octDA->curr());
 	unsigned int chNum = m_octDA->getChildNumber();
-	da->getNodeIndices(idx);
+	m_octDA->getNodeIndices(idx);
 
 	unsigned char eType = getEtype(hangingMask, chNum);
 
@@ -1146,11 +1136,12 @@ inline PetscErrorCode interp_global_to_local(PetscScalar* __restrict loc, PetscS
 
 }
 
-inline PetscErrorCode interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::DA* m_octDA) {
-	ot::DA::index idx[8];
-	unsigned char hangingMask = m_octDA->getHangingNodeIndex(da->curr());
+template <typename T>
+PetscErrorCode feMatrix<T>::interp_local_to_global(PetscScalar* __restrict loc, PetscScalar* glo, ot::DA* m_octDA) {
+	unsigned int idx[8];
+	unsigned char hangingMask = m_octDA->getHangingNodeIndex(m_octDA->curr());
 	unsigned int chNum = m_octDA->getChildNumber();
-	da->getNodeIndices(idx);
+	m_octDA->getNodeIndices(idx);
 
 	unsigned char eType = getEtype(hangingMask, chNum);
 

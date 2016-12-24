@@ -115,6 +115,7 @@ include_directories(${PROJECT_BINARY_DIR}
                     include/omg
                     include/test
                     examples/include
+                    examples/heat
                     $ENV{PETSC_DIR}/include
                     $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/include
                     )
@@ -158,6 +159,12 @@ add_executable(genPrlFBMpts scripts/genPrlFBMpts.C)
 target_link_libraries(genPrlFBMpts ${MPI_LIBRARIES} m)
 ##---------------------------------------------------------------------------------------
 
+##---------------------------------------------------------------------------------------
+##----------- integration with Taly -----------------------------------------------------
+##---------------------------------------------------------------------------------------
+add_executable(heat examples/heat/main.cpp examples/heat/parabolic.h
+  examples/heat/timeStepper.cpp examples/heat/rhs.h)
+target_link_libraries(heat dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
 ##---------------------------------------------------------------------------------------
 ## Octree Construct-Balance Apps

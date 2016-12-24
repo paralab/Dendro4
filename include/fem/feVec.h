@@ -1,7 +1,7 @@
 #ifndef __FE_VEC_H_
 #define __FE_VEC_H_
 
-#include "petscda.h"
+#include "petscdmda.h"
 #include "oda.h"
 
 
@@ -26,10 +26,10 @@ class feVec {
 
   }
   
-  void setDA (DA da) { m_DA = da; }
+  void setDA (DM da) { m_DA = da; }
   void setDA (ot::DA* da) { m_octDA = da; }
 
-  DA getDA() { return m_DA; }
+  DM getDA() { return m_DA; }
   ot::DA* getOctDA() { return m_octDA; }
   
   //  virtual bool addVec(Vec _in, double scale=1.0) = 0;
@@ -45,7 +45,7 @@ protected:
 
   daType          m_daType;
 	
-  DA              m_DA;
+  DM              m_DA;
   ot::DA*         m_octDA;
   /// The dimensions of the problem.
   double m_dLx;

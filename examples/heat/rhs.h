@@ -1,82 +1,36 @@
+#pragma once
 
-/**
-*  @file	massMatrix.h
-*  @brief	Main class for finite element assembly of a generic
-*           mass matrix.
-*  @author	Hari Sundar
-*  @date	5/8/07
-* 
-*  Main class for finite element assembly of a generic mass matrix. The density 
-*  image needs to be set and is used for the computation of the matrix. MatVec 
-*  functions are virtual and in most cases need not be specified as they are 
-*  obtained from the parent feMatrix class. In most cases only the assembly of 
-*  the element matrix needs to be done within this or a derived class.
-*/
+#include <iostream>
+#include <assert.h>
+#include "feVector.h"
 
-#ifndef _MASSMATRIX_H_
-#define _MASSMATRIX_H_
-
-/**
-*  @brief	Main class for finite element assembly of a generic mass matrix.
-*  @author	Hari Sundar
-*  @date	5/8/07
-*
-*  Main class for finite element assembly of a generic mass matrix. The density 
-*  image needs to be set and is used for the computation of the matrix. MatVec 
-*  functions are virtual and in most cases need not be specified as they are 
-*  obtained from the parent feMatrix class. In most cases only the assembly of 
-*  the element matrix needs to be done within this or a derived class.
-*/
-
-#include "feMatrix.h"
-
-class massMatrix : public feMatrix<massMatrix>
+class forceVector : public feVector<forceVector>
 {
   public:
-  massMatrix(daType da);
-    /**   
-     * 	@brief		The elemental matrix-vector multiplication routine that is used
-     *				by matrix-free methods. 
-     * 	@param		_in	PETSc Vec which is the input vector with whom the 
-     * 				product is to be calculated.
-     * 	@param		_out PETSc Vec, the output of M*_in
-     * 	@return		bool true if successful, false otherwise.
-     *  @todo		Might have to change _in and _out to std. C arrays for speed.
-     * 
-    **/ 
-    inline bool ElementalMatVec(int i, int j, int k, PetscScalar ***in, PetscScalar ***out, double scale);
-    inline bool ElementalMatVec(unsigned int idx, PetscScalar *in, PetscScalar *out, double scale);
+  forceVector(daType da);
 
-    inline bool GetElementalMatrix(int i, int j, int k, PetscScalar *mat);
-    inline bool GetElementalMatrix(unsigned int idx, std::vector<ot::MatRecord> &records);
-
-    inline bool ElementalMatGetDiagonal(int i, int j, int k, PetscScalar ***diag, double scale);
-    inline bool ElementalMatGetDiagonal(unsigned int idx, PetscScalar *diag, double scale);
-
-  
-    inline bool ElementalMatVec(PetscScalar* in_local, PetscScalar* out_local, PetscScalar* coords, double scale);
-
+  inline bool ElementalAddVec(unsigned int index, PetscScalar *in, double scale) { assert(false); }
+  inline bool ElementalAddVec(int i, int j, int k, PetscScalar ***in, double scale);
     inline bool initStencils();
 
-    bool preMatVec();
-    bool postMatVec();
+    bool preAddVec();
+    bool postAddVec();
 
-    void setNuVec(Vec nv) {
-      nuvec = nv;
+    inline void setPrevTS(Vec ts) {
+      m_prevTSVec = ts;
     }
 
    private:
-    PetscScalar***      nuarray; /* Diffusion coefficient array*/
-    Vec                 nuvec;     
+    Vec m_prevTSVec;
+    PetscScalar*** m_prevTSArray;
 
     double 		m_dHx;
-    
     double xFac, yFac, zFac;
     unsigned int maxD;
 };
 
 
-massMatrix::massMatrix(daType da) {
+forceVector::forceVector(daType da) {
 #ifdef __DEBUG__
   assert ( ( da == PETSC ) || ( da == OCT ) );
 #endif
@@ -84,6 +38,7 @@ massMatrix::massMatrix(daType da) {
   m_DA 		= NULL;
   m_octDA 	= NULL;
   m_stencil	= NULL;
+  m_prevTSArray = NULL;
 
   // initialize the stencils ...
   initStencils();
@@ -91,7 +46,7 @@ massMatrix::massMatrix(daType da) {
     initOctLut();
 }
 
-bool massMatrix::initStencils() {
+bool forceVector::initStencils() {
   typedef int* int1Ptr;
   typedef int** int2Ptr;
  
@@ -213,7 +168,7 @@ bool massMatrix::initStencils() {
   return true;
 }
 
-bool massMatrix::preMatVec() {
+bool forceVector::preAddVec() {
   if (m_daType == PETSC) {
     // compute Hx
     int ierr;
@@ -223,6 +178,9 @@ bool massMatrix::preMatVec() {
     m_dHx = m_dLx/(mx -1);
     m_dHx = m_dHx*m_dHx*m_dHx;
     m_dHx /= 1728.0;
+    CHKERRQ(ierr);
+
+    ierr = DMDAVecGetArray(m_DA, m_prevTSVec, &m_prevTSArray);
     CHKERRQ(ierr);
   } else {
     maxD = m_octDA->getMaxDepth();
@@ -241,6 +199,7 @@ bool massMatrix::preMatVec() {
   return true;
 }
 
+/*
 bool massMatrix::ElementalMatVec(unsigned int i, PetscScalar *in, PetscScalar *out, double scale) {
   unsigned int lev = m_octDA->getLevel(i);
   double hx = xFac*(1<<(maxD - lev));
@@ -264,9 +223,9 @@ bool massMatrix::ElementalMatVec(unsigned int i, PetscScalar *in, PetscScalar *o
   }//end for k
   
   return true;
-}
+}*/
 
-bool massMatrix::ElementalMatVec(int i, int j, int k, PetscScalar ***in, PetscScalar ***out, double scale){
+bool forceVector::ElementalAddVec(int i, int j, int k, PetscScalar ***out, double scale) {
   int dof= m_uiDof;
   int idx[8][3]={
     {k, j, dof*i},
@@ -281,87 +240,24 @@ bool massMatrix::ElementalMatVec(int i, int j, int k, PetscScalar ***in, PetscSc
 
   double stencilScale =  m_dHx*scale;
   int **Ajk = (int **)m_stencil;
-
+  PetscScalar*** in = m_prevTSArray;
+  /*for (int r = 0; r < 8; r++) {
+    std::cout << "Element " << i << ", " << j << ", " << k << " in[" << r << "] = " << in[idx[r][0]][idx[r][1]][idx[r][2]] << "\n";
+  }*/
+  
   for (int q = 0; q < 8; q++) {
     for (int r = 0; r < 8; r++) {
-      out[idx[q][0]][idx[q][1]][idx[q][2]] += stencilScale*Ajk[q][r]*in[idx[r][0]][idx[r][1]][idx[r][2]];
-		if(dof > 1)  out[idx[q][0]][idx[q][1]][idx[q][2]+1] += 0.0;
+      double contrib = stencilScale*Ajk[q][r]*in[idx[r][0]][idx[r][1]][idx[r][2]];
+      out[idx[q][0]][idx[q][1]][idx[q][2]] += contrib;
     }
   }
   return true;
   // std::cout << "Stencil scale is " << stencilScale << std::endl;
 }
 
-bool massMatrix::GetElementalMatrix(int i, int j, int k, PetscScalar *mat){
-  double stencilScale =  m_dHx;
-  int **Ajk = (int **)m_stencil;
-
-  for (int q = 0; q < 8; q++) {
-    for (int r = 0; r < 8; r++) {
-      mat[8*q+r] = stencilScale*Ajk[q][r];
-    }
-  }
+bool forceVector::postAddVec() {
+  int ierr = DMDAVecRestoreArray(m_DA, m_prevTSVec, &m_prevTSArray);
+  CHKERRQ(ierr);
   return true;
 }
-
-bool massMatrix::GetElementalMatrix(unsigned int idx, std::vector<ot::MatRecord> &records) {
-	return true;
-}
-
-bool massMatrix::postMatVec() {
-
-  return true;
-}
-
-bool massMatrix::ElementalMatGetDiagonal(unsigned int i, PetscScalar *diag, double scale) {
-  unsigned int lev = m_octDA->getLevel(i);
-  double hx = xFac*(1<<(maxD - lev));
-  double hy = yFac*(1<<(maxD - lev));
-  double hz = zFac*(1<<(maxD - lev));
-
-  double fac = scale*hx*hy*hz/1728.0;
-  
-  stdElemType elemType;
-  unsigned int idx[8];
-  
-  int ***Aijk = (int ***)m_stencil;
-  
-  alignElementAndVertices(m_octDA, elemType, idx);       
-  
-  for (int k = 0;k < 8;k++) {
-      diag[m_uiDof*idx[k]] += fac*(Aijk[elemType][k][k]);
-	}//end for k
-  
-  return true;
-}
-
-bool massMatrix::ElementalMatGetDiagonal(int i, int j, int k, PetscScalar ***diag, double scale){
-  int dof= m_uiDof;
-  int idx[8][3]={
-    {k, j, dof*i},
-    {k,j,dof*(i+1)},
-    {k,j+1,dof*i},
-    {k,j+1,dof*(i+1)},
-    {k+1, j, dof*i},
-    {k+1,j,dof*(i+1)},
-    {k+1,j+1,dof*i},
-    {k+1,j+1,dof*(i+1)}               
-  };             
-
-  double stencilScale =  m_dHx*scale;
-  int **Ajk = (int **)m_stencil;
-  
-  for (int q = 0; q < 8; q++) {
-    diag[idx[q][0]][idx[q][1]][idx[q][2]] += stencilScale*Ajk[q][q];
-		if(dof > 1)  diag[idx[q][0]][idx[q][1]][idx[q][2]+1] += 0.0;
-  }
-  return true;
-}
-
-bool massMatrix::ElementalMatVec(PetscScalar* in_local, PetscScalar* out_local, PetscScalar* coords, double scale) {
-  return true;
-}
-
-
-#endif /*_MASSMATRIX_H_*/
 

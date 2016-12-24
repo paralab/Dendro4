@@ -30,7 +30,7 @@
  *  derived class.
  */
 
-class stiffnessMatrix : public ot::fem::feMatrix<stiffnessMatrix>
+class stiffnessMatrix : public feMatrix<stiffnessMatrix>
 {
   public:	
     stiffnessMatrix(daType da);
@@ -47,8 +47,13 @@ class stiffnessMatrix : public ot::fem::feMatrix<stiffnessMatrix>
     inline bool ElementalMatVec(int i, int j, int k, PetscScalar ***in, PetscScalar ***out, double scale);
     inline bool ElementalMatVec(unsigned int idx, PetscScalar *in, PetscScalar *out, double scale);
 
+    inline bool GetElementalMatrix(int i, int j, int k, PetscScalar *mat);
+    inline bool GetElementalMatrix(unsigned int idx, std::vector<ot::MatRecord>& records);
+
     inline bool ElementalMatGetDiagonal(int i, int j, int k, PetscScalar ***diag, double scale);
     inline bool ElementalMatGetDiagonal(unsigned int idx, PetscScalar *diag, double scale);
+    
+    inline bool ElementalMatVec(PetscScalar* in_local, PetscScalar* out_local, PetscScalar* coords, double scale);
     
     inline bool initStencils();
 
@@ -207,12 +212,12 @@ bool stiffnessMatrix::preMatVec() {
 	 // int ierr;
 	 // ierr = VecNorm(nuvec,NORM_INFINITY,&m_nuval); CHKERRQ(ierr);
 
-    int ierr = DAVecGetArray(m_DA, nuvec, &nuarray);
+    int ierr = DMDAVecGetArray(m_DA, nuvec, &nuarray);
 
     m_nuarray = nuarray;
     // compute Hx
     PetscInt mx,my,mz;
-    ierr = DAGetInfo(m_DA,0, &mx, &my, &mz, 0,0,0,0,0,0,0); CHKERRQ(ierr); 
+    ierr = DMDAGetInfo(m_DA,0, &mx, &my, &mz, 0,0,0,0,0,0,0,0,0); CHKERRQ(ierr); 
     CHKERRQ(ierr);
     
     m_dHx = m_dLx/(mx -1);
@@ -231,11 +236,11 @@ bool stiffnessMatrix::preMatVec() {
 
     
     // Get the  x,y,z factors 
-    xFac = 1.0/((double)(1u << (maxD-1)));
+    xFac = 1.0/((double)(1<<(maxD-1)));
     if (m_octDA->getDimension() > 1) {
-      yFac = 1.0/((double)(1u << (maxD-1)));
+      yFac = 1.0/((double)(1<<(maxD-1)));
       if (m_octDA->getDimension() > 2) {
-        zFac = 1.0/((double)(1u << (maxD-1)));
+        zFac = 1.0/((double)(1<<(maxD-1)));
       }
     }
   }
@@ -245,16 +250,16 @@ bool stiffnessMatrix::preMatVec() {
 
 bool stiffnessMatrix::ElementalMatVec(unsigned int i, PetscScalar *in, PetscScalar *out, double scale) {
   unsigned int lev = m_octDA->getLevel(i);
-  double hx = xFac*(1u << (maxD - lev));
-  double hy = yFac*(1u << (maxD - lev));
-  double hz = zFac*(1u << (maxD - lev));
+  double hx = xFac*(1<<(maxD - lev));
+  // double hy = yFac*(1<<(maxD - lev));
+  // double hz = zFac*(1<<(maxD - lev));
 
   double fac11 = -hx*scale/192.0;
   
   stdElemType elemType;
   unsigned int idx[8];
 
-  unsigned char hangingMask = m_octDA->getHangingNodeIndex(i);    //  alignElementAndVertices(m_octDA, elemType, idx);       
+  // unsigned char hangingMask = m_octDA->getHangingNodeIndex(i);    //  alignElementAndVertices(m_octDA, elemType, idx);       
   int ***Aijk = (int ***)m_stencil;
   
   alignElementAndVertices(m_octDA, elemType, idx);       
@@ -264,7 +269,8 @@ bool stiffnessMatrix::ElementalMatVec(unsigned int i, PetscScalar *in, PetscScal
     for (int j=0;j<8;j++) {
 		double fac1 = nuarray[idx[k]]*fac11;
       out[m_uiDof*idx[k]] +=  (fac1*(Aijk[elemType][k][j]))*in[m_uiDof*idx[j]];
-		//if(hangingMask) std::cout << fac1*Aijk[elemType][k][j] << " " ;
+		
+      // if(hangingMask) std::cout << fac1*Aijk[elemType][k][j] << " " ;
     }//end for j
 	 //	 if(hangingMask) std::cout << std::endl;
   }//end for k
@@ -293,25 +299,37 @@ bool stiffnessMatrix::ElementalMatVec(int i, int j, int k, PetscScalar ***in, Pe
   for (int q = 0; q < 8; q++) {
     for (int r = 0; r < 8; r++) {
       stencilScale = -(nuarray[k][j][i]*m_dHx)*scale;
-		// stencilScale = -(m_nuval*m_dHx)*scale;
-		//		stencilScale = -(nuarray[k][j][dof*i]*m_dHx)*scale;
-		//stencilScale = -(m_dHx)*scale;
       out[idx[q][0]][idx[q][1]][idx[q][2]] +=  stencilScale*Ajk[q][r]*in[idx[r][0]][idx[r][1]][idx[r][2]];
       if (dof > 1)	
         out[idx[q][0]][idx[q][1]][idx[q][2]+1] += 0.0;
     }
   }
-#ifdef __DEBUG__
-  //		PetscPrintf(0,"stencil scale in stiffness matrix = %f\n",stencilScale);
-#endif
-
   return true;
+}
+
+bool stiffnessMatrix::GetElementalMatrix(int i, int j, int k, PetscScalar *mat){
+  double stencilScale;
+  int **Ajk = (int **)m_stencil;
+
+  PetscScalar ***nuarray = (PetscScalar ***)m_nuarray;
+
+  for (int q = 0; q < 8; q++) {
+    for (int r = 0; r < 8; r++) {
+      stencilScale = -nuarray[k][j][i]*m_dHx;
+      mat[8*q+r] = stencilScale*Ajk[q][r];
+    }
+  }
+  return true;
+}
+
+bool stiffnessMatrix::GetElementalMatrix(unsigned int idx, std::vector<ot::MatRecord> &records) {
+	return true;
 }
 
 bool stiffnessMatrix::postMatVec() {
   if ( m_daType == PETSC) {
 	 PetscScalar ***nuarray = (PetscScalar ***)m_nuarray;
-    int ierr = DAVecRestoreArray(m_DA, nuvec, &nuarray);
+    int ierr = DMDAVecRestoreArray(m_DA, nuvec, &nuarray);
     CHKERRQ(ierr);
   } else {
     PetscScalar *nuarray = (PetscScalar *)m_nuarray;
@@ -353,16 +371,16 @@ bool stiffnessMatrix::ElementalMatGetDiagonal(int i, int j, int k, PetscScalar *
 
 bool stiffnessMatrix::ElementalMatGetDiagonal(unsigned int i, PetscScalar *diag, double scale) {
   unsigned int lev = m_octDA->getLevel(i);
-  double hx = xFac*(1u << (maxD - lev));
-  double hy = yFac*(1u << (maxD - lev));
-  double hz = zFac*(1u << (maxD - lev));
+  double hx = xFac*(1<<(maxD - lev));
+  //double hy = yFac*(1<<(maxD - lev));
+  //double hz = zFac*(1<<(maxD - lev));
 
   double fac11 = -hx*scale/192.0;
   
   stdElemType elemType;
   unsigned int idx[8];
 
-  unsigned char hangingMask = m_octDA->getHangingNodeIndex(i);    //  alignElementAndVertices(m_octDA, elemType, idx);       
+  // unsigned char hangingMask = m_octDA->getHangingNodeIndex(i);    //  alignElementAndVertices(m_octDA, elemType, idx);       
   int ***Aijk = (int ***)m_stencil;
   
   alignElementAndVertices(m_octDA, elemType, idx);       
@@ -376,6 +394,9 @@ bool stiffnessMatrix::ElementalMatGetDiagonal(unsigned int i, PetscScalar *diag,
   return true;
 }
 
+bool stiffnessMatrix::ElementalMatVec(PetscScalar* in_local, PetscScalar* out_local, PetscScalar* coords, double scale) {
+  return true;
+}
 
 #endif /*_STIFFNESSMATRIX_H_*/
 

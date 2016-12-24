@@ -186,12 +186,12 @@ class feMatrix : public feMat {
 		return type;
   }
 
-  inline PetscErrorCode alignElementAndVertices(ot::DA * da, stdElemType & sType, ot::DA::index* indices);
-  inline PetscErrorCode mapVtxAndFlagsToOrientation(int childNum, ot::DA::index* indices, unsigned char & mask);
-  inline PetscErrorCode reOrderIndices(unsigned char eType, ot::DA::index* indices);
+  inline PetscErrorCode alignElementAndVertices(ot::DA * da, stdElemType & sType, unsigned int* indices);
+  inline PetscErrorCode mapVtxAndFlagsToOrientation(int childNum, unsigned int* indices, unsigned char & mask);
+  inline PetscErrorCode reOrderIndices(unsigned char eType, unsigned int* indices);
 
-	inline PetscErrorCode interp_global_to_local(PetscScalar* __restrict loc, PetscScalar* glo, ot::DA* m_octDA);
-  inline PetscErrorCode interp_local_to_global(PetscScalar* glo, PetscScalar* __restrict loc, ot::DA* m_octDA);
+	inline PetscErrorCode interp_local_to_global(PetscScalar* __restrict loc, PetscScalar* glo, ot::DA* m_octDA);
+  inline PetscErrorCode interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::DA* m_octDA);
 
 protected:
   void *          	m_stencil;
