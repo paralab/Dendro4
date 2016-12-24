@@ -465,7 +465,7 @@ PetscFunctionReturn(0);
 /**
   @brief The intra-processor balancing is done in two stages: a search-free intra-block balancing, followed by the ripple algorithm for inter-block balancing. This combined algorithm is actually implemented recursively and this factor controls the level of recursion.
   */
-#define _COMBO_RIPPLE_FACTOR_ 1000000
+#define _COMBO_RIPPLE_FACTOR_ 10000000
 
 /**
   @namespace ot

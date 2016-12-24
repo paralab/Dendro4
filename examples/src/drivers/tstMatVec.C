@@ -181,13 +181,29 @@ int main(int argc, char ** argv ) {
   }
 
 
+    if(genPts) {
+
+       genGauss(0.15,grainSize,dim,argv[1],comm);
+
+    }
+
+    sprintf(pFile, "%s%d_%d.pts", argv[1], rank, npes);
+    //std::cout<<"Attempt to Read "<<ptsFileName<<std::endl;
+
+    //Read pts from files
+    if (!rank) {
+        std::cout << RED " Reading  " << argv[1] << NRM << std::endl; // Point size
+    }
+    ot::readPtsFromFile(pFile, pts);
+
+    if (!rank) {
+        std::cout << GRN " Finished reading  " << argv[1] << NRM << std::endl; // Point size
+    }
 
 
-  genGauss(0.5, grainSize, dim,pts);
-  ptsLen=pts.size();
-  //std::cout<<"pts npes : "<<pts.npes()<<std::endl;
+  //std::cout<<"pts npes : "<<pts.size()<<std::endl;
   std::vector<ot::TreeNode> tmpNodes;
-  for (int i = 0; i < ptsLen; i += 3) {
+  for (int i = 0; i < pts.size(); i += 3) {
     if ((pts[i] > 0.0) &&
         (pts[i + 1] > 0.0)
         && (pts[i + 2] > 0.0) &&
@@ -295,6 +311,8 @@ int main(int argc, char ** argv ) {
   ot::balanceOctree(linOct, balOct, dim, maxDepth, incCorner, MPI_COMM_WORLD, NULL, NULL);
   endTime = MPI_Wtime();
 
+
+
 #ifdef PETSC_USE_LOG
   PetscLogStagePop();
 #endif
@@ -347,7 +365,7 @@ int main(int argc, char ** argv ) {
       std::cout<< YLW<<"Mesh generation time (max): "<<t_mesh_g[2]<<NRM<<std::endl;
       std::cout << "Total # Vertices: "<< totalSz << std::endl;
   }
-
+ dollar::text(std::cout);
 
 #ifdef HILBERT_ORDERING
   da.computeHilbertRotations();

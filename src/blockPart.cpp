@@ -563,7 +563,7 @@ namespace ot {
   //Assumes that nodes are globally sorted, linear, complete, unique.
   //No processor must call this with an empty input.
   int blockPartStage1(std::vector<TreeNode> &nodes, std::vector<TreeNode> &blocks,
-      unsigned int dim, unsigned int maxDepth,  MPI_Comm comm,double tol) {
+      unsigned int dim, unsigned int maxDepth,  MPI_Comm comm,double tol) {//$
 #ifdef __PROF_WITH_BARRIER__
     MPI_Barrier(comm);
 #endif
@@ -693,7 +693,7 @@ namespace ot {
 
   int blockPartStage2(std::vector<TreeNode> &nodes, std::vector<TreeNode> &globalCoarse,
       std::vector<ot::TreeNode>& minsAllBlocks, unsigned int dim, unsigned int maxDepth,
-      MPI_Comm comm,double tol) {
+      MPI_Comm comm,double tol) {//$
 #ifdef __PROF_WITH_BARRIER__
     MPI_Barrier(comm);
 #endif

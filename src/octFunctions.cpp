@@ -1546,7 +1546,7 @@ namespace ot {
 
   }//end function
 
-  void flagNodesType3(std::vector<ot::TreeNode> & in, MPI_Comm comm) {
+  void flagNodesType3(std::vector<ot::TreeNode> & in, MPI_Comm comm) {//$
 
 #ifdef __PROF_WITH_BARRIER__
     MPI_Barrier(comm);

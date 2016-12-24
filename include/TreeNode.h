@@ -17,6 +17,7 @@
 #include "hcurvedata.h"
 #include <iostream>
 #include <cassert>
+#include "dollar.hpp"
 
 
 

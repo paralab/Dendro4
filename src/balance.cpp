@@ -30,7 +30,7 @@ namespace ot {
   //Assumption: in is globally sorted, linear and complete.
   int balanceOctree(std::vector<TreeNode> &in, std::vector<TreeNode> &out,
                     unsigned int dim, unsigned int maxDepth, bool incCorner,
-                    MPI_Comm comm, MPI_Comm *newCommPtr, bool *iAmActive) {
+                    MPI_Comm comm, MPI_Comm *newCommPtr, bool *iAmActive) {//$
 #ifdef __PROF_WITH_BARRIER__
     MPI_Barrier(comm);
 #endif
@@ -801,7 +801,7 @@ namespace ot {
   int comboRipple(std::vector<TreeNode> &in, bool incCorner, const unsigned int maxNum) {
     PROF_COMBO_RIPPLE_BEGIN
 
-    std::cout << "Entering " << __func__ << std::endl;
+    //std::cout << "Entering " << __func__ << std::endl;
     if (in.size() < 2) {
       PROF_COMBO_RIPPLE_END
     }
@@ -813,8 +813,8 @@ namespace ot {
     TreeNode nca = getNCA(in[0], in[in.size() - 1]);
     nca.addChildren(blocks);
 
-    std::cout << __func__ << " in[0] is: " << in[0] << std::endl;
-    std::cout << "NCA is: " << nca << std::endl;
+    //std::cout << __func__ << " in[0] is: " << in[0] << std::endl;
+    //std::cout << "NCA is: " << nca << std::endl;
 
     assert(maxNum > 0);
 
@@ -953,7 +953,7 @@ namespace ot {
   int balanceBlocks(const std::vector<TreeNode> &inp,
                     const std::vector<TreeNode> &blocks, std::vector<TreeNode> &nodes,
                     std::vector<TreeNode> &allBoundaryLeaves, bool incCorner,
-                    std::vector<unsigned int> *maxBlockBndVec) {
+                    std::vector<unsigned int> *maxBlockBndVec) {//$
     PROF_CON_BAL_BEGIN
       int rank=0;
       MPI_Comm_rank(MPI_COMM_WORLD,&rank);
@@ -1230,7 +1230,7 @@ PROF_RIPPLE_BAL_END
 */
 
 //Original implementation of the ripple algorithm
-  int ripple(std::vector<TreeNode> &nodes, bool incCorners) {
+  int ripple(std::vector<TreeNode> &nodes, bool incCorners) { //$
     PROF_RIPPLE_BAL_BEGIN
 
     if (!nodes.size()) {
