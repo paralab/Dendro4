@@ -246,18 +246,23 @@ int main(int argc, char ** argv ) {
   PetscLogStagePop();
 #endif
 
- //! Create nodal vector and set via function
- auto fx = [](double x, double y, double z) { return sin(2*M_PI*x)*sin(2*M_PI*y)*sin(2*M_PI*z); };
+  //! Create nodal vector and set via function
+  auto fx = [](double x, double y, double z) { return sin(M_PI*x)*sin(M_PI*y)*sin(M_PI*z); };
+  // auto fx = [](double x, double y, double z) { return sin(2*M_PI*x)*sin(2*M_PI*y)*sin(2*M_PI*z); };
+  // auto fx = [](double x, double y, double z) { return x*y*z; };
 
   //Nodal, non-Ghosted, dof
-  PetscScalar zero = 0.0;
+  PetscScalar zero = -1.0, nrm; 
   Vec v;
   da.createVector(v, false, false, 1);
-
+ 
   // not really needed ...
   VecSet(v, zero);
 
   setScalarByFunction(&da, v, fx);
+  VecNorm(v, NORM_2, &nrm);
+
+  std::cout << "Norm: " << nrm << std::endl;
 
  //! write nodal vector to vtk file ...
   saveNodalVecAsVTK(&da, v, "fnViz" );
@@ -310,7 +315,7 @@ void setScalarByFunction(ot::DA* da, Vec vec, std::function<double(double,double
 	int dof=1;	
   PetscScalar *_vec=NULL; 
 
-  da->vecGetBuffer(vec,   _vec, false, false, true,  dof);
+  da->vecGetBuffer(vec,   _vec, false, false, false,  dof);
   
   da->ReadFromGhostsBegin<PetscScalar>(_vec, dof);
 	da->ReadFromGhostsEnd<PetscScalar>(_vec);
@@ -318,15 +323,15 @@ void setScalarByFunction(ot::DA* da, Vec vec, std::function<double(double,double
   unsigned int maxD = da->getMaxDepth();
 	unsigned int lev;
 	double hx, hy, hz;
-	Point pt;
+	Point pt, parPt;
 
 	double xFac = gSize[0]/((double)(1<<(maxD-1)));
 	double yFac = gSize[1]/((double)(1<<(maxD-1)));
 	double zFac = gSize[2]/((double)(1<<(maxD-1)));
-	double xx, yy, zz;
+	double xx[8], yy[8], zz[8];
 	unsigned int idx[8];
 
-  for ( da->init<ot::DA_FLAGS::WRITABLE>(); da->curr() < da->end<ot::DA_FLAGS::WRITABLE>(); da->next<ot::DA_FLAGS::WRITABLE>() ) { 
+  for ( da->init<ot::DA_FLAGS::ALL>(); da->curr() < da->end<ot::DA_FLAGS::ALL>(); da->next<ot::DA_FLAGS::ALL>() ) { 
     // set the value
     lev = da->getLevel(da->curr());
     hx = xFac*(1<<(maxD - lev));
@@ -334,16 +339,32 @@ void setScalarByFunction(ot::DA* da, Vec vec, std::function<double(double,double
     hz = zFac*(1<<(maxD - lev));
 
     pt = da->getCurrentOffset();
-			
-    xx = pt.x()*xFac; yy = pt.y()*yFac; zz = pt.z()*zFac;
+		
+    //! get the correct coordinates of the nodes ...
+    unsigned int chNum = da->getChildNumber();
+    
+    // if hanging, use parents, else mine. 
+    
+    xx[0] = pt.x()*xFac; yy[0] = pt.y()*yFac; zz[0] = pt.z()*zFac;
+    xx[1] = pt.x()*xFac+hx; yy[1] = pt.y()*yFac; zz[1] = pt.z()*zFac;
+    xx[2] = pt.x()*xFac; yy[2] = pt.y()*yFac+hy; zz[2] = pt.z()*zFac;
+    xx[3] = pt.x()*xFac+hx; yy[3] = pt.y()*yFac+hy; zz[3] = pt.z()*zFac;
+    
+    xx[4] = pt.x()*xFac; yy[4] = pt.y()*yFac; zz[4] = pt.z()*zFac+hz;
+    xx[5] = pt.x()*xFac+hx; yy[5] = pt.y()*yFac; zz[5] = pt.z()*zFac+hz;
+    xx[6] = pt.x()*xFac; yy[6] = pt.y()*yFac+hy; zz[6] = pt.z()*zFac+hz;
+    xx[7] = pt.x()*xFac+hx; yy[7] = pt.y()*yFac+hy; zz[7] = pt.z()*zFac +hz;
     
     da->getNodeIndices(idx);
-    if ( ! da->isHanging( da->curr() ) ) {
-      _vec[idx[0]] = f(xx, yy, zz);
-     }
+    for (int i=0; i<8; ++i) {
+      if ( ! da->isHanging( i ) ) {
+        _vec[idx[i]] =  f(xx[i], yy[i], zz[i]); //! use correct coordinate
+      }
+    }
+    //  std::cout << "Setting value: " << idx[0] << " to " << f(xx,yy,zz) << std::endl;
   }
 
-  da->vecRestoreBuffer(vec,  _vec, false, false, true,  dof);
+  da->vecRestoreBuffer(vec,  _vec, false, false, false,  dof);
   
 }
 
@@ -371,10 +392,10 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, char *file_prefix) {
   int dim = 3;
 
   int unit_points = 1 << dim;
-  int num_verticies = da->getElementSize() * (unit_points);
+  int num_vertices = da->getElementSize() * (unit_points);
   int num_cells = da->getElementSize();
 
-  out << "POINTS " << num_verticies << " float" << std::endl;
+  out << "POINTS " << num_vertices << " float" << std::endl;
 
   { // dim = 3
     
@@ -425,6 +446,8 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, char *file_prefix) {
       out << pt.x()*xFac << " " <<  pt.y()*yFac + hy << " " << pt.z()*zFac + hz << std::endl;
     }
 
+    
+    
     out << "CELLS " << da->getElementSize() << " " << num_cells_elements << std::endl;
 
     for (int i = 0; i < num_cells; i++) {
@@ -441,15 +464,37 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, char *file_prefix) {
     }
 
     //myfile<<"CELL_DATA "<<num_cells<<std::endl;
-    //myfile<<"POINT_DATA "<<(num_cells*unit_points)<<std::endl;
+    
+    out << std::endl;
+    out << "POINT_DATA " << num_vertices  << std::endl;
+    out << "SCALARS foo float 1" << std::endl;
+    out << "LOOKUP_TABLE default" << std::endl;
 
+    for ( da->init<ot::DA_FLAGS::ALL>(); da->curr() < da->end<ot::DA_FLAGS::ALL>(); da->next<ot::DA_FLAGS::ALL>() ) { 
+      da->getNodeIndices(idx);
+      // for (int i=0; i<8; ++i) {
+        out << _vec[idx[0]] << " ";
+        out << _vec[idx[1]] << " ";
+        out << _vec[idx[3]] << " ";
+        out << _vec[idx[2]] << " ";
+        out << _vec[idx[4]] << " ";
+        out << _vec[idx[5]] << " ";
+        out << _vec[idx[7]] << " ";
+        out << _vec[idx[6]] << " ";
+      // }
+    }
+
+    out << std::endl;
+
+/*
 
     out << "FIELD OCTREE_DATA " << num_data_field << std::endl;
 
     out << "cell_level 1 " << num_cells << " int" << std::endl;
 
-    for ( da->init<ot::DA_FLAGS::WRITABLE>(); da->curr() < da->end<ot::DA_FLAGS::WRITABLE>(); da->next<ot::DA_FLAGS::WRITABLE>() ) { 
-      out << da->getLevel(da->curr()) << " ";
+    for ( da->init<ot::DA_FLAGS::ALL>(); da->curr() < da->end<ot::DA_FLAGS::ALL>(); da->next<ot::DA_FLAGS::ALL>() ) { 
+      int l = da->getLevel(da->curr()); 
+      out << l << " ";
     }
 
     out << std::endl;
@@ -459,7 +504,7 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, char *file_prefix) {
       out << rank << " ";
 
     out << std::endl;
-
+*/
     da->vecRestoreBuffer(vec,  _vec, false, false, true,  dof);
   }
 
