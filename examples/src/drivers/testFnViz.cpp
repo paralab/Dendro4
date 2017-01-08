@@ -17,6 +17,14 @@
 #define iC(fun) {CHKERRQ(fun);}
 #endif
 
+#define NODE_0 1u
+#define NODE_1 2u
+#define NODE_2 4u
+#define NODE_3 8u
+#define NODE_4 16u
+#define NODE_5 32u
+#define NODE_6 64u
+#define NODE_7 128u
 
 double gSize[3];
 
@@ -320,8 +328,8 @@ void setScalarByFunction(ot::DA* da, Vec vec, std::function<double(double,double
 
   da->vecGetBuffer(vec,   _vec, false, false, false,  dof);
   
-  da->ReadFromGhostsBegin<PetscScalar>(_vec, dof);
-	da->ReadFromGhostsEnd<PetscScalar>(_vec);
+  // da->ReadFromGhostsBegin<PetscScalar>(_vec, dof);
+	// da->ReadFromGhostsEnd<PetscScalar>(_vec);
 		
   unsigned int maxD = da->getMaxDepth();
 	unsigned int lev;
@@ -344,7 +352,8 @@ void setScalarByFunction(ot::DA* da, Vec vec, std::function<double(double,double
     pt = da->getCurrentOffset();
 		
     //! get the correct coordinates of the nodes ...
-    unsigned int chNum = da->getChildNumber();
+    // unsigned int chNum = da->getChildNumber();
+    unsigned char hangingMask = da->getHangingNodeIndex(da->curr());
     
     // if hanging, use parents, else mine. 
     
@@ -360,7 +369,7 @@ void setScalarByFunction(ot::DA* da, Vec vec, std::function<double(double,double
     
     da->getNodeIndices(idx);
     for (int i=0; i<8; ++i) {
-      if ( ! da->isHanging( i ) ) {
+      if ( ! ( hangingMask & ( 1u << i ) ) ) {
         _vec[idx[i]] =  f(xx[i], yy[i], zz[i]); //! use correct coordinate
       }
     }
@@ -475,11 +484,11 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, char *file_prefix) {
 
     PetscScalar* local = new PetscScalar[8];
     
-    for ( da->init<ot::DA_FLAGS::ALL>(); da->curr() < da->end<ot::DA_FLAGS::ALL>(); da->next<ot::DA_FLAGS::ALL>() ) { 
+    for ( da->init<ot::DA_FLAGS::WRITABLE>(); da->curr() < da->end<ot::DA_FLAGS::WRITABLE>(); da->next<ot::DA_FLAGS::WRITABLE>() ) { 
       da->getNodeIndices(idx);
       interp_global_to_local(_vec, local, da);
       
-      // for (int i=0; i<8; ++i) {
+       
         out << local[0] << " ";
         out << local[1] << " ";
         out << local[3] << " ";
@@ -487,16 +496,17 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, char *file_prefix) {
         out << local[4] << " ";
         out << local[5] << " ";
         out << local[7] << " ";
-        out << local[6] << " ";
-        // out << _vec[idx[0]] << " ";
-        // out << _vec[idx[1]] << " ";
-        // out << _vec[idx[3]] << " ";
-        // out << _vec[idx[2]] << " ";
-        // out << _vec[idx[4]] << " ";
-        // out << _vec[idx[5]] << " ";
-        // out << _vec[idx[7]] << " ";
-        // out << _vec[idx[6]] << " ";
-      // }
+        out << local[6] << " "; 
+        /*
+        out << _vec[idx[0]] << " ";
+        out << _vec[idx[1]] << " ";
+        out << _vec[idx[3]] << " ";
+        out << _vec[idx[2]] << " ";
+        out << _vec[idx[4]] << " ";
+        out << _vec[idx[5]] << " ";
+        out << _vec[idx[7]] << " ";
+        out << _vec[idx[6]] << " "; */
+    
     }
 
     out << std::endl;
@@ -533,6 +543,8 @@ void interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::D
 	da->getNodeIndices(idx);
 
   unsigned int m_uiDof = 1;
+  
+  // std::cout << chNum << std::endl;
 
   switch (chNum) {
 
@@ -540,32 +552,33 @@ void interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::D
       // 0,7 are not hanging
 		  for (size_t i = 0; i < m_uiDof; i++) {
 				loc[i] = glo[m_uiDof*idx[0]+i];
-        if ( da->isHanging( 1 ) ) 
+
+        if ( hangingMask & NODE_1 ) 
           loc[m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[0]+i] + glo[m_uiDof*idx[1]+i] );
         else
           loc[m_uiDof + i] = glo[m_uiDof*idx[1]+i];
 				
-        if ( da->isHanging( 2 ) ) 
+        if ( hangingMask & NODE_2 ) 
           loc[2*m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[0]+i] + glo[m_uiDof*idx[2]+i] );
         else
           loc[2*m_uiDof + i] = glo[m_uiDof*idx[2]+i];
         
-        if ( da->isHanging( 3 ) ) 
+        if ( hangingMask & NODE_3 ) 
           loc[3*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[0]+i] + glo[m_uiDof*idx[1]+i] + glo[m_uiDof*idx[2]+i] + glo[m_uiDof*idx[3]+i]);
         else
           loc[3*m_uiDof + i] = glo[m_uiDof*idx[3]+i];
         
-        if ( da->isHanging( 4 ) ) 
+        if ( hangingMask & NODE_4 ) 
           loc[4*m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[0]+i] + glo[m_uiDof*idx[4]+i] );
         else
           loc[4*m_uiDof + i] = glo[m_uiDof*idx[4]+i];
         
-        if ( da->isHanging( 5 ) ) 
+        if ( hangingMask & NODE_5 ) 
           loc[5*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[0]+i] + glo[m_uiDof*idx[1]+i] + glo[m_uiDof*idx[4]+i] + glo[m_uiDof*idx[5]+i]);
         else
           loc[5*m_uiDof + i] = glo[m_uiDof*idx[5]+i];
         
-        if ( da->isHanging( 6 ) ) 
+        if ( hangingMask & NODE_6 ) 
           loc[6*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[0]+i] + glo[m_uiDof*idx[2]+i] + glo[m_uiDof*idx[4]+i] + glo[m_uiDof*idx[6]+i]);
         else
           loc[6*m_uiDof + i] = glo[m_uiDof*idx[6]+i];
@@ -577,36 +590,36 @@ void interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::D
       // 1,6 are not hanging
 		  for (size_t i = 0; i < m_uiDof; i++) {
         
-        if ( da->isHanging( 0 ) ) 
+        if ( hangingMask & NODE_0 ) 
           loc[i] = 0.5 * ( glo[m_uiDof*idx[0]+i] + glo[m_uiDof*idx[1]+i] );
         else
           loc[i] = glo[m_uiDof*idx[0]+i] ;
           
         loc[m_uiDof + i] = glo[m_uiDof*idx[1]+i];
 				
-        if ( da->isHanging( 2 ) ) 
+        if ( hangingMask & NODE_2 ) 
           loc[2*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[0]+i] + glo[m_uiDof*idx[1]+i] + glo[m_uiDof*idx[2]+i] + glo[m_uiDof*idx[3]+i]);
         else
           loc[2*m_uiDof + i] = glo[m_uiDof*idx[2]+i];
         
-        if ( da->isHanging( 3 ) ) 
+        if ( hangingMask & NODE_3 ) 
           loc[3*m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[1]+i] + glo[m_uiDof*idx[3]+i] );
         else
           loc[3*m_uiDof + i] = glo[m_uiDof*idx[3]+i];
         
-        if ( da->isHanging( 4 ) ) 
+        if ( hangingMask & NODE_4 ) 
           loc[4*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[0]+i] + glo[m_uiDof*idx[1]+i] + glo[m_uiDof*idx[4]+i] + glo[m_uiDof*idx[5]+i]);
         else
           loc[4*m_uiDof + i] = glo[m_uiDof*idx[4]+i];
         
-        if ( da->isHanging( 5 ) ) 
+        if ( hangingMask & NODE_5 ) 
           loc[5*m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[1]+i] + glo[m_uiDof*idx[5]+i] );
         else
           loc[5*m_uiDof + i] = glo[m_uiDof*idx[5]+i];
         
         loc[6*m_uiDof + i] = glo[m_uiDof*idx[6]+i];
         
-        if ( da->isHanging( 7 ) ) 
+        if ( hangingMask & NODE_7 ) 
           loc[7*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[1]+i] + glo[m_uiDof*idx[3]+i] + glo[m_uiDof*idx[5]+i] + glo[m_uiDof*idx[7]+i]);
         else
           loc[7*m_uiDof + i] = glo[m_uiDof*idx[7]+i];
@@ -616,36 +629,36 @@ void interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::D
       // 2,5 are not hanging
 		  for (size_t i = 0; i < m_uiDof; i++) {
         
-        if ( da->isHanging( 0 ) ) 
+        if ( hangingMask & NODE_0 ) 
           loc[i] = 0.5 * ( glo[m_uiDof*idx[0]+i] + glo[m_uiDof*idx[2]+i] );
         else
           loc[i] = glo[m_uiDof*idx[0]+i] ;
         
-        if ( da->isHanging( 1 ) ) 
+        if ( hangingMask & NODE_1 ) 
           loc[1*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[0]+i] + glo[m_uiDof*idx[1]+i] + glo[m_uiDof*idx[2]+i] + glo[m_uiDof*idx[3]+i]);
         else
           loc[1*m_uiDof + i] = glo[m_uiDof*idx[1]+i];
 				
         loc[2*m_uiDof + i] = glo[m_uiDof*idx[2]+i];
         
-        if ( da->isHanging( 3 ) ) 
+        if ( hangingMask & NODE_3 ) 
           loc[3*m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[2]+i] + glo[m_uiDof*idx[3]+i] );
         else
           loc[3*m_uiDof + i] = glo[m_uiDof*idx[3]+i];
         
-        if ( da->isHanging( 4 ) ) 
+        if ( hangingMask & NODE_4 ) 
           loc[4*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[0]+i] + glo[m_uiDof*idx[2]+i] + glo[m_uiDof*idx[4]+i] + glo[m_uiDof*idx[6]+i]);
         else
           loc[4*m_uiDof + i] = glo[m_uiDof*idx[4]+i];
   
         loc[5*m_uiDof + i] = glo[m_uiDof*idx[5]+i];
         
-        if ( da->isHanging( 6 ) ) 
+        if ( hangingMask & NODE_6 ) 
           loc[6*m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[2]+i] + glo[m_uiDof*idx[6]+i] );
         else
           loc[6*m_uiDof + i] = glo[m_uiDof*idx[6]+i];
         
-        if ( da->isHanging( 7 ) ) 
+        if ( hangingMask & NODE_7 ) 
           loc[7*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[2]+i] + glo[m_uiDof*idx[3]+i] + glo[m_uiDof*idx[6]+i] + glo[m_uiDof*idx[7]+i]);
         else
           loc[7*m_uiDof + i] = glo[m_uiDof*idx[7]+i];
@@ -654,17 +667,17 @@ void interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::D
     case 3:
       // 3,4 are not hanging
 		  for (size_t i = 0; i < m_uiDof; i++) {
-        if ( da->isHanging( 3 ) ) 
+        if ( hangingMask & NODE_0 ) 
           loc[i] = 0.25 * ( glo[m_uiDof*idx[0]+i] + glo[m_uiDof*idx[1]+i] + glo[m_uiDof*idx[2]+i] + glo[m_uiDof*idx[3]+i]);
         else
           loc[i] = glo[m_uiDof*idx[0]+i];
         
-        if ( da->isHanging( 1 ) ) 
+        if ( hangingMask & NODE_1 ) 
           loc[m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[1]+i] + glo[m_uiDof*idx[3]+i] );
         else
           loc[m_uiDof + i] = glo[m_uiDof*idx[1]+i];
 				
-        if ( da->isHanging( 2 ) ) 
+        if ( hangingMask & NODE_2 ) 
           loc[2*m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[2]+i] + glo[m_uiDof*idx[3]+i] );
         else
           loc[2*m_uiDof + i] = glo[m_uiDof*idx[2]+i];
@@ -673,17 +686,17 @@ void interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::D
         
         loc[4*m_uiDof + i] = glo[m_uiDof*idx[4]+i];
         
-        if ( da->isHanging( 5 ) ) 
+        if ( hangingMask & NODE_5 ) 
           loc[5*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[1]+i] + glo[m_uiDof*idx[3]+i] + glo[m_uiDof*idx[5]+i] + glo[m_uiDof*idx[7]+i]);
         else
           loc[5*m_uiDof + i] = glo[m_uiDof*idx[5]+i];
         
-        if ( da->isHanging( 6 ) ) 
+        if ( hangingMask & NODE_6 ) 
           loc[6*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[2]+i] + glo[m_uiDof*idx[3]+i] + glo[m_uiDof*idx[6]+i] + glo[m_uiDof*idx[7]+i]);
         else
           loc[6*m_uiDof + i] = glo[m_uiDof*idx[6]+i];
         
-        if ( da->isHanging( 7 ) ) 
+        if ( hangingMask & NODE_7 ) 
           loc[7*m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[3]+i] + glo[m_uiDof*idx[7]+i] );
         else
           loc[7*m_uiDof + i] = glo[m_uiDof*idx[7]+i];
@@ -692,17 +705,17 @@ void interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::D
     case 4:
 		  // 4,3 are not hanging
       for (size_t i = 0; i < m_uiDof; i++) {
-        if ( da->isHanging( 0 ) ) 
+        if ( hangingMask & NODE_0 ) 
           loc[i] = 0.5 * ( glo[m_uiDof*idx[0]+i] + glo[m_uiDof*idx[4]+i] );
         else
           loc[i] = glo[m_uiDof*idx[0]+i];
 				
-        if ( da->isHanging( 1 ) ) 
+        if ( hangingMask & NODE_1 ) 
           loc[1*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[0]+i] + glo[m_uiDof*idx[1]+i] + glo[m_uiDof*idx[4]+i] + glo[m_uiDof*idx[5]+i]);
         else
           loc[1*m_uiDof + i] = glo[m_uiDof*idx[1]+i];
         
-        if ( da->isHanging( 2 ) ) 
+        if ( hangingMask & NODE_2 ) 
           loc[2*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[0]+i] + glo[m_uiDof*idx[2]+i] + glo[m_uiDof*idx[4]+i] + glo[m_uiDof*idx[6]+i]);
         else
           loc[2*m_uiDof + i] = glo[m_uiDof*idx[2]+i];
@@ -711,17 +724,17 @@ void interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::D
           
         loc[4*m_uiDof + i] = glo[m_uiDof*idx[4]+i];
         
-        if ( da->isHanging( 5 ) ) 
+        if ( hangingMask & NODE_5 ) 
           loc[5*m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[4]+i] + glo[m_uiDof*idx[5]+i] );
         else
           loc[5*m_uiDof + i] = glo[m_uiDof*idx[5]+i];
         
-        if ( da->isHanging( 6 ) ) 
+        if ( hangingMask & NODE_6 ) 
           loc[6*m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[4]+i] + glo[m_uiDof*idx[6]+i] );
         else
           loc[6*m_uiDof + i] = glo[m_uiDof*idx[6]+i];
         
-        if ( da->isHanging( 7 ) ) 
+        if ( hangingMask & NODE_7 ) 
           loc[7*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[4]+i] + glo[m_uiDof*idx[5]+i] + glo[m_uiDof*idx[6]+i] + glo[m_uiDof*idx[7]+i]);
         else
           loc[7*m_uiDof + i] = glo[m_uiDof*idx[7]+i];
@@ -730,36 +743,36 @@ void interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::D
     case 5:
       // 5,2 are not hanging
       for (size_t i = 0; i < m_uiDof; i++) {
-        if ( da->isHanging( 0 ) ) 
+        if ( hangingMask & NODE_0 ) 
           loc[i] = 0.25 * ( glo[m_uiDof*idx[0]+i] + glo[m_uiDof*idx[1]+i] + glo[m_uiDof*idx[4]+i] + glo[m_uiDof*idx[5]+i]);
         else
           loc[i] = glo[m_uiDof*idx[0]+i];
         
-        if ( da->isHanging( 1 ) ) 
+        if ( hangingMask & NODE_1 ) 
           loc[m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[1]+i] + glo[m_uiDof*idx[5]+i] );
         else
           loc[m_uiDof + i] = glo[m_uiDof*idx[1]+i];
         
         loc[2*m_uiDof + i] = glo[m_uiDof*idx[2]+i];
         
-        if ( da->isHanging( 3 ) ) 
+        if ( hangingMask & NODE_3 ) 
           loc[3*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[1]+i] + glo[m_uiDof*idx[3]+i] + glo[m_uiDof*idx[5]+i] + glo[m_uiDof*idx[7]+i]);
         else
           loc[3*m_uiDof + i] = glo[m_uiDof*idx[3]+i];
           
-        if ( da->isHanging( 4 ) ) 
+        if ( hangingMask & NODE_4 ) 
           loc[4*m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[4]+i] + glo[m_uiDof*idx[5]+i] );
         else
           loc[4*m_uiDof + i] = glo[m_uiDof*idx[4]+i];
           
         loc[5*m_uiDof + i] = glo[m_uiDof*idx[5]+i];
         
-        if ( da->isHanging( 6 ) ) 
+        if ( hangingMask & NODE_6 ) 
           loc[6*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[4]+i] + glo[m_uiDof*idx[5]+i] + glo[m_uiDof*idx[6]+i] + glo[m_uiDof*idx[7]+i]);
         else
           loc[6*m_uiDof + i] = glo[m_uiDof*idx[6]+i];
         
-        if ( da->isHanging( 7 ) ) 
+        if ( hangingMask & NODE_7 ) 
           loc[7*m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[5]+i] + glo[m_uiDof*idx[7]+i] );
         else
           loc[7*m_uiDof + i] = glo[m_uiDof*idx[7]+i];
@@ -768,36 +781,36 @@ void interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::D
     case 6:
       // 6,1 are not hanging
       for (size_t i = 0; i < m_uiDof; i++) {
-        if ( da->isHanging( 0 ) ) 
+        if ( hangingMask & NODE_0 ) 
           loc[i] = 0.25 * ( glo[m_uiDof*idx[0]+i] + glo[m_uiDof*idx[1]+i] + glo[m_uiDof*idx[4]+i] + glo[m_uiDof*idx[5]+i]);
         else
           loc[i] = glo[m_uiDof*idx[0]+i];
       
         loc[m_uiDof + i] = glo[m_uiDof*idx[1]+i];
 
-        if ( da->isHanging( 2 ) ) 
+        if ( hangingMask & NODE_2 ) 
           loc[2*m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[2]+i] + glo[m_uiDof*idx[6]+i] );
         else
           loc[2*m_uiDof + i] = glo[m_uiDof*idx[2]+i];
 
-        if ( da->isHanging( 3 ) ) 
+        if ( hangingMask & NODE_3 ) 
           loc[3*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[2]+i] + glo[m_uiDof*idx[3]+i] + glo[m_uiDof*idx[6]+i] + glo[m_uiDof*idx[7]+i]);
         else
           loc[3*m_uiDof + i] = glo[m_uiDof*idx[3]+i];
 
-        if ( da->isHanging( 4 ) ) 
+        if ( hangingMask & NODE_4 ) 
           loc[4*m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[4]+i] + glo[m_uiDof*idx[6]+i] );
         else
           loc[4*m_uiDof + i] = glo[m_uiDof*idx[4]+i];
 
-        if ( da->isHanging( 5 ) ) 
+        if ( hangingMask & NODE_5 ) 
           loc[5*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[4]+i] + glo[m_uiDof*idx[5]+i] + glo[m_uiDof*idx[6]+i] + glo[m_uiDof*idx[7]+i]);
         else
           loc[5*m_uiDof + i] = glo[m_uiDof*idx[5]+i];
           
         loc[6*m_uiDof + i] = glo[m_uiDof*idx[6]+i];
         
-        if ( da->isHanging( 7 ) ) 
+        if ( hangingMask & NODE_7 ) 
           loc[7*m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[6]+i] + glo[m_uiDof*idx[7]+i] );
         else
           loc[7*m_uiDof + i] = glo[m_uiDof*idx[7]+i];
@@ -809,32 +822,32 @@ void interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::D
       for (size_t i = 0; i < m_uiDof; i++) {
         loc[i] = glo[m_uiDof*idx[0]+i];
         
-        if ( da->isHanging( 1 ) ) 
+        if ( hangingMask & NODE_1 ) 
           loc[1*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[1]+i] + glo[m_uiDof*idx[3]+i] + glo[m_uiDof*idx[5]+i] + glo[m_uiDof*idx[7]+i]);
         else
           loc[1*m_uiDof + i] = glo[m_uiDof*idx[1]+i];
         
-        if ( da->isHanging( 2 ) ) 
+        if ( hangingMask & NODE_2 ) 
           loc[2*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[2]+i] + glo[m_uiDof*idx[3]+i] + glo[m_uiDof*idx[6]+i] + glo[m_uiDof*idx[7]+i]);
         else
           loc[2*m_uiDof + i] = glo[m_uiDof*idx[2]+i];
         
-        if ( da->isHanging( 3 ) ) 
+        if ( hangingMask & NODE_3 ) 
           loc[3*m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[3]+i] + glo[m_uiDof*idx[7]+i] );
         else
           loc[3*m_uiDof + i] = glo[m_uiDof*idx[3]+i];
         
-        if ( da->isHanging( 4 ) ) 
+        if ( hangingMask & NODE_4 ) 
           loc[4*m_uiDof + i] = 0.25 * ( glo[m_uiDof*idx[4]+i] + glo[m_uiDof*idx[5]+i] + glo[m_uiDof*idx[6]+i] + glo[m_uiDof*idx[7]+i]);
         else
           loc[4*m_uiDof + i] = glo[m_uiDof*idx[4]+i];
 
-        if ( da->isHanging( 5 ) ) 
+        if ( hangingMask & NODE_5 ) 
           loc[5*m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[5]+i] + glo[m_uiDof*idx[7]+i] );
         else
           loc[5*m_uiDof + i] = glo[m_uiDof*idx[5]+i];
 
-        if ( da->isHanging( 6 ) ) 
+        if ( hangingMask & NODE_6 ) 
           loc[6*m_uiDof + i] = 0.5 * ( glo[m_uiDof*idx[6]+i] + glo[m_uiDof*idx[7]+i] );
         else
           loc[6*m_uiDof + i] = glo[m_uiDof*idx[6]+i];
