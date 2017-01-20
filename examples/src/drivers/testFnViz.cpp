@@ -866,7 +866,7 @@ void interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::D
 
 } // glo_to_loc
 
-void interp_local_to_global(PetscScalar* __restrict loc, PetscScalar* glo, ot::DA* m_octDA) {
+void interp_local_to_global(PetscScalar* __restrict loc, PetscScalar* glo, ot::DA* da) {
   unsigned int idx[8];
 	unsigned char hangingMask = da->getHangingNodeIndex(da->curr());
 	unsigned int chNum = da->getChildNumber();
@@ -925,7 +925,318 @@ void interp_local_to_global(PetscScalar* __restrict loc, PetscScalar* glo, ot::D
       }
       break;
     case 1:
+		  for (size_t i = 0; i < m_uiDof; i++) {
+        if ( hangingMask & NODE_0 ) {
+          glo[m_uiDof*idx[0]+i] += 0.5*loc[i];
+          glo[m_uiDof*idx[1]+i] += 0.5*loc[i];
+        } else {
+          glo[m_uiDof*idx[0]+i] += loc[i];
+        }
 
+        glo[m_uiDof*idx[1]+i] += loc[m_uiDof + i];
+
+        if ( hangingMask & NODE_2 ) {
+          glo[m_uiDof*idx[0]+i] += 0.25*loc[2*m_uiDof + i];
+          glo[m_uiDof*idx[1]+i] += 0.25*loc[2*m_uiDof + i];
+          glo[m_uiDof*idx[2]+i] += 0.25*loc[2*m_uiDof + i];
+          glo[m_uiDof*idx[3]+i] += 0.25*loc[2*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[2]+i] += loc[2*m_uiDof + i];
+        }
+
+        if ( hangingMask & NODE_3 ) {
+          glo[m_uiDof*idx[1]+i] += 0.5*loc[3*m_uiDof + i];
+          glo[m_uiDof*idx[3]+i] += 0.5*loc[3*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[3]+i] += loc[3*m_uiDof + i];
+        }
+
+        if ( hangingMask & NODE_4 ) {
+          glo[m_uiDof*idx[0]+i] += 0.25*loc[4*m_uiDof + i];
+          glo[m_uiDof*idx[1]+i] += 0.25*loc[4*m_uiDof + i];
+          glo[m_uiDof*idx[4]+i] += 0.25*loc[4*m_uiDof + i];
+          glo[m_uiDof*idx[5]+i] += 0.25*loc[4*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[4]+i] += loc[4*m_uiDof + i];
+        }
+
+        if ( hangingMask & NODE_5 ) {
+          glo[m_uiDof*idx[1]+i] += 0.5*loc[5*m_uiDof + i];
+          glo[m_uiDof*idx[5]+i] += 0.5*loc[5*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[5]+i] += loc[5*m_uiDof + i];
+        }
+          
+        glo[m_uiDof*idx[6]+i] += loc[6*m_uiDof + i];
+        
+        if ( hangingMask & NODE_7 ) {
+          glo[m_uiDof*idx[1]+i] += 0.25*loc[7*m_uiDof + i];
+          glo[m_uiDof*idx[3]+i] += 0.25*loc[7*m_uiDof + i];
+          glo[m_uiDof*idx[5]+i] += 0.25*loc[7*m_uiDof + i];
+          glo[m_uiDof*idx[7]+i] += 0.25*loc[7*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[7]+i] += loc[7*m_uiDof + i];
+        }
+      }
+      break;
+    case 2:
+      // 2,5 are not hanging
+		  for (size_t i = 0; i < m_uiDof; i++) {
+        if ( hangingMask & NODE_0 ) {
+          glo[m_uiDof*idx[0]+i] += 0.5*loc[i];
+          glo[m_uiDof*idx[2]+i] += 0.5*loc[i];
+        } else {
+          glo[m_uiDof*idx[0]+i] += loc[i];
+        }
+
+        if ( hangingMask & NODE_1 ) {
+          glo[m_uiDof*idx[0]+i] += 0.25*loc[m_uiDof + i];
+          glo[m_uiDof*idx[1]+i] += 0.25*loc[m_uiDof + i];
+          glo[m_uiDof*idx[2]+i] += 0.25*loc[m_uiDof + i];
+          glo[m_uiDof*idx[3]+i] += 0.25*loc[m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[1]+i] += loc[m_uiDof + i];
+        }
+
+        glo[m_uiDof*idx[2]+i] += loc[2*m_uiDof + i];
+
+        if ( hangingMask & NODE_3 ) {
+          glo[m_uiDof*idx[2]+i] += 0.5*loc[3*m_uiDof + i];
+          glo[m_uiDof*idx[3]+i] += 0.5*loc[3*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[3]+i] += loc[3*m_uiDof + i];
+        }
+
+        if ( hangingMask & NODE_4 ) {
+          glo[m_uiDof*idx[0]+i] += 0.25*loc[4*m_uiDof + i];
+          glo[m_uiDof*idx[2]+i] += 0.25*loc[4*m_uiDof + i];
+          glo[m_uiDof*idx[4]+i] += 0.25*loc[4*m_uiDof + i];
+          glo[m_uiDof*idx[6]+i] += 0.25*loc[4*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[4]+i] += loc[4*m_uiDof + i];
+        }
+
+        glo[m_uiDof*idx[5]+i] += loc[5*m_uiDof + i];
+          
+        if ( hangingMask & NODE_6 ) {
+          glo[m_uiDof*idx[2]+i] += 0.5*loc[6*m_uiDof + i];
+          glo[m_uiDof*idx[6]+i] += 0.5*loc[6*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[6]+i] += loc[6*m_uiDof + i];
+        }
+        
+        if ( hangingMask & NODE_7 ) {
+          glo[m_uiDof*idx[2]+i] += 0.25*loc[7*m_uiDof + i];
+          glo[m_uiDof*idx[3]+i] += 0.25*loc[7*m_uiDof + i];
+          glo[m_uiDof*idx[6]+i] += 0.25*loc[7*m_uiDof + i];
+          glo[m_uiDof*idx[7]+i] += 0.25*loc[7*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[7]+i] += loc[7*m_uiDof + i];
+        }
+      }
+      break;
+    case 3:
+      // 3,4 are not hanging
+		  for (size_t i = 0; i < m_uiDof; i++) {
+        if ( hangingMask & NODE_0 ) {
+          glo[m_uiDof*idx[0]+i] += 0.25*loc[i];
+          glo[m_uiDof*idx[1]+i] += 0.25*loc[i];
+          glo[m_uiDof*idx[2]+i] += 0.25*loc[i];
+          glo[m_uiDof*idx[3]+i] += 0.25*loc[i];
+        } else {
+          glo[m_uiDof*idx[0]+i] += loc[i];
+        }
+
+        if ( hangingMask & NODE_1 ) {
+          glo[m_uiDof*idx[1]+i] += 0.5*loc[m_uiDof + i];
+          glo[m_uiDof*idx[3]+i] += 0.5*loc[m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[1]+i] += loc[m_uiDof + i];
+        }
+
+        if ( hangingMask & NODE_2 ) {
+          glo[m_uiDof*idx[2]+i] += 0.5*loc[2*m_uiDof + i];
+          glo[m_uiDof*idx[3]+i] += 0.5*loc[2*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[2]+i] += loc[2*m_uiDof + i];
+        }
+
+        glo[m_uiDof*idx[3]+i] += loc[3*m_uiDof + i];
+        glo[m_uiDof*idx[4]+i] += loc[4*m_uiDof + i];
+
+        if ( hangingMask & NODE_5 ) {
+          glo[m_uiDof*idx[1]+i] += 0.25*loc[5*m_uiDof + i];
+          glo[m_uiDof*idx[3]+i] += 0.25*loc[5*m_uiDof + i];
+          glo[m_uiDof*idx[5]+i] += 0.25*loc[5*m_uiDof + i];
+          glo[m_uiDof*idx[7]+i] += 0.25*loc[5*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[5]+i] += loc[5*m_uiDof + i];
+        }
+        if ( hangingMask & NODE_6 ) {
+          glo[m_uiDof*idx[2]+i] += 0.25*loc[6*m_uiDof + i];
+          glo[m_uiDof*idx[3]+i] += 0.25*loc[6*m_uiDof + i];
+          glo[m_uiDof*idx[6]+i] += 0.25*loc[6*m_uiDof + i];
+          glo[m_uiDof*idx[7]+i] += 0.25*loc[6*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[6]+i] += loc[6*m_uiDof + i];
+        }
+        if ( hangingMask & NODE_7 ) {
+          glo[m_uiDof*idx[3]+i] += 0.5*loc[7*m_uiDof + i];
+          glo[m_uiDof*idx[7]+i] += 0.5*loc[7*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[7]+i] += loc[7*m_uiDof + i];
+        }
+      }
+      break;
+    case 4:
+		  // 4,3 are not hanging
+      for (size_t i = 0; i < m_uiDof; i++) {
+        if ( hangingMask & NODE_0 ) {
+          glo[m_uiDof*idx[0]+i] += 0.5*loc[i];
+          glo[m_uiDof*idx[4]+i] += 0.5*loc[i];
+        } else {
+          glo[m_uiDof*idx[0]+i] += loc[i];
+        }
+        if ( hangingMask & NODE_1 ) {
+          glo[m_uiDof*idx[0]+i] += 0.25*loc[m_uiDof + i];
+          glo[m_uiDof*idx[1]+i] += 0.25*loc[m_uiDof + i];
+          glo[m_uiDof*idx[4]+i] += 0.25*loc[m_uiDof + i];
+          glo[m_uiDof*idx[5]+i] += 0.25*loc[m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[1]+i] += loc[m_uiDof + i];
+        }
+
+        if ( hangingMask & NODE_2 ) {
+          glo[m_uiDof*idx[0]+i] += 0.25*loc[2*m_uiDof + i];
+          glo[m_uiDof*idx[2]+i] += 0.25*loc[2*m_uiDof + i];
+          glo[m_uiDof*idx[4]+i] += 0.25*loc[2*m_uiDof + i];
+          glo[m_uiDof*idx[6]+i] += 0.25*loc[2*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[2]+i] += loc[2*m_uiDof + i];
+        }
+
+        glo[m_uiDof*idx[3]+i] += loc[3*m_uiDof + i];
+        glo[m_uiDof*idx[4]+i] += loc[4*m_uiDof + i];
+        
+        if ( hangingMask & NODE_5 ) {
+          glo[m_uiDof*idx[4]+i] += 0.5*loc[5*m_uiDof + i];
+          glo[m_uiDof*idx[5]+i] += 0.5*loc[5*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[5]+i] += loc[5*m_uiDof + i];
+        }
+        if ( hangingMask & NODE_6 ) {
+          glo[m_uiDof*idx[4]+i] += 0.5*loc[6*m_uiDof + i];
+          glo[m_uiDof*idx[6]+i] += 0.5*loc[6*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[6]+i] += loc[6*m_uiDof + i];
+        }
+        if ( hangingMask & NODE_7 ) {
+          glo[m_uiDof*idx[4]+i] += 0.25*loc[7*m_uiDof + i];
+          glo[m_uiDof*idx[5]+i] += 0.25*loc[7*m_uiDof + i];
+          glo[m_uiDof*idx[6]+i] += 0.25*loc[7*m_uiDof + i];
+          glo[m_uiDof*idx[7]+i] += 0.25*loc[7*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[7]+i] += loc[7*m_uiDof + i];
+        }
+      }
+      break;
+    case 5:
+      // 5,2 are not hanging
+      for (size_t i = 0; i < m_uiDof; i++) {
+        if ( hangingMask & NODE_0 ) {
+          glo[m_uiDof*idx[0]+i] += 0.25*loc[i];
+          glo[m_uiDof*idx[1]+i] += 0.25*loc[i];
+          glo[m_uiDof*idx[4]+i] += 0.25*loc[i];
+          glo[m_uiDof*idx[5]+i] += 0.25*loc[i];
+        } else {
+          glo[m_uiDof*idx[0]+i] += loc[i];
+        }
+        if ( hangingMask & NODE_1 ) {
+          glo[m_uiDof*idx[1]+i] += 0.5*loc[m_uiDof + i];
+          glo[m_uiDof*idx[5]+i] += 0.5*loc[m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[1]+i] += loc[m_uiDof + i];
+        }
+        glo[m_uiDof*idx[2]+i] += loc[2*m_uiDof + i];
+        if ( hangingMask & NODE_3 ) {
+          glo[m_uiDof*idx[1]+i] += 0.25*loc[3*m_uiDof + i];
+          glo[m_uiDof*idx[3]+i] += 0.25*loc[3*m_uiDof + i];
+          glo[m_uiDof*idx[5]+i] += 0.25*loc[3*m_uiDof + i];
+          glo[m_uiDof*idx[7]+i] += 0.25*loc[3*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[3]+i] += loc[3*m_uiDof + i];
+        }
+        if ( hangingMask & NODE_4 ) {
+          glo[m_uiDof*idx[4]+i] += 0.5*loc[4*m_uiDof + i];
+          glo[m_uiDof*idx[5]+i] += 0.5*loc[4*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[4]+i] += loc[4*m_uiDof + i];
+        }
+        glo[m_uiDof*idx[5]+i] += loc[5*m_uiDof + i];
+        if ( hangingMask & NODE_6 ) {
+          glo[m_uiDof*idx[4]+i] += 0.25*loc[6*m_uiDof + i];
+          glo[m_uiDof*idx[5]+i] += 0.25*loc[6*m_uiDof + i];
+          glo[m_uiDof*idx[6]+i] += 0.25*loc[6*m_uiDof + i];
+          glo[m_uiDof*idx[7]+i] += 0.25*loc[6*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[6]+i] += loc[6*m_uiDof + i];
+        }
+        if ( hangingMask & NODE_7 ) {
+          glo[m_uiDof*idx[5]+i] += 0.5*loc[7*m_uiDof + i];
+          glo[m_uiDof*idx[7]+i] += 0.5*loc[7*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[7]+i] += loc[7*m_uiDof + i];
+        }
+      }
+      break;
+    case 6:
+      // 6,1 are not hanging
+      for (size_t i = 0; i < m_uiDof; i++) {
+        if ( hangingMask & NODE_0 ) {
+          glo[m_uiDof*idx[0]+i] += 0.25*loc[i];
+          glo[m_uiDof*idx[1]+i] += 0.25*loc[i];
+          glo[m_uiDof*idx[4]+i] += 0.25*loc[i];
+          glo[m_uiDof*idx[5]+i] += 0.25*loc[i];
+        } else {
+          glo[m_uiDof*idx[0]+i] += loc[i];
+        }
+        glo[m_uiDof*idx[1]+i] += loc[m_uiDof + i];
+        if ( hangingMask & NODE_2 ) {
+          glo[m_uiDof*idx[2]+i] += 0.5*loc[2*m_uiDof + i];
+          glo[m_uiDof*idx[6]+i] += 0.5*loc[2*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[2]+i] += loc[2*m_uiDof + i];
+        }
+        if ( hangingMask & NODE_3 ) {
+          glo[m_uiDof*idx[2]+i] += 0.25*loc[3*m_uiDof + i];
+          glo[m_uiDof*idx[3]+i] += 0.25*loc[3*m_uiDof + i];
+          glo[m_uiDof*idx[6]+i] += 0.25*loc[3*m_uiDof + i];
+          glo[m_uiDof*idx[7]+i] += 0.25*loc[3*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[3]+i] += loc[3*m_uiDof + i];
+        }
+        if ( hangingMask & NODE_4 ) {
+          glo[m_uiDof*idx[4]+i] += 0.5*loc[4*m_uiDof + i];
+          glo[m_uiDof*idx[6]+i] += 0.5*loc[4*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[4]+i] += loc[4*m_uiDof + i];
+        }
+        if ( hangingMask & NODE_5 ) {
+          glo[m_uiDof*idx[4]+i] += 0.25*loc[5*m_uiDof + i];
+          glo[m_uiDof*idx[5]+i] += 0.25*loc[5*m_uiDof + i];
+          glo[m_uiDof*idx[6]+i] += 0.25*loc[5*m_uiDof + i];
+          glo[m_uiDof*idx[7]+i] += 0.25*loc[5*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[5]+i] += loc[5*m_uiDof + i];
+        }
+        glo[m_uiDof*idx[6]+i] += loc[6*m_uiDof + i];
+        if ( hangingMask & NODE_7 ) {
+          glo[m_uiDof*idx[6]+i] += 0.5*loc[7*m_uiDof + i];
+          glo[m_uiDof*idx[7]+i] += 0.5*loc[7*m_uiDof + i];
+        } else {
+          glo[m_uiDof*idx[7]+i] += loc[7*m_uiDof + i];
+        }
+      }
       break;
     case 7:
       // 7,0 are not hanging
