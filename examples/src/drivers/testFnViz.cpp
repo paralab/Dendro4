@@ -1372,8 +1372,9 @@ void getBoundaryNodeIndices(ot::DA* da, std::vector<unsigned int> &indices, std:
   // extract the indices and coords from map
   for(auto const& i: bdy) {
     indices.push_back(i.first);
-    coords.push_back(i.second.x());
-    coords.push_back(i.second.y());
-    coords.push_back(i.second.z());
+    pt = i.second;
+    coords.push_back(pt.x());
+    coords.push_back(pt.y());
+    coords.push_back(pt.z());
   }
 } // getBdy
