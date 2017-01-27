@@ -839,39 +839,39 @@ namespace ot {
             KSPGetOptionsPrefix(damg[0]->ksp, &clearOptionPrefix);
 
             sprintf(optionName, "-%sksp_type",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             ierr = KSPSetType(damg[0]->ksp, KSPRICHARDSON); CHKERRQ(ierr);
 
             sprintf(optionName, "-%sksp_knoll",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             ierr = KSPSetInitialGuessKnoll(damg[0]->ksp, PETSC_FALSE);
             CHKERRQ(ierr);
 
             sprintf(optionName, "-%sksp_richardson_scale",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             ierr = KSPRichardsonSetScale(damg[0]->ksp, 1.0);
             CHKERRQ(ierr);
 
             sprintf(optionName, "-%sksp_right_pc",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             sprintf(optionName, "-%sksp_symmetric_pc",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             ierr = KSPSetPCSide(damg[0]->ksp, PC_LEFT);
             CHKERRQ(ierr);
 
             sprintf(optionName, "-%sksp_norm_type",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             ierr = KSPSetNormType(damg[0]->ksp, KSP_NORM_NONE);
             CHKERRQ(ierr);
 
             sprintf(optionName, "-%sksp_rtol",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             sprintf(optionName, "-%sksp_atol",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             sprintf(optionName, "-%sksp_divtol",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             sprintf(optionName, "-%sksp_max_it",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             ierr = KSPSetTolerances(damg[0]->ksp, PETSC_DEFAULT, PETSC_DEFAULT,
                 PETSC_DEFAULT, 1); 
             CHKERRQ(ierr);
@@ -887,7 +887,7 @@ namespace ot {
 
             PCGetOptionsPrefix(pc, &clearOptionPrefix);
             sprintf(optionName, "-%spc_type",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             ierr  = PCSetType(pc, PCSHELL); CHKERRQ(ierr);
             ierr = PCShellSetName(pc, "PC_KSP_Shell"); CHKERRQ(ierr);
 
@@ -912,7 +912,7 @@ namespace ot {
 
           if(ismg) {
             PetscBool useRTLMG;
-            ierr = PetscOptionsHasName(PETSC_NULL,"-damg_useRTLMG",&useRTLMG);
+            ierr = PetscOptionsHasName(NULL, PETSC_NULL,"-damg_useRTLMG",&useRTLMG);
             CHKERRQ(ierr);
             KSP lksp;
             if(useRTLMG) {
@@ -928,39 +928,39 @@ namespace ot {
             KSPGetOptionsPrefix(lksp, &clearOptionPrefix);
 
             sprintf(optionName, "-%sksp_type",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             ierr = KSPSetType(lksp, KSPRICHARDSON); CHKERRQ(ierr);              
 
             sprintf(optionName, "-%sksp_knoll",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             ierr = KSPSetInitialGuessKnoll(lksp, PETSC_FALSE);
             CHKERRQ(ierr);
 
             sprintf(optionName, "-%sksp_richardson_scale",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             ierr = KSPRichardsonSetScale(lksp, 1.0);
             CHKERRQ(ierr);
 
             sprintf(optionName, "-%sksp_right_pc",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             sprintf(optionName, "-%sksp_symmetric_pc",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             ierr = KSPSetPCSide(lksp, PC_LEFT);
             CHKERRQ(ierr);
 
             sprintf(optionName, "-%sksp_norm_type",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             ierr = KSPSetNormType(lksp, KSP_NORM_NONE);
             CHKERRQ(ierr);
 
             sprintf(optionName, "-%sksp_rtol",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             sprintf(optionName, "-%sksp_atol",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             sprintf(optionName, "-%sksp_divtol",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             sprintf(optionName, "-%sksp_max_it",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             ierr = KSPSetTolerances(lksp, PETSC_DEFAULT, PETSC_DEFAULT,
                 PETSC_DEFAULT, 1); 
             CHKERRQ(ierr);
@@ -975,7 +975,7 @@ namespace ot {
 
             PCGetOptionsPrefix(pc, &clearOptionPrefix);
             sprintf(optionName, "-%spc_type",clearOptionPrefix);
-            ierr = PetscOptionsClearValue(optionName); CHKERRQ(ierr);
+            ierr = PetscOptionsClearValue(NULL, optionName); CHKERRQ(ierr);
             ierr  = PCSetType(pc, PCSHELL); CHKERRQ(ierr);
             ierr = PCShellSetName(pc, "PC_KSP_Shell"); CHKERRQ(ierr);
 
@@ -1126,8 +1126,8 @@ namespace ot {
     PetscBool     gridseq,vecmonitor;
 
     PetscFunctionBegin;
-    ierr = PetscOptionsHasName(0,"-damg_grid_sequence",&gridseq);CHKERRQ(ierr);
-    ierr = PetscOptionsHasName(0,"-damg_vecmonitor",&vecmonitor);CHKERRQ(ierr);
+    ierr = PetscOptionsHasName(NULL, 0,"-damg_grid_sequence",&gridseq);CHKERRQ(ierr);
+    ierr = PetscOptionsHasName(NULL, 0,"-damg_vecmonitor",&vecmonitor);CHKERRQ(ierr);
     if (gridseq) {    
       if(damg[0]->initialguess) {
         (*(damg[0]->initialguess))(damg[0],damg[0]->x);
@@ -1182,15 +1182,18 @@ namespace ot {
     PetscFunctionBegin;
     if (!damg) SETERRQ(damg[0]->comm,PETSC_ERR_ARG_NULL,"Passing null as DAMG");
 
-    ierr = PetscOptionsHasName(PETSC_NULL,"-damg_ksp_monitor",&monitor);CHKERRQ(ierr);
-    ierr = PetscOptionsHasName(PETSC_NULL,"-damg_useRTLMG",&useRTLMG);CHKERRQ(ierr);
+    ierr = PetscOptionsHasName(NULL, PETSC_NULL,"-damg_ksp_monitor",&monitor);CHKERRQ(ierr);
+    ierr = PetscOptionsHasName(NULL, PETSC_NULL,"-damg_useRTLMG",&useRTLMG);CHKERRQ(ierr);
 
     if (monitor) {
       ierr = PetscObjectGetComm((PetscObject)ksp,&comm);CHKERRQ(ierr);
       ierr = PetscViewerASCIIOpen(comm,"stdout",&ascii);CHKERRQ(ierr);
       ierr = PetscViewerASCIISetTab(ascii,1+(damg[0]->nlevels)-nlevels);CHKERRQ(ierr);
-      ierr = KSPMonitorSet(ksp, KSPMonitorDefault, ascii,
-          (PetscErrorCode(*)(void**))PetscViewerDestroy);CHKERRQ(ierr);
+      // ierr = KSPMonitorSet(ksp, KSPMonitorDefault, ascii,
+      //    (PetscErrorCode(*)(void**))PetscViewerDestroy);CHKERRQ(ierr);
+      ierr = KSPMonitorSet(ksp,(PetscErrorCode (*)(KSP,PetscInt,PetscReal,void*))KSPMonitorDefault,ascii,
+                           (PetscErrorCode (*)(void**))PetscViewerAndFormatDestroy);
+
     }
 
     /* use fgmres on outer iteration by default */
@@ -1273,8 +1276,10 @@ namespace ot {
             ierr = PetscObjectGetComm((PetscObject)lksp,&comm);CHKERRQ(ierr);
             ierr = PetscViewerASCIIOpen(comm,"stdout",&ascii);CHKERRQ(ierr);
             ierr = PetscViewerASCIISetTab(ascii,1+damg[0]->nlevels-i);CHKERRQ(ierr);
-            ierr = KSPMonitorSet(lksp,KSPMonitorDefault,ascii,
-                (PetscErrorCode(*)(void**))PetscViewerDestroy);CHKERRQ(ierr);
+            // ierr = KSPMonitorSet(lksp,KSPMonitorDefault,ascii,
+            //    (PetscErrorCode(*)(void**))PetscViewerDestroy);CHKERRQ(ierr);
+            ierr = KSPMonitorSet(lksp,(PetscErrorCode (*)(KSP,PetscInt,PetscReal,void*))KSPMonitorDefault,ascii,
+                                 (PetscErrorCode (*)(void**))PetscViewerAndFormatDestroy);
           }
           /* If using a matrix free multiply and did not provide an explicit matrix to build
              the preconditioner then must use no preconditioner 

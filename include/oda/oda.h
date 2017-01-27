@@ -1047,6 +1047,22 @@ namespace ot {
             unsigned int dof, InsertMode mode);
 
         /**
+         * @author Hari Sundar
+         * @brief zeros out specific rows of a matrix. indices are specified in local numbering and mapped to the global
+         *        indices. This internally calls PETSc's
+         * @param mat        the matrix
+         * @param indices    the node indices that have to be zeroed out.
+         * @param dof        the number of degrees of freedom per node
+         * @param diag       the value to be set on the diagonal, can be 0.0
+         * @param x          optional vector of solutions for zeroed rows (other entries in vector are not used)
+         * @param b 	     optional vector of right hand side, that will be adjusted by provided solution
+         * @return           an error flag
+         */
+
+        int zeroRowsInMatrix(Mat mat, std::vector<unsigned int>& indices, unsigned int dof,
+                             double diag, Vec x, Vec b);
+
+        /**
           @author Hari Sundar
           @brief Returns a std. vector of appropriate size of the requested type. 
 

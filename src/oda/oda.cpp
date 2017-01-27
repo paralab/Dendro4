@@ -115,6 +115,28 @@ namespace ot {
     return 0;
   }//end function
 
+    int DA::zeroRowsInMatrix(Mat mat, std::vector<unsigned int>& indices, unsigned int dof,
+                             double diag, Vec x, Vec b) {
+        assert(m_bComputedLocalToGlobal);
+        int errCode;
+        std::vector<PetscInt> rows;
+
+        if ( !indices.empty() ) {
+            PetscInt numRows = dof*indices.size();
+
+            for (auto &i: indices) {
+                PetscInt glo_idx = static_cast<PetscInt>( dof*m_dilpLocalToGlobal[i] );
+                for (auto d=0; d<dof; ++d)
+                    rows.push_back(glo_idx++);
+            }
+
+            errCode = MatZeroRows(mat, numRows, rows.data(), diag, Vec x, Vec b);
+
+        } // if not empty
+
+        return errCode;
+    }  // end function
+
   int DA::setValuesInMatrix(Mat mat, std::vector<ot::MatRecord>& records, unsigned int dof, InsertMode mode) {
 
     PROF_SET_MAT_VALUES_BEGIN 
@@ -129,7 +151,8 @@ namespace ot {
       std::sort(records.begin(), records.end());
 
       unsigned int currRecord = 0;
-      while(currRecord < (records.size()-1)) {
+
+        while(currRecord < (records.size()-1)) {
         values.push_back(records[currRecord].val);
         colIndices.push_back( static_cast<PetscInt>(
               (dof*m_dilpLocalToGlobal[records[currRecord].colIdx]) +
@@ -146,10 +169,11 @@ namespace ot {
         }
         currRecord++;
       }//end while
+
       PetscInt rowId = static_cast<PetscInt>(
           (dof*m_dilpLocalToGlobal[records[currRecord].rowIdx]) +
           records[currRecord].rowDim);
-      if(values.empty()) {
+        if(values.empty()) {
         //Last row is different from the previous row
         PetscInt colId = static_cast<PetscInt>(
             (dof*m_dilpLocalToGlobal[records[currRecord].colIdx]) + 
@@ -168,7 +192,7 @@ namespace ot {
         values.clear();
       }
       records.clear();
-    }
+    } // records not empty
 
     PROF_SET_MAT_VALUES_END
   }//end function
