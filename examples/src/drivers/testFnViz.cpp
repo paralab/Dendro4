@@ -32,6 +32,8 @@ double gaussian(double mean, double std_deviation);
 
 void setScalarByFunction(ot::DA* da, Vec vec, std::function<double(double,double,double)> f);
 
+void getBoundaryNodeIndices(ot::DA* da, std::vector<unsigned int> &indices, std::vector<double>& coords, std::function<double(double,double,double)> f);
+
 void saveNodalVecAsVTK(ot::DA* da, Vec vec, char *fname);
 
 void interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::DA* m_octDA);
@@ -1292,3 +1294,87 @@ void interp_local_to_global(PetscScalar* __restrict loc, PetscScalar* glo, ot::D
       break;
   } // switch chNum
 } // loc_to_glo
+
+/*
+ * This function will return all node indices that are closest to function `f`. The idea is to identify boundaries
+ * specified by a specific function. It is expected that the function will compute the distance of the provided x,y,z
+ * coordinates to the boundary surface. The node is part of the boundary if it is closer to the surface than half the
+ * size of the current octant.
+ *
+ * The function will return a unique set of indices and the corresponding list of coordinates (3x for the x,y, and z coords).
+ */
+void getBoundaryNodeIndices(ot::DA* da, std::vector<unsigned int> &indices, std::vector<double>& coords, std::function<double(double,double,double)> f) {
+  // loop over elements, writable? and maintain list of indices and coords that are close enough.
+  std::map<unsigned int, Point> bdy;
+
+  unsigned int maxD = da->getMaxDepth();
+  unsigned int lev;
+  double hx, hy, hz, dist, half;
+  Point pt;
+
+  double xFac = gSize[0]/((double)(1<<(maxD-1)));
+  double yFac = gSize[1]/((double)(1<<(maxD-1)));
+  double zFac = gSize[2]/((double)(1<<(maxD-1)));
+  double xx[8], yy[8], zz[8];
+  unsigned int idx[8];
+
+  for ( da->init<ot::DA_FLAGS::ALL>(); da->curr() < da->end<ot::DA_FLAGS::ALL>(); da->next<ot::DA_FLAGS::ALL>() ) {
+    // set the value
+    lev = da->getLevel(da->curr());
+    hx = xFac * (1 << (maxD - lev));
+    hy = yFac * (1 << (maxD - lev));
+    hz = zFac * (1 << (maxD - lev));
+
+    half = sqrt((hx * hx + hy * hy + hz * hz)) * 0.5;
+
+    pt = da->getCurrentOffset();
+
+    //! get the correct coordinates of the nodes ...
+    unsigned char hangingMask = da->getHangingNodeIndex(da->curr());
+
+    xx[0] = pt.x() * xFac;
+    yy[0] = pt.y() * yFac;
+    zz[0] = pt.z() * zFac;
+    xx[1] = pt.x() * xFac + hx;
+    yy[1] = pt.y() * yFac;
+    zz[1] = pt.z() * zFac;
+    xx[2] = pt.x() * xFac;
+    yy[2] = pt.y() * yFac + hy;
+    zz[2] = pt.z() * zFac;
+    xx[3] = pt.x() * xFac + hx;
+    yy[3] = pt.y() * yFac + hy;
+    zz[3] = pt.z() * zFac;
+
+    xx[4] = pt.x() * xFac;
+    yy[4] = pt.y() * yFac;
+    zz[4] = pt.z() * zFac + hz;
+    xx[5] = pt.x() * xFac + hx;
+    yy[5] = pt.y() * yFac;
+    zz[5] = pt.z() * zFac + hz;
+    xx[6] = pt.x() * xFac;
+    yy[6] = pt.y() * yFac + hy;
+    zz[6] = pt.z() * zFac + hz;
+    xx[7] = pt.x() * xFac + hx;
+    yy[7] = pt.y() * yFac + hy;
+    zz[7] = pt.z() * zFac + hz;
+
+    da->getNodeIndices(idx);
+    for (int i = 0; i < 8; ++i) {
+      if (!(hangingMask & (1u << i))) {
+        dist = f(xx[i], yy[i], zz[i]);
+        if (dist < half) {
+          bdy[idx[i]] = Point(xx[i], yy[i], zz[i]);
+        }
+      }
+    }
+  } // loop over elements
+
+  // extract the indices and coords from map
+  for(auto const& i: bdy) {
+    indices.push_back(i.first);
+    pt = i.second;
+    coords.push_back(pt.x());
+    coords.push_back(pt.y());
+    coords.push_back(pt.z());
+  }
+} // getBdy
