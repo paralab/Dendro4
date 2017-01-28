@@ -48,7 +48,7 @@ int main(int argc, char **argv)
 
   PetscBool mf = PETSC_FALSE;
   bool mfree = false;
-  PetscOptionsGetBool(0, "-mfree", &mf, 0);
+  PetscOptionsGetBool(PETSC_NULL, 0, "-mfree", &mf, 0);
   
   if (mf == PETSC_TRUE) {
     mfree = true;
@@ -56,11 +56,11 @@ int main(int argc, char **argv)
     mfree = false;
 
   // get Ns
-  CHKERRQ ( PetscOptionsGetInt(0,"-Ns",&Ns,0) );
-  CHKERRQ ( PetscOptionsGetScalar(0,"-t0",&t0,0) );
-  CHKERRQ ( PetscOptionsGetScalar(0,"-t1",&t1,0) );
-  CHKERRQ ( PetscOptionsGetScalar(0,"-dt",&dt,0) );
-  CHKERRQ ( PetscOptionsGetString(PETSC_NULL, "-pn",problemName,PETSC_MAX_PATH_LEN-1,PETSC_NULL));
+  CHKERRQ ( PetscOptionsGetInt(PETSC_NULL, 0,"-Ns",&Ns,0) );
+  CHKERRQ ( PetscOptionsGetScalar(PETSC_NULL, 0,"-t0",&t0,0) );
+  CHKERRQ ( PetscOptionsGetScalar(PETSC_NULL, 0,"-t1",&t1,0) );
+  CHKERRQ ( PetscOptionsGetScalar(PETSC_NULL, 0,"-dt",&dt,0) );
+  CHKERRQ ( PetscOptionsGetString(PETSC_NULL, PETSC_NULL, "-pn",problemName,PETSC_MAX_PATH_LEN-1,PETSC_NULL));
 
   // Time info for timestepping
   ti.start = t0;

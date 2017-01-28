@@ -110,7 +110,7 @@ int main(int argc, char ** argv ) {
   createRegularOctree(balOct, regLev, dim, maxDepth, MPI_COMM_WORLD);
 
   PetscInt nlevelsPetscInt = nlevels; //To keep the compilers happy when using 64-bit indices 
-  PetscOptionsGetInt(0, "-nlevels", &nlevelsPetscInt, 0);
+  PetscOptionsGetInt(NULL, 0, "-nlevels", &nlevelsPetscInt, 0);
   nlevels = nlevelsPetscInt;
   
   // Note: The user context for all levels will be set separately later.
@@ -154,10 +154,10 @@ int main(int argc, char ** argv ) {
   MPI_Barrier(MPI_COMM_WORLD);
 
   PetscInt       jacType = 1;
-  PetscOptionsGetInt(0,"-jacType",&jacType,0);
+  PetscOptionsGetInt(NULL,0,"-jacType",&jacType,0);
 
   PetscInt       rhsType = 1;
-  PetscOptionsGetInt(0,"-rhsType",&rhsType,0);
+  PetscOptionsGetInt(NULL,0,"-rhsType",&rhsType,0);
 
   createLmatType2(LaplacianType2Stencil);
   createMmatType2(MassType2Stencil);

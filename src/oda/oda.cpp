@@ -130,7 +130,7 @@ namespace ot {
                     rows.push_back(glo_idx++);
             }
 
-            errCode = MatZeroRows(mat, numRows, rows.data(), diag, Vec x, Vec b);
+            errCode = MatZeroRows(mat, numRows, rows.data(), diag, x, b);
 
         } // if not empty
 

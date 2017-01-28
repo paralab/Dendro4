@@ -159,7 +159,7 @@ int main(int argc, char ** argv ) {
   unsigned int       dof =1;// degrees of freedom per node  
 
   PetscInt nlevelsPetscInt = nlevels;
-  PetscOptionsGetInt(0, "-nlevels", &nlevelsPetscInt, 0);
+  PetscOptionsGetInt(PETSC_NULL, 0, "-nlevels", &nlevelsPetscInt, 0);
   nlevels = nlevelsPetscInt;
 
   // Note: The user context for all levels will be set separately later.

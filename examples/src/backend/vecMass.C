@@ -24,7 +24,7 @@ PetscErrorCode CreateConstVecMass(ot::DAMG damg, Mat *jac) {
   PetscInt buildFullCoarseMat;
   int totalLevels;
   PetscBool flg;
-  PetscOptionsGetInt(PETSC_NULL,"-buildFullCoarseMat",&buildFullCoarseMat,&flg);
+  PetscOptionsGetInt(PETSC_NULL, PETSC_NULL,"-buildFullCoarseMat",&buildFullCoarseMat,&flg);
   totalLevels = damg->nlevels;
   ot::DA* da = damg->da;
   if((totalLevels == damg->nlevels) && buildFullCoarseMat) {
@@ -39,7 +39,7 @@ PetscErrorCode CreateConstVecMass(ot::DAMG damg, Mat *jac) {
     }
     char matType[30];
     PetscBool typeFound;
-    PetscOptionsGetString(PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
+    PetscOptionsGetString(PETSC_NULL, PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
     if(!typeFound) {
       std::cout<<"I need a MatType for the full matrix!"<<std::endl;
       assert(false);

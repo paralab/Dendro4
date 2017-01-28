@@ -85,14 +85,14 @@ int main(int argc, char ** argv ) {
   } else {
 
     PetscInt regLev = 4;
-    PetscOptionsGetInt(0, "-regLev", &regLev, 0);
+    PetscOptionsGetInt(PETSC_NULL, 0, "-regLev", &regLev, 0);
     createRegularOctree(balOct, regLev, dim, maxDepth, MPI_COMM_WORLD);
 
   }
 
   PetscInt       numRefinements = 0;
 
-  PetscOptionsGetInt(0,"-numRefinements",&numRefinements,0);
+  PetscOptionsGetInt(PETSC_NULL, 0,"-numRefinements",&numRefinements,0);
   for(int i = 0; i < numRefinements; i++) {
     std::vector<ot::TreeNode> tmpOct = balOct;
     balOct.clear();
@@ -106,7 +106,7 @@ int main(int argc, char ** argv ) {
   unsigned int       dof =1;// degrees of freedom per node  
 
   PetscInt nlevelsPetscInt = nlevels;
-  PetscOptionsGetInt(0, "-nlevels", &nlevelsPetscInt, 0);
+  PetscOptionsGetInt(PETSC_NULL, 0, "-nlevels", &nlevelsPetscInt, 0);
   nlevels = nlevelsPetscInt;
 
   if(!rank) {

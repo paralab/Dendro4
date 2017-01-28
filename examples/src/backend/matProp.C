@@ -399,12 +399,12 @@
 void SetUserContexts(ot::DAMG* damg) {
 
   PetscInt       jacType = 1;
-  PetscOptionsGetInt(0, "-jacType", &jacType, 0);
+  PetscOptionsGetInt(PETSC_NULL, 0, "-jacType", &jacType, 0);
 
   if(jacType == 1) { return; }
 
   PetscBool setMatPropsAtCoarsest;
-  PetscOptionsHasName(0,"-setMatPropsAtCoarsest",&setMatPropsAtCoarsest);
+  PetscOptionsHasName(PETSC_NULL, 0,"-setMatPropsAtCoarsest",&setMatPropsAtCoarsest);
 
   if(setMatPropsAtCoarsest) {
     assert(jacType == 2);
@@ -455,32 +455,32 @@ void SetUserContexts(ot::DAMG* damg) {
   PetscReal massFac = 0.0;
   PetscReal massBase = 1.0;
   PetscBool optFound;
-  PetscOptionsGetReal("lap","-MatPropFac",&lapFac,&optFound);
-  PetscOptionsGetReal("mass","-MatPropFac",&massFac,&optFound);
-  PetscOptionsGetReal("mass","-BaseMatProp",&massBase,&optFound);
+  PetscOptionsGetReal(PETSC_NULL, "lap","-MatPropFac",&lapFac,&optFound);
+  PetscOptionsGetReal(PETSC_NULL, "mass","-MatPropFac",&massFac,&optFound);
+  PetscOptionsGetReal(PETSC_NULL, "mass","-BaseMatProp",&massBase,&optFound);
   unsigned int maxD ;
   double *matPropArr = NULL;
   ot::DA* da;
 
   PetscBool setMatPropFromAnalyticFn;
-  PetscOptionsHasName(0,"-setMatPropFromAnalyticFn",&setMatPropFromAnalyticFn);
+  PetscOptionsHasName(PETSC_NULL, 0,"-setMatPropFromAnalyticFn",&setMatPropFromAnalyticFn);
 
   if(setMatPropFromAnalyticFn) {
     PetscReal lapFreq = 1.0;
-    PetscOptionsGetReal(0,"-lapFreq",&lapFreq,&optFound);
+    PetscOptionsGetReal(PETSC_NULL, 0,"-lapFreq",&lapFreq,&optFound);
     int dummyInit;
     SET_SINGLE_LEVEL_MAT_PROP_BLOCK(\
         ASSIGN_MAT_PROP_ANALYTIC_FN_ELEM_BLOCK, dummyInit = 0;) 
   } else {
     PetscBool setCheckerBoardMatProp;
-    PetscOptionsHasName(0,"-setCheckerBoardMatProp",&setCheckerBoardMatProp);
+    PetscOptionsHasName(PETSC_NULL, 0,"-setCheckerBoardMatProp",&setCheckerBoardMatProp);
     if(setCheckerBoardMatProp) {
       int dummyInit;
       SET_SINGLE_LEVEL_MAT_PROP_BLOCK(\
           ASSIGN_MAT_PROP_CHECKER_BOARD_ELEM_BLOCK, dummyInit = 0;) 
     } else {
       PetscInt numCubes = 1;
-      PetscOptionsGetInt(0,"-numCubes",&numCubes,0);
+      PetscOptionsGetInt(PETSC_NULL, 0,"-numCubes",&numCubes,0);
       if(numCubes == 1) {
         int dummyInit;
         SET_SINGLE_LEVEL_MAT_PROP_BLOCK(\
@@ -560,7 +560,7 @@ void SetUserContextsFromPts(ot::DAMG* damg,
     const std::vector<double> & lapJump) {
 
   PetscInt       jacType = 1;
-  PetscOptionsGetInt(0, "-jacType", &jacType, 0);
+  PetscOptionsGetInt(PETSC_NULL, 0, "-jacType", &jacType, 0);
 
   assert(jacType != 1);
 
@@ -605,8 +605,8 @@ void SetUserContextsFromPts(ot::DAMG* damg,
   PetscReal lapBase = 1.0;
   PetscReal massBase = 1.0;
   PetscBool optFound;
-  PetscOptionsGetReal("lap","-BaseMatProp",&lapBase,&optFound);
-  PetscOptionsGetReal("mass","-BaseMatProp",&massBase,&optFound);
+  PetscOptionsGetReal(PETSC_NULL, "lap","-BaseMatProp",&lapBase,&optFound);
+  PetscOptionsGetReal(PETSC_NULL, "mass","-BaseMatProp",&massBase,&optFound);
   unsigned int maxD ;
   double *matPropArr = NULL;
   ot::DA* da;
@@ -900,32 +900,32 @@ void SetUserContextsCoarsestToFinest(ot::DAMG* damg) {
   PetscReal massFac = 0.0;
   PetscReal massBase = 1.0;
   PetscBool optFound;
-  PetscOptionsGetReal("lap","-MatPropFac",&lapFac,&optFound);
-  PetscOptionsGetReal("mass","-MatPropFac",&massFac,&optFound);
-  PetscOptionsGetReal("mass","-BaseMatProp",&massBase,&optFound);
+  PetscOptionsGetReal(PETSC_NULL, "lap","-MatPropFac",&lapFac,&optFound);
+  PetscOptionsGetReal(PETSC_NULL, "mass","-MatPropFac",&massFac,&optFound);
+  PetscOptionsGetReal(PETSC_NULL, "mass","-BaseMatProp",&massBase,&optFound);
   unsigned int maxD;
   ot::DA* da;
   double *matPropArr = NULL;
 
   PetscBool setMatPropFromAnalyticFn;
-  PetscOptionsHasName(0,"-setMatPropFromAnalyticFn",&setMatPropFromAnalyticFn);
+  PetscOptionsHasName(PETSC_NULL, 0,"-setMatPropFromAnalyticFn",&setMatPropFromAnalyticFn);
 
   if(setMatPropFromAnalyticFn) {
     PetscReal lapFreq = 1.0;
-    PetscOptionsGetReal(0,"-lapFreq",&lapFreq,&optFound);
+    PetscOptionsGetReal(PETSC_NULL, 0,"-lapFreq",&lapFreq,&optFound);
     int dummyInit;
     SET_SINGLE_LEVEL_MAT_PROP_BLOCK(\
         ASSIGN_MAT_PROP_ANALYTIC_FN_ELEM_BLOCK, dummyInit = 0;) 
   } else {
     PetscBool setCheckerBoardMatProp;
-    PetscOptionsHasName(0,"-setCheckerBoardMatProp",&setCheckerBoardMatProp);
+    PetscOptionsHasName(PETSC_NULL, 0,"-setCheckerBoardMatProp",&setCheckerBoardMatProp);
     if(setCheckerBoardMatProp) {
       int dummyInit;
       SET_SINGLE_LEVEL_MAT_PROP_BLOCK(ASSIGN_MAT_PROP_CHECKER_BOARD_ELEM_BLOCK, 
           dummyInit = 0;) 
     } else {
       PetscInt numCubes = 1;
-      PetscOptionsGetInt(0,"-numCubes",&numCubes,0);
+      PetscOptionsGetInt(PETSC_NULL, 0,"-numCubes",&numCubes,0);
       if(numCubes == 1) {
         int dummyInit;
         SET_SINGLE_LEVEL_MAT_PROP_BLOCK(ASSIGN_MAT_PROP_1_CUBE_ELEM_BLOCK, 
@@ -969,8 +969,8 @@ void SetCoarseToFineFromPts(ot::DAMG* damg,
   PetscReal lapBase = 1.0;
   PetscReal massBase = 1.0;
   PetscBool optFound;
-  PetscOptionsGetReal("lap","-BaseMatProp",&lapBase,&optFound);
-  PetscOptionsGetReal("mass","-BaseMatProp",&massBase,&optFound);
+  PetscOptionsGetReal(PETSC_NULL, "lap","-BaseMatProp",&lapBase,&optFound);
+  PetscOptionsGetReal(PETSC_NULL, "mass","-BaseMatProp",&massBase,&optFound);
   unsigned int maxD;
   ot::DA* da;
   double *matPropArr = NULL;
@@ -999,7 +999,7 @@ void SetCoarseToFineFromPts(ot::DAMG* damg,
 void DestroyUserContexts(ot::DAMG* damg) {
 
   PetscInt       jacType = 1;
-  PetscOptionsGetInt(0,"-jacType",&jacType,0);
+  PetscOptionsGetInt(PETSC_NULL, 0,"-jacType",&jacType,0);
 
   if(jacType == 1) { return; }
 

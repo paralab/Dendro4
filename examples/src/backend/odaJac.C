@@ -184,8 +184,8 @@ PetscErrorCode Jacobian1MatGetDiagonal(Mat J, Vec diag) {
   PetscReal lapFac = 1.0;
   PetscReal massFac = 1.0;
   PetscBool optFound;
-  PetscOptionsGetReal("lap","-MatPropFac",&lapFac,&optFound);
-  PetscOptionsGetReal("mass","-MatPropFac",&massFac,&optFound);
+  PetscOptionsGetReal(NULL,"lap","-MatPropFac",&lapFac,&optFound);
+  PetscOptionsGetReal(NULL,"mass","-MatPropFac",&massFac,&optFound);
 
   if(data->da->iAmActive()) {
     maxD = (data->da->getMaxDepth());
@@ -313,8 +313,8 @@ PetscErrorCode Jacobian1MatMult(Mat J, Vec in, Vec out)
   PetscReal lapFac = 1.0;
   PetscReal massFac = 1.0;
   PetscBool optFound;
-  PetscOptionsGetReal("lap","-MatPropFac",&lapFac,&optFound);
-  PetscOptionsGetReal("mass","-MatPropFac",&massFac,&optFound);
+  PetscOptionsGetReal(NULL,"lap","-MatPropFac",&lapFac,&optFound);
+  PetscOptionsGetReal(NULL,"mass","-MatPropFac",&massFac,&optFound);
 
   PetscScalar *outArr=NULL;
   PetscScalar *inArr=NULL; 
@@ -475,7 +475,7 @@ PetscErrorCode CreateAndComputeFullJacobian1(ot::DA* da,Mat * J)
 
   char matType[30];
   PetscBool typeFound;
-  PetscOptionsGetString(PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
+  PetscOptionsGetString(NULL,PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
   if(!typeFound) {
     std::cout<<"I need a MatType for the full Jacobian matrix!"<<std::endl;
     MPI_Finalize();
@@ -496,8 +496,8 @@ PetscErrorCode CreateAndComputeFullJacobian1(ot::DA* da,Mat * J)
   PetscReal lapFac = 1.0;
   PetscReal massFac = 1.0;
   PetscBool optFound;
-  PetscOptionsGetReal("lap","-MatPropFac",&lapFac,&optFound);
-  PetscOptionsGetReal("mass","-MatPropFac",&massFac,&optFound);
+  PetscOptionsGetReal(NULL,"lap","-MatPropFac",&lapFac,&optFound);
+  PetscOptionsGetReal(NULL,"mass","-MatPropFac",&massFac,&optFound);
 
   if(da->iAmActive()) {
     for(da->init<ot::DA_FLAGS::WRITABLE>();
@@ -548,7 +548,7 @@ PetscErrorCode CreateAndComputeFullActiveJacobian1(ot::DA* da,Mat * J)
   if(da->iAmActive()) {
     char matType[30];
     PetscBool typeFound;
-    PetscOptionsGetString(PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
+    PetscOptionsGetString(NULL,PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
     if(!typeFound) {
       std::cout<<"I need a MatType for the full Jacobian matrix!"<<std::endl;
       MPI_Finalize();
@@ -566,8 +566,8 @@ PetscErrorCode CreateAndComputeFullActiveJacobian1(ot::DA* da,Mat * J)
     PetscReal lapFac = 1.0;
     PetscReal massFac = 1.0;
     PetscBool optFound;
-    PetscOptionsGetReal("lap","-MatPropFac",&lapFac,&optFound);
-    PetscOptionsGetReal("mass","-MatPropFac",&massFac,&optFound);
+    PetscOptionsGetReal(NULL,"lap","-MatPropFac",&lapFac,&optFound);
+    PetscOptionsGetReal(NULL,"mass","-MatPropFac",&massFac,&optFound);
 
     for(da->init<ot::DA_FLAGS::WRITABLE>();
         da->curr() < da->end<ot::DA_FLAGS::WRITABLE>();

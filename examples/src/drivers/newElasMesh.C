@@ -286,7 +286,7 @@ int main(int argc, char ** argv ) {
   PetscInt       numRefinements = 0;
   unsigned int   dof = 3; // degrees of freedom per node  
 
-  iC(PetscOptionsGetInt(0,"-numRefinements",&numRefinements,0));
+  iC(PetscOptionsGetInt(PETSC_NULL, 0,"-numRefinements",&numRefinements,0));
   for(int i = 0; i < numRefinements; i++) {
     std::vector<ot::TreeNode> tmpOct = balOct;
     balOct.clear();
@@ -294,7 +294,7 @@ int main(int argc, char ** argv ) {
   }
 
   PetscInt nlevelsPetscInt = nlevels;
-  PetscOptionsGetInt(0, "-nlevels", &nlevelsPetscInt, 0);
+  PetscOptionsGetInt(PETSC_NULL, 0, "-nlevels", &nlevelsPetscInt, 0);
   nlevels = nlevelsPetscInt;
 
   // Note: The user context for all levels will be set separately later.

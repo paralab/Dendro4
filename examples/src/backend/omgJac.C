@@ -64,8 +64,8 @@ PetscErrorCode CreateDirichletLaplacian(ot::DAMG damg, Mat *jac) {
   PetscBool flg;
   PetscInt buildFullCoarseMat;
   PetscInt buildFullMatAll;
-  PetscOptionsGetInt(PETSC_NULL,"-buildFullMatAll",&buildFullMatAll,&flg);
-  PetscOptionsGetInt(PETSC_NULL,"-buildFullCoarseMat",&buildFullCoarseMat,&flg);
+  PetscOptionsGetInt(NULL,PETSC_NULL,"-buildFullMatAll",&buildFullMatAll,&flg);
+  PetscOptionsGetInt(NULL,PETSC_NULL,"-buildFullCoarseMat",&buildFullCoarseMat,&flg);
   if(buildFullMatAll) {
     buildFullCoarseMat = 1;
   }
@@ -87,7 +87,7 @@ PetscErrorCode CreateDirichletLaplacian(ot::DAMG damg, Mat *jac) {
         da->computeLocalToGlobalMappings();
       }
       PetscBool typeFound;
-      PetscOptionsGetString(PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
+      PetscOptionsGetString(NULL,PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
       if(!typeFound) {
         std::cout<<"I need a MatType for the full Jacobian matrix!"<<std::endl;
         assert(false);
@@ -142,7 +142,7 @@ PetscErrorCode CreateDirichletLaplacian(ot::DAMG damg, Mat *jac) {
       }
       char matType[30];
       PetscBool typeFound;
-      PetscOptionsGetString(PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
+      PetscOptionsGetString(NULL,PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
       if(!typeFound) {
         std::cout<<"I need a MatType for the full Jacobian matrix!"<<std::endl;
         assert(false);
@@ -169,8 +169,8 @@ PetscErrorCode CreateDirichletJacobian(ot::DAMG damg, Mat *jac) {
   PetscBool flg;
   PetscInt buildFullCoarseMat;
   PetscInt buildFullMatAll;
-  PetscOptionsGetInt(PETSC_NULL,"-buildFullMatAll",&buildFullMatAll,&flg);
-  PetscOptionsGetInt(PETSC_NULL,"-buildFullCoarseMat",&buildFullCoarseMat,&flg);
+  PetscOptionsGetInt(NULL,PETSC_NULL,"-buildFullMatAll",&buildFullMatAll,&flg);
+  PetscOptionsGetInt(NULL,PETSC_NULL,"-buildFullCoarseMat",&buildFullCoarseMat,&flg);
   if(buildFullMatAll) {
     buildFullCoarseMat = 1;
   }
@@ -192,7 +192,7 @@ PetscErrorCode CreateDirichletJacobian(ot::DAMG damg, Mat *jac) {
         da->computeLocalToGlobalMappings();
       }
       PetscBool typeFound;
-      PetscOptionsGetString(PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
+      PetscOptionsGetString(PETSC_NULL, PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
       if(!typeFound) {
         std::cout<<"I need a MatType for the full Jacobian matrix!"<<std::endl;
         assert(false);
@@ -247,7 +247,7 @@ PetscErrorCode CreateDirichletJacobian(ot::DAMG damg, Mat *jac) {
       }
       char matType[30];
       PetscBool typeFound;
-      PetscOptionsGetString(PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
+      PetscOptionsGetString(PETSC_NULL, PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
       if(!typeFound) {
         std::cout<<"I need a MatType for the full Jacobian matrix!"<<std::endl;
         assert(false);
@@ -1335,8 +1335,8 @@ PetscErrorCode CreateJacobian1(ot::DAMG damg,Mat *jac) {
   PetscInt buildFullMatAll;
   int totalLevels;
   PetscBool flg;
-  PetscOptionsGetInt(PETSC_NULL, "-buildFullMatAll", &buildFullMatAll, &flg);
-  PetscOptionsGetInt(PETSC_NULL, "-buildFullCoarseMat", &buildFullCoarseMat, &flg);
+  PetscOptionsGetInt(PETSC_NULL, PETSC_NULL, "-buildFullMatAll", &buildFullMatAll, &flg);
+  PetscOptionsGetInt(PETSC_NULL, PETSC_NULL, "-buildFullCoarseMat", &buildFullCoarseMat, &flg);
   if(buildFullMatAll) {
     buildFullCoarseMat = 1;
   }
@@ -1485,8 +1485,8 @@ PetscErrorCode CreateJacobian2(ot::DAMG damg, Mat *jac) {
   PetscBool flg;
   PetscInt buildFullCoarseMat;
   PetscInt buildFullMatAll;
-  PetscOptionsGetInt(PETSC_NULL,"-buildFullMatAll",&buildFullMatAll,&flg);
-  PetscOptionsGetInt(PETSC_NULL,"-buildFullCoarseMat",&buildFullCoarseMat,&flg);
+  PetscOptionsGetInt(PETSC_NULL, PETSC_NULL, "-buildFullMatAll",&buildFullMatAll,&flg);
+  PetscOptionsGetInt(PETSC_NULL, PETSC_NULL, "-buildFullCoarseMat",&buildFullCoarseMat,&flg);
   if(buildFullMatAll) {
     buildFullCoarseMat = 1;
   }
@@ -1508,7 +1508,7 @@ PetscErrorCode CreateJacobian2(ot::DAMG damg, Mat *jac) {
         da->computeLocalToGlobalMappings();
       }
       PetscBool typeFound;
-      PetscOptionsGetString(PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
+      PetscOptionsGetString(PETSC_NULL, PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
       if(!typeFound) {
         std::cout<<"I need a MatType for the full Jacobian matrix!"<<std::endl;
         assert(false);
@@ -1563,7 +1563,7 @@ PetscErrorCode CreateJacobian2(ot::DAMG damg, Mat *jac) {
       }
       char matType[30];
       PetscBool typeFound;
-      PetscOptionsGetString(PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
+      PetscOptionsGetString(PETSC_NULL, PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
       if(!typeFound) {
         std::cout<<"I need a MatType for the full Jacobian matrix!"<<std::endl;
         assert(false);
@@ -1898,8 +1898,8 @@ PetscErrorCode CreateJacobian3(ot::DAMG damg,Mat *jac) {
   PetscBool flg;
   PetscInt buildFullMatAll;
   PetscInt buildFullCoarseMat;
-  PetscOptionsGetInt(PETSC_NULL,"-buildFullMatAll",&buildFullMatAll,&flg);
-  PetscOptionsGetInt(PETSC_NULL,"-buildFullCoarseMat",&buildFullCoarseMat,&flg);
+  PetscOptionsGetInt(PETSC_NULL, PETSC_NULL, "-buildFullMatAll",&buildFullMatAll,&flg);
+  PetscOptionsGetInt(PETSC_NULL, PETSC_NULL, "-buildFullCoarseMat",&buildFullCoarseMat,&flg);
   if(buildFullMatAll) {
     buildFullCoarseMat = 1;
   }
@@ -1921,7 +1921,7 @@ PetscErrorCode CreateJacobian3(ot::DAMG damg,Mat *jac) {
         da->computeLocalToGlobalMappings();
       }
       PetscBool typeFound;
-      PetscOptionsGetString(PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
+      PetscOptionsGetString(PETSC_NULL, PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
       if(!typeFound) {
         std::cout<<"I need a MatType for the full Jacobian matrix!"<<std::endl;
         assert(false);
@@ -1979,7 +1979,7 @@ PetscErrorCode CreateJacobian3(ot::DAMG damg,Mat *jac) {
       }
       char matType[30];
       PetscBool typeFound;
-      PetscOptionsGetString(PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
+      PetscOptionsGetString(PETSC_NULL, PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
       if(!typeFound) {
         std::cout<<"I need a MatType for the full Jacobian matrix!"<<std::endl;
         assert(false);
@@ -2260,7 +2260,7 @@ PetscErrorCode Jacobian3MatMult(Mat J, Vec in, Vec out)
     //Loop over the coarse and fine meshes simultaneously
     PetscReal tolToCoarsenMatProp = 1.0e-12;
     PetscBool optFound;
-    PetscOptionsGetReal(0,"-tolToCoarsenMatProp",&tolToCoarsenMatProp,&optFound);
+    PetscOptionsGetReal(PETSC_NULL, 0,"-tolToCoarsenMatProp",&tolToCoarsenMatProp,&optFound);
     assert(tolToCoarsenMatProp >= 0.0);
 
     ot::DA* da = damg->da;

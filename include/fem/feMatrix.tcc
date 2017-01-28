@@ -408,7 +408,7 @@ bool feMatrix<T>::GetAssembledMatrix(Mat *J, MatType mtype) {
 		// Octree part ...
 		char matType[30];
 		PetscBool typeFound;
-		PetscOptionsGetString(PETSC_NULL, "-fullJacMatType", matType, 30, &typeFound);
+		PetscOptionsGetString(PETSC_NULL, PETSC_NULL, "-fullJacMatType", matType, 30, &typeFound);
 		if(!typeFound) {
 			std::cout<<"I need a MatType for the full Jacobian matrix!"<<std::endl;
 			MPI_Finalize();

@@ -175,7 +175,7 @@ int main(int argc, char ** argv ) {
   MPI_Barrier(MPI_COMM_WORLD);	
 
   PetscBool setMatPropsUsingPts;
-  PetscOptionsHasName(0,"-setMatPropsUsingPts",&setMatPropsUsingPts);
+  PetscOptionsHasName(PETSC_NULL, 0,"-setMatPropsUsingPts",&setMatPropsUsingPts);
 
   std::vector<ot::TreeNode> matPropNodes;
   if(setMatPropsUsingPts) {
@@ -197,8 +197,8 @@ int main(int argc, char ** argv ) {
 
   PetscBool usingRegularOctree;
   PetscInt regLev;
-  PetscOptionsHasName(0,"-useRegularOctreeAtLevel",&usingRegularOctree);
-  PetscOptionsGetInt(0,"-useRegularOctreeAtLevel",&regLev,0);
+  PetscOptionsHasName(PETSC_NULL, 0,"-useRegularOctreeAtLevel",&usingRegularOctree);
+  PetscOptionsGetInt(PETSC_NULL, 0,"-useRegularOctreeAtLevel",&regLev,0);
 
   if(usingRegularOctree) {
     if(!rank) {
@@ -270,10 +270,10 @@ int main(int argc, char ** argv ) {
   unsigned int       dof =1;// degrees of freedom per node  
 
   PetscInt nlevelsPetscInt = nlevels;
-  PetscOptionsGetInt(0, "-nlevels", &nlevelsPetscInt, 0);
+  PetscOptionsGetInt(PETSC_NULL, 0, "-nlevels", &nlevelsPetscInt, 0);
   nlevels = nlevelsPetscInt;
 
-  PetscOptionsGetInt(0,"-numRefinements",&numRefinements,0);
+  PetscOptionsGetInt(PETSC_NULL, 0,"-numRefinements",&numRefinements,0);
   for(int i = 0; i < numRefinements; i++) {
     std::vector<ot::TreeNode> tmpOct = balOct;
     balOct.clear();
@@ -373,7 +373,7 @@ int main(int argc, char ** argv ) {
 
   if(setMatPropsUsingPts) {
     PetscBool setMatPropsAtCoarsest;
-    PetscOptionsHasName(0,"-setMatPropsAtCoarsest",&setMatPropsAtCoarsest);
+    PetscOptionsHasName(PETSC_NULL, 0,"-setMatPropsAtCoarsest",&setMatPropsAtCoarsest);
     if(setMatPropsAtCoarsest) {
       //Coarsest is only 1 processor. So to align with coarse blocks, everything
       //must be sent to p0
@@ -399,7 +399,7 @@ int main(int argc, char ** argv ) {
 
       PetscReal lapFac = 0.0;
       PetscBool optFound;
-      PetscOptionsGetReal("lap","-MatPropFac",&lapFac,&optFound);
+      PetscOptionsGetReal(PETSC_NULL, "lap","-MatPropFac",&lapFac,&optFound);
       std::vector<double> lapJumps((matPropPts.size()/3));
       for(int i=0;i<lapJumps.size();i++) {
         lapJumps[i] = lapFac;
@@ -529,7 +529,7 @@ int main(int argc, char ** argv ) {
 
       PetscReal lapFac = 0.0;
       PetscBool optFound;
-      PetscOptionsGetReal("lap","-MatPropFac",&lapFac,&optFound);
+      PetscOptionsGetReal(PETSC_NULL, "lap","-MatPropFac",&lapFac,&optFound);
       std::vector<double> lapJumps((matPropPts.size()/3));
       for(int i=0;i<lapJumps.size();i++) {
         lapJumps[i] = lapFac;
@@ -548,7 +548,7 @@ int main(int argc, char ** argv ) {
   MPI_Barrier(MPI_COMM_WORLD);
 
   PetscInt       jacType = 1;
-  PetscOptionsGetInt(0,"-jacType",&jacType,0);
+  PetscOptionsGetInt(PETSC_NULL, 0,"-jacType",&jacType,0);
 
   MPI_Barrier(MPI_COMM_WORLD);
   if(!rank) {
@@ -573,7 +573,7 @@ int main(int argc, char ** argv ) {
   MPI_Barrier(MPI_COMM_WORLD);
 
   PetscInt rhsType = 2;
-  PetscOptionsGetInt(0,"-rhsType",&rhsType,0);
+  PetscOptionsGetInt(PETSC_NULL, 0,"-rhsType",&rhsType,0);
 
   //Function handles
   PetscErrorCode (*ComputeRHSHandle)(ot::DAMG damg,Vec rhs) = NULL;
@@ -644,7 +644,7 @@ int main(int argc, char ** argv ) {
   PetscReal normInf;
 
   PetscBool setRandomGuess = PETSC_FALSE;
-  PetscOptionsHasName(0,"-setRandomGuess",&setRandomGuess);
+  PetscOptionsHasName(PETSC_NULL, 0,"-setRandomGuess",&setRandomGuess);
 
   if(setRandomGuess) { 
     ot::DAMGSetInitialGuess(damg,ot::DAMGInitialGuessCurrent);
@@ -653,7 +653,7 @@ int main(int argc, char ** argv ) {
     PetscRandomCreate(PETSC_COMM_WORLD,&rctx);
     PetscRandomSetType(rctx,PETSCRAND48);
     PetscInt randomSeed = 12345;
-    PetscOptionsGetInt(0,"-randomSeed",&randomSeed,0);
+    PetscOptionsGetInt(PETSC_NULL, 0,"-randomSeed",&randomSeed,0);
     if(!rank) {
       std::cout<<"Using Random Seed: "<<randomSeed<<std::endl;
     }

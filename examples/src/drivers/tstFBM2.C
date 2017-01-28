@@ -61,13 +61,13 @@ int main(int argc, char ** argv ) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   PetscReal gamma = 0;
-  PetscOptionsGetReal(0, "-gamma", &gamma, 0);
+  PetscOptionsGetReal(PETSC_NULL, 0, "-gamma", &gamma, 0);
 
   PetscInt Nsample = 100;
-  PetscOptionsGetInt(0, "-Nsample", &Nsample, 0);
+  PetscOptionsGetInt(PETSC_NULL, 0, "-Nsample", &Nsample, 0);
 
   PetscInt maxDepth = 30;
-  PetscOptionsGetInt(0, "-maxDepth", &maxDepth, 0);
+  PetscOptionsGetInt(PETSC_NULL, 0, "-maxDepth", &maxDepth, 0);
 
   double hSample = 1.0/static_cast<double>(Nsample);
   std::vector<double> pts;
@@ -98,7 +98,7 @@ int main(int argc, char ** argv ) {
 
   PetscInt       numRefinements = 0;
 
-  PetscOptionsGetInt(0,"-numRefinements",&numRefinements,0);
+  PetscOptionsGetInt(PETSC_NULL, 0,"-numRefinements",&numRefinements,0);
   for(int i = 0; i < numRefinements; i++) {
     std::vector<ot::TreeNode> tmpOct = balOct;
     balOct.clear();
@@ -112,7 +112,7 @@ int main(int argc, char ** argv ) {
   unsigned int       dof =1;// degrees of freedom per node  
 
   PetscInt nlevelsPetscInt = nlevels;
-  PetscOptionsGetInt(0, "-nlevels", &nlevelsPetscInt, 0);
+  PetscOptionsGetInt(PETSC_NULL, 0, "-nlevels", &nlevelsPetscInt, 0);
   nlevels = nlevelsPetscInt;
 
   if(!rank) {

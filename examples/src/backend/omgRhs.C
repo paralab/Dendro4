@@ -55,7 +55,7 @@ PetscErrorCode EnforceZeroFBM2(ot::DAMG damg, Vec tmp) {
   da->vecGetBuffer(tmp, inarray, false, false, false, 1);
 
   PetscReal gamma = 0;
-  PetscOptionsGetReal(0, "-gamma", &gamma, 0);
+  PetscOptionsGetReal(PETSC_NULL, 0, "-gamma", &gamma, 0);
 
   unsigned int maxD;
   unsigned int balOctmaxD;
@@ -116,7 +116,7 @@ PetscErrorCode EnforceZeroFBM(ot::DAMG damg, Vec tmp) {
   da->vecGetBuffer(tmp, inarray, false, false, false, 1);
 
   PetscReal fbmR = 0;
-  PetscOptionsGetReal(0, "-fbmR", &fbmR, 0);
+  PetscOptionsGetReal(PETSC_NULL, 0, "-fbmR", &fbmR, 0);
 
   unsigned int maxD;
   unsigned int balOctmaxD;
@@ -181,7 +181,7 @@ PetscErrorCode SetSolutionFBM2(ot::DAMG damg, Vec tmp) {
   da->vecGetBuffer(tmp, inarray, false, false, false, 1);
 
   PetscReal gamma = 0;
-  PetscOptionsGetReal(0, "-gamma", &gamma, 0);
+  PetscOptionsGetReal(PETSC_NULL, 0, "-gamma", &gamma, 0);
 
   unsigned int maxD;
   unsigned int balOctmaxD;
@@ -244,7 +244,7 @@ PetscErrorCode SetSolutionFBM(ot::DAMG damg, Vec tmp) {
   da->vecGetBuffer(tmp, inarray, false, false, false, 1);
 
   PetscReal fbmR = 0;
-  PetscOptionsGetReal(0, "-fbmR", &fbmR, 0);
+  PetscOptionsGetReal(PETSC_NULL, 0, "-fbmR", &fbmR, 0);
 
   unsigned int maxD;
   unsigned int balOctmaxD;
@@ -350,7 +350,7 @@ PetscErrorCode ComputeFBM2_RHS(ot::DAMG damg, Vec in) {
   MatDestroy(&tmpMat);
 
   PetscReal gamma = 0;
-  PetscOptionsGetReal(0, "-gamma", &gamma, 0);
+  PetscOptionsGetReal(PETSC_NULL, 0, "-gamma", &gamma, 0);
 
   VecAXPY(in, -1.0, deltaRhs);
   VecAXPY(in, 1.0, dirichletVals);
@@ -403,10 +403,10 @@ PetscErrorCode ComputeFBM2_RHS_Part1(ot::DAMG damg, Vec in) {
   unsigned int balOctMaxD = (maxDepth - 1);
 
   PetscReal gamma = 0;
-  PetscOptionsGetReal(0, "-gamma", &gamma, 0);
+  PetscOptionsGetReal(PETSC_NULL, 0, "-gamma", &gamma, 0);
 
   PetscInt Nsample = 100;
-  PetscOptionsGetInt(0, "-Nsample", &Nsample, 0);
+  PetscOptionsGetInt(PETSC_NULL, 0, "-Nsample", &Nsample, 0);
 
   double hSample = 1.0/static_cast<double>(Nsample);
   std::vector<double> pts;
@@ -609,7 +609,7 @@ PetscErrorCode ComputeFBM2_RHS_Part2(ot::DAMG damg, Vec in) {
   unsigned char* bdyArr = data->bdyArr;
 
   PetscReal gamma = 0;
-  PetscOptionsGetReal(0, "-gamma", &gamma, 0);
+  PetscOptionsGetReal(PETSC_NULL, 0, "-gamma", &gamma, 0);
 
   VecZeroEntries(in);
   da->vecGetBuffer(in, inarray, false, false, false, 1);
@@ -683,7 +683,7 @@ PetscErrorCode ComputeFBM_RHS(ot::DAMG damg, Vec in) {
   MatDestroy(&tmpMat);
 
   PetscReal fbmR = 0;
-  PetscOptionsGetReal(0, "-fbmR", &fbmR, 0);
+  PetscOptionsGetReal(PETSC_NULL, 0, "-fbmR", &fbmR, 0);
 
   VecAXPY(in, -2.0*fbmR, deltaRhs);
   VecAXPY(in, 1.0, dirichletVals);
@@ -712,7 +712,7 @@ PetscErrorCode ComputeFBM_RHS_Part3(ot::DAMG damg, Vec in) {
   unsigned char* bdyArr = data->bdyArr;
 
   PetscReal fbmR = 0;
-  PetscOptionsGetReal(0, "-fbmR", &fbmR, 0);
+  PetscOptionsGetReal(PETSC_NULL, 0, "-fbmR", &fbmR, 0);
 
   VecZeroEntries(in);
   da->vecGetBuffer(in,inarray,false,false,false,1);
@@ -1003,10 +1003,10 @@ PetscErrorCode ComputeFBM_RHS_Part1(ot::DAMG damg, Vec in) {
   unsigned int balOctmaxD;
 
   PetscInt numGaussPts = 0;
-  PetscOptionsGetInt(0,"-numGaussPts",&numGaussPts,0);
+  PetscOptionsGetInt(PETSC_NULL, 0,"-numGaussPts",&numGaussPts,0);
 
   PetscReal fbmR = 0;
-  PetscOptionsGetReal(0,"-fbmR",&fbmR,0);
+  PetscOptionsGetReal(PETSC_NULL, 0,"-fbmR",&fbmR,0);
 
   assert(numGaussPts <= 7);
   assert(numGaussPts >= 2);
@@ -1265,7 +1265,7 @@ PetscErrorCode ComputeRandomRHS(ot::DAMG damg,Vec in) {
   PetscRandomCreate(PETSC_COMM_WORLD,&rctx);
   PetscRandomSetType(rctx,PETSCRAND48);
   PetscInt randomSeed = 12345;
-  PetscOptionsGetInt(0,"-randomSeed",&randomSeed,0);
+  PetscOptionsGetInt(PETSC_NULL, 0,"-randomSeed",&randomSeed,0);
   int rank;
   MPI_Comm_rank(damg->comm,&rank);
   if(!rank) {
@@ -1440,7 +1440,7 @@ PetscErrorCode ComputeRHS5(ot::DAMG damg,Vec in) {
 
   PetscReal lapFac = 0.0;
   PetscBool optFound;
-  PetscOptionsGetReal("lap","-MatPropFac",&lapFac,&optFound);
+  PetscOptionsGetReal(PETSC_NULL, "lap","-MatPropFac",&lapFac,&optFound);
   int rank;
   MPI_Comm_rank(damg->comm,&rank);
   unsigned int maxD;
@@ -1558,7 +1558,7 @@ PetscErrorCode ComputeRHS7(ot::DAMG damg,Vec in) {
 
   PetscReal lapFac = 0.0;
   PetscBool optFound;
-  PetscOptionsGetReal("lap","-MatPropFac",&lapFac,&optFound);
+  PetscOptionsGetReal(PETSC_NULL, "lap","-MatPropFac",&lapFac,&optFound);
 
   unsigned int maxD;
   unsigned int balOctmaxD;
@@ -1644,10 +1644,10 @@ PetscErrorCode ComputeRHS8(ot::DAMG damg,Vec in) {
 
   PetscReal lapFac = 0.0;
   PetscBool optFound;
-  PetscOptionsGetReal("lap","-MatPropFac",&lapFac,&optFound);
+  PetscOptionsGetReal(PETSC_NULL, "lap","-MatPropFac",&lapFac,&optFound);
 
   PetscInt numGaussPts = 0;
-  PetscOptionsGetInt(0,"-numGaussPts",&numGaussPts,0);
+  PetscOptionsGetInt(PETSC_NULL, 0,"-numGaussPts",&numGaussPts,0);
 
   assert(numGaussPts <= 7);
   assert(numGaussPts >= 2);

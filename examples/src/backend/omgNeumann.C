@@ -646,8 +646,8 @@ PetscErrorCode CreateJacobian2(ot::DAMG damg, Mat *jac) {
   PetscBool flg;
   PetscInt buildFullCoarseMat;
   PetscInt buildFullMatAll;
-  PetscOptionsGetInt(PETSC_NULL,"-buildFullMatAll",&buildFullMatAll,&flg);
-  PetscOptionsGetInt(PETSC_NULL,"-buildFullCoarseMat",&buildFullCoarseMat,&flg);
+  PetscOptionsGetInt(NULL,PETSC_NULL,"-buildFullMatAll",&buildFullMatAll,&flg);
+  PetscOptionsGetInt(NULL,PETSC_NULL,"-buildFullCoarseMat",&buildFullCoarseMat,&flg);
   if(buildFullMatAll) {
     buildFullCoarseMat = 1;
   }
@@ -669,7 +669,7 @@ PetscErrorCode CreateJacobian2(ot::DAMG damg, Mat *jac) {
         da->computeLocalToGlobalMappings();
       }
       PetscBool typeFound;
-      PetscOptionsGetString(PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
+      PetscOptionsGetString(NULL,PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
       if(!typeFound) {
         std::cout<<"I need a MatType for the full Jacobian matrix!"<<std::endl;
         assert(false);
@@ -724,7 +724,7 @@ PetscErrorCode CreateJacobian2(ot::DAMG damg, Mat *jac) {
       }
       char matType[30];
       PetscBool typeFound;
-      PetscOptionsGetString(PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
+      PetscOptionsGetString(NULL,PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
       if(!typeFound) {
         std::cout<<"I need a MatType for the full Jacobian matrix!"<<std::endl;
         assert(false);
@@ -897,7 +897,7 @@ void solve_neumann(
       dof, mgLoadFac, compressLut, incCorner);
  
   // set some options to make "CreateJacobian2" and "ComputeJacobian2" work. These routines are related to matrix-vector multiplication on all levels.
-  PetscOptionsSetValue("-jacType","2");
+  PetscOptionsSetValue(NULL,"-jacType","2");
   
   // load stencils, i.e. integrals of: products of gradients of shape functions, product of shape functions and shape functions themselves
   createLmatType2(LaplacianType2Stencil);
@@ -1008,7 +1008,7 @@ void solve_neumann_oct(
       dof, mgLoadFac, compressLut, incCorner);
 
   // set some options to make "CreateJacobian2" and "ComputeJacobian2" work. These routines are related to matrix-vector multiplication on all levels.
-  PetscOptionsSetValue("-jacType","2");
+  PetscOptionsSetValue(PETSC_NULL, "-jacType","2");
   
   // load stencils, i.e. integrals of: products of gradients of shape functions, product of shape functions and shape functions themselves
   createLmatType2(LaplacianType2Stencil);

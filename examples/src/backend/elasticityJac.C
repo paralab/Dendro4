@@ -398,8 +398,8 @@ void SetElasticityContexts(ot::DAMG* damg) {
   PetscReal muVal = 1.0;
   PetscReal lambdaVal = 1.0;
   PetscBool optFound;
-  PetscOptionsGetReal("elasticity","-_mu", &muVal, &optFound);
-  PetscOptionsGetReal("elasticity","-_lambda", &lambdaVal, &optFound);
+  PetscOptionsGetReal(PETSC_NULL, "elasticity","-_mu", &muVal, &optFound);
+  PetscOptionsGetReal(PETSC_NULL, "elasticity","-_lambda", &lambdaVal, &optFound);
   for(int i = 0; i < nlevels; i++) {
     ElasticityData* ctx= new ElasticityData;
     ctx->mu = muVal;
@@ -544,8 +544,8 @@ PetscErrorCode CreateElasticityMat(ot::DAMG damg, Mat *jac) {
   PetscInt buildFullMatAll;
   int totalLevels;
   PetscBool flg;
-  PetscOptionsGetInt(PETSC_NULL,"-buildFullCoarseMat",&buildFullCoarseMat,&flg);
-  PetscOptionsGetInt(PETSC_NULL,"-buildFullMatAll",&buildFullMatAll,&flg);
+  PetscOptionsGetInt(PETSC_NULL, PETSC_NULL,"-buildFullCoarseMat",&buildFullCoarseMat,&flg);
+  PetscOptionsGetInt(PETSC_NULL, PETSC_NULL,"-buildFullMatAll",&buildFullMatAll,&flg);
   if(buildFullMatAll) {
     buildFullCoarseMat = 1;
   }
@@ -564,7 +564,7 @@ PetscErrorCode CreateElasticityMat(ot::DAMG damg, Mat *jac) {
         da->computeLocalToGlobalMappings();
       }
       PetscBool typeFound;
-      PetscOptionsGetString(PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
+      PetscOptionsGetString(PETSC_NULL, PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
       if(!typeFound) {
         std::cout<<"I need a MatType for the full matrix!"<<std::endl;
         assert(false);
@@ -627,7 +627,7 @@ PetscErrorCode CreateElasticityMat(ot::DAMG damg, Mat *jac) {
       }
       char matType[30];
       PetscBool typeFound;
-      PetscOptionsGetString(PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
+      PetscOptionsGetString(PETSC_NULL, PETSC_NULL,"-fullJacMatType",matType,30,&typeFound);
       if(!typeFound) {
         std::cout<<"I need a MatType for the full matrix!"<<std::endl;
         assert(false);

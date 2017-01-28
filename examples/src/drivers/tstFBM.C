@@ -84,7 +84,7 @@ int main(int argc, char ** argv ) {
 
   PetscInt       numRefinements = 0;
 
-  PetscOptionsGetInt(0,"-numRefinements",&numRefinements,0);
+  PetscOptionsGetInt(NULL, 0,"-numRefinements",&numRefinements,0);
   for(int i = 0; i < numRefinements; i++) {
     std::vector<ot::TreeNode> tmpOct = balOct;
     balOct.clear();
@@ -98,7 +98,7 @@ int main(int argc, char ** argv ) {
   unsigned int       dof =1;// degrees of freedom per node  
 
   PetscInt nlevelsPetscInt = nlevels;
-  PetscOptionsGetInt(0, "-nlevels", &nlevelsPetscInt, 0);
+  PetscOptionsGetInt(NULL, 0, "-nlevels", &nlevelsPetscInt, 0);
   nlevels = nlevelsPetscInt;
 
   if(!rank) {
