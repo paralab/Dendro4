@@ -644,7 +644,7 @@ namespace SFC
             MPI_Comm_rank(comm, &rank);
             MPI_Comm_size(comm, &npes);
 
-#pragma message ("Splitter selection FIX ON")
+// #pragma message ("Splitter selection FIX ON")
 
             if (npes > NUM_NPES_THRESHOLD) {
 

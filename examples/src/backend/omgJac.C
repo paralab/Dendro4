@@ -109,7 +109,7 @@ PetscErrorCode CreateDirichletLaplacian(ot::DAMG damg, Mat *jac) {
           MatShellSetOperation(data->Jmat_private, MATOP_DESTROY,
               (void (*)(void)) DirichletLaplacianMatDestroy);
         }
-        MatGetVecs(data->Jmat_private, &(data->inTmp), &(data->outTmp));
+        MatCreateVecs(data->Jmat_private, &(data->inTmp), &(data->outTmp));
       } else {
         data->Jmat_private = NULL;
         data->inTmp = NULL;
@@ -214,7 +214,8 @@ PetscErrorCode CreateDirichletJacobian(ot::DAMG damg, Mat *jac) {
           MatShellSetOperation(data->Jmat_private, MATOP_DESTROY,
               (void (*)(void)) DirichletJacobianMatDestroy);
         }
-        MatGetVecs(data->Jmat_private, &(data->inTmp), &(data->outTmp));
+        // MatGetVecs(data->Jmat_private, &(data->inTmp), &(data->outTmp));
+        MatCreateVecs(data->Jmat_private, &(data->inTmp), &(data->outTmp));
       } else {
         data->Jmat_private = NULL;
         data->inTmp = NULL;
@@ -1382,7 +1383,7 @@ PetscErrorCode CreateJacobian1(ot::DAMG damg,Mat *jac) {
           iC(MatShellSetOperation(data->Jmat_private ,MATOP_DESTROY,
                 (void(*)(void)) Jacobian1MatDestroy));
         }
-        MatGetVecs(data->Jmat_private, &(data->inTmp), &(data->outTmp));
+        MatCreateVecs(data->Jmat_private, &(data->inTmp), &(data->outTmp));
       } else {
         data->Jmat_private = NULL;
         data->inTmp = NULL;
@@ -1530,7 +1531,7 @@ PetscErrorCode CreateJacobian2(ot::DAMG damg, Mat *jac) {
           MatShellSetOperation(data->Jmat_private, MATOP_DESTROY,
               (void (*)(void)) Jacobian2MatDestroy);
         }
-        MatGetVecs(data->Jmat_private, &(data->inTmp), &(data->outTmp));
+        MatCreateVecs(data->Jmat_private, &(data->inTmp), &(data->outTmp));
       } else {
         data->Jmat_private = NULL;
         data->inTmp = NULL;
@@ -1946,7 +1947,7 @@ PetscErrorCode CreateJacobian3(ot::DAMG damg,Mat *jac) {
           MatShellSetOperation(data->Jmat_private ,MATOP_DESTROY,
               (void (*)(void)) Jacobian3MatDestroy);
         }
-        MatGetVecs(data->Jmat_private, &(data->inTmp), &(data->outTmp));
+        MatCreateVecs(data->Jmat_private, &(data->inTmp), &(data->outTmp));
       } else {
         data->Jmat_private = NULL;
         data->inTmp = NULL;

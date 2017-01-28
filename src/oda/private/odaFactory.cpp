@@ -242,7 +242,7 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
 
     PROF_DA_BPART1_END
 
-      PROF_DA_BPART2_BEGIN
+    PROF_DA_BPART2_BEGIN
 
     DA_blockPartStage2(in, blocks, m_uiDimension, m_uiMaxDepth, m_mpiCommActive,m_uiTreeSortTol);
     //treeNodesTovtk(blocks,m_iRankActive,"oda_blocks_2");
@@ -255,6 +255,7 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
     blocks = *blocksPtr;
   }
 
+
   PROF_DA_BPART3_BEGIN
 
     DA_blockPartStage3(in, blocks, m_tnMinAllBlocks, m_uiDimension, m_uiMaxDepth, m_mpiCommActive);
@@ -263,7 +264,7 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
 //      std::cout<<GRN<<"DA_blockPartStage3 is completed."<<NRM<<std::endl;
   PROF_DA_BPART3_END
 
-    //Store Blocks. 
+    //Store Blocks.
     m_tnBlocks = blocks;
 
   //we must split comm if new empty procs were created in blockPartStage2
@@ -308,6 +309,7 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
 #ifdef __PROF_WITH_BARRIER__
     MPI_Barrier(m_mpiCommActive);
 #endif
+
   PROF_BUILD_DA_STAGE4_BEGIN
 
     // Set the Local offset
@@ -771,6 +773,7 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
 
 
   PROF_BUILD_DA_STAGE9_END
+//   PROF_BUILD_DA_STAGE3_END
 
 #ifdef __DEBUG_DA_PUBLIC__
     //Check Loops

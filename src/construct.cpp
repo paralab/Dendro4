@@ -523,6 +523,8 @@ namespace ot {
       int size;
       MPI_Comm_size(comm, &size);
 
+    PROF_N2O_BEGIN
+
       if (size == 1) {
         completeSubtree(root, inp, out, dim, maxDepth, isUnique, isSorted);
         PROF_N2O_END

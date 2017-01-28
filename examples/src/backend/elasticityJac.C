@@ -591,7 +591,8 @@ PetscErrorCode CreateElasticityMat(ot::DAMG damg, Mat *jac) {
           MatShellSetOperation(ctx->Jmat_private, MATOP_DESTROY,
               (void (*)(void)) ElasticityMatDestroy);
         }
-        MatGetVecs(ctx->Jmat_private, &(ctx->inTmp), &(ctx->outTmp));
+        // MatGetVecs(ctx->Jmat_private, &(ctx->inTmp), &(ctx->outTmp));
+        MatCreateVecs(ctx->Jmat_private, &(ctx->inTmp), &(ctx->outTmp));
       } else {
         ctx->Jmat_private = NULL;
       }

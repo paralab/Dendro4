@@ -691,7 +691,7 @@ PetscErrorCode CreateJacobian2(ot::DAMG damg, Mat *jac) {
           MatShellSetOperation(data->Jmat_private, MATOP_DESTROY,
               (void (*)(void)) Jacobian2MatDestroy);
         }
-        MatGetVecs(data->Jmat_private, &(data->inTmp), &(data->outTmp));
+        MatCreateVecs(data->Jmat_private, &(data->inTmp), &(data->outTmp));
       } else {
         data->Jmat_private = NULL;
         data->inTmp = NULL;

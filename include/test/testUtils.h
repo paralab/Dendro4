@@ -105,11 +105,11 @@ namespace ot {
       @return true if for every element in the vector, all the neighbours that balanced it are also present in the vector and false otherwise.
       @remark The function uses Binary Search and hence expects the vector of nodes to be sorted.
     **/ 
-    bool isBalanced(unsigned int dim, unsigned int maxDepth, char* failFileName,
+    bool isBalanced(unsigned int dim, unsigned int maxDepth, const char* failFileName,
         const std::vector<TreeNode >& nodes, bool incCorn, unsigned int maxLevDiff = 1) ;
 
     bool isBalancedInternal(unsigned int dim, unsigned int maxDepth,
-        char*failFileName,	const std::vector<TreeNode > & nodes,
+        const char* failFileName,	const std::vector<TreeNode > & nodes,
         TreeNode holder, bool incCorn, unsigned int maxLevDiff = 1) ;
 
   }//end namespace

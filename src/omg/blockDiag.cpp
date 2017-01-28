@@ -2725,7 +2725,8 @@ Type2: Use Aux. Coarse and Fine are not aligned.
         //This also calls PCSetFromOptions for the private pc internally
         KSPSetFromOptions(data->ksp_private);  
 
-        MatGetVecs(Amat_private, &(data->sol_private), &(data->rhs_private));
+        // MatGetVecs(Amat_private, &(data->sol_private), &(data->rhs_private));
+        MatCreateVecs(Amat_private, &(data->sol_private), &(data->rhs_private));
       }
 
       KSPSetOperators(data->ksp_private, Amat_private, Pmat_private); // , pFlag);

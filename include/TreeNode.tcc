@@ -134,7 +134,7 @@ namespace ot {
 
 #ifdef HILBERT_ORDERING
         // NOTE: To work the Hilbert Ordering You need the Hilbert Table Initialized.
-        #pragma message "Hilbert"
+        // #pragma message "Hilbert"
         unsigned int x1 = m_uiX;
         unsigned int x2 = other.getX();
 
@@ -209,7 +209,7 @@ namespace ot {
         return rotations[rot_offset*current_rot+num_children+index1] < rotations[rot_offset*current_rot+num_children+index2];
 
 #else
-	      #pragma message "Morton"
+	      // #pragma message "Morton"
           // -- original Morton
           // first compare the x, y, and z to determine which one dominates ...
           //Ancestor is smaller.

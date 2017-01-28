@@ -34,7 +34,7 @@ void setScalarByFunction(ot::DA* da, Vec vec, std::function<double(double,double
 
 void getBoundaryNodeIndices(ot::DA* da, std::vector<unsigned int> &indices, std::vector<double>& coords, std::function<double(double,double,double)> f);
 
-void saveNodalVecAsVTK(ot::DA* da, Vec vec, char *fname);
+void saveNodalVecAsVTK(ot::DA* da, Vec vec, const char *fname);
 
 void interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::DA* m_octDA);
 void interp_local_to_global(PetscScalar* __restrict loc, PetscScalar* glo, ot::DA* m_octDA);
@@ -245,6 +245,7 @@ int main(int argc, char ** argv ) {
 #endif
 
   MPI_Barrier(MPI_COMM_WORLD);
+
   if(rank==0) {
     std::cout << "building DA" << std::endl;
   }
@@ -383,7 +384,7 @@ void setScalarByFunction(ot::DA* da, Vec vec, std::function<double(double,double
 
 }
 
-void saveNodalVecAsVTK(ot::DA* da, Vec vec, char *file_prefix) {
+void saveNodalVecAsVTK(ot::DA* da, Vec vec, const char *file_prefix) {
   int rank, size;
   char fname[256];
 

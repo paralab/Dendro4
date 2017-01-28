@@ -79,13 +79,13 @@ bool isComplete(const std::vector<ot::TreeNode >& nodes) {
 
 
 
-bool isBalanced(unsigned int dim, unsigned int maxDepth, char*failFileName,
+bool isBalanced(unsigned int dim, unsigned int maxDepth, const char*failFileName,
     const std::vector<ot::TreeNode > &nodes, bool incCorn, unsigned int maxLevDiff) {
   TreeNode root (dim, maxDepth);
-  return	isBalancedInternal(dim,maxDepth,failFileName,nodes,root, incCorn, maxLevDiff);
+  return	isBalancedInternal(dim,maxDepth,failFileName, nodes, root, incCorn, maxLevDiff);
 }//end function
 
-bool isBalancedInternal(unsigned int dim, unsigned int maxDepth,char*failFileName,
+bool isBalancedInternal(unsigned int dim, unsigned int maxDepth, const char*failFileName,
 
   const  std::vector<ot::TreeNode > & nodes, ot::TreeNode holder,
   bool incCorn, unsigned int maxLevDiff) {

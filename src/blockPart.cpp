@@ -568,6 +568,7 @@ namespace ot {
     MPI_Barrier(comm);
 #endif
     PROF_BLKPART1_BEGIN
+    // std::cout << "blk part 1 begin" << std::endl;
     int npes, rank;
     const double thFac = 0.5;
     MPI_Comm_rank(comm,&rank);
@@ -578,6 +579,7 @@ namespace ot {
 #else
       par::partitionW<ot::TreeNode>(nodes, NULL,comm);
 #endif
+    // std::cout << "blk part after SFC part" << std::endl;
     /*MPI_Barrier(comm);
     std::cout << rank << ": " << __func__ << ":Block Part Node Size:" <<nodes.size()<< std::endl;*/
     assert(nodes.size() > (1 << dim) ); 
@@ -599,6 +601,8 @@ namespace ot {
 
     appendCompleteRegion(nodes[0], nodes[nodes.size()-1], localCoarse, true, true);
     //treeNodesTovtk(localCoarse,rank,"localCoarse");
+
+    // std::cout << "blk part after appendComplete" << std::endl;
 
     // 2. Get local Blocks. These will be input to completeOctree that will
     // produce globalCoarse.
@@ -643,6 +647,7 @@ namespace ot {
     }//end while
 
     sort(localCoarse.begin(), localCoarse.end(), ot::bPartComparator);
+    // std::cout << "blk part 1 after localSOrt" << std::endl;
     //treeNodesTovtk(localCoarse,rank,"local_coarse");
     long localWt = 0;
     unsigned int cnt = 0;
@@ -652,8 +657,6 @@ namespace ot {
       localWt += (long)(localCoarse[cnt].getWeight());
       cnt++;
     }//end while
-
-
 
     localCoarse.clear();
 
@@ -680,14 +683,16 @@ namespace ot {
 
     //treeNodesTovtk(localBlocks,rank,"local_blocks");
 
+    // std::cout << "blk part 1 before Complete oct" << std::endl;
     completeOctree(localBlocks, blocks, dim, maxDepth, true,true,true, comm,tol);
+    // std::cout << "blk part 1 after complete Oct" << std::endl;
     MPI_Barrier(comm);
     //assert(par::test::isUniqueAndSorted(blocks, comm));
     //treeNodesTovtk(blocks,rank,"af_complete_octree");
     localBlocks.clear();
 
 #endif
-
+    // std::cout << "blk part 1 end" << std::endl;
     PROF_BLKPART1_END
   } // end blockPart
 
