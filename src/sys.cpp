@@ -56,6 +56,7 @@ namespace ot {
     PetscLogEventRegister("bal-wList",classid,&prepBalWlistEvent);
     PetscLogEventRegister("mergeOctrees",classid,&mergeOctreesEvent);
     PetscLogEventRegister("rg2o",classid,&rg2oEvent);
+    PetscLogEventRegister("f2o",classid,&f2oEvent);
     PetscLogEventRegister("p2o",classid,&p2oEvent);
     PetscLogEventRegister("p2oSeq",classid,&p2oSeqEvent);
     PetscLogEventRegister("p2oLoc",classid,&p2oLocalEvent);

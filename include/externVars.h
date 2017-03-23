@@ -60,6 +60,7 @@ namespace ot {
   int balanceEvent;
   int mergeOctreesEvent;
   int rg2oEvent;
+  int f2oEvent;
   int p2oEvent;
   int p2oSeqEvent;
   int p2oLocalEvent;

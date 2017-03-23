@@ -74,8 +74,6 @@ int main(int argc, char ** argv ) {
   PetscLogStageRegister("ODACreate",&stages[2]);
 #endif
 
-
-
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -255,8 +253,7 @@ int main(int argc, char ** argv ) {
   if(rank==0) {
     std::cout << "finished building DA" << std::endl;
   }
-
-
+  
 #ifdef PETSC_USE_LOG
   PetscLogStagePop();
 #endif

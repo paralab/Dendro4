@@ -1062,6 +1062,16 @@ namespace ot {
         int zeroRowsInMatrix(Mat mat, std::vector<unsigned int>& indices, unsigned int dof,
                              double diag, Vec x, Vec b);
 
+        
+        /**
+         * @author Hari Sundar
+         * @brief  Aligns points with the DA partition so that all points will lie within local elements on any process.
+         * 
+         * Note that the points will be redistributed and contents will be modified.
+         */ 
+        int alignPointsWithDA(std::vector<double>& points);
+        
+        
         /**
           @author Hari Sundar
           @brief Returns a std. vector of appropriate size of the requested type. 

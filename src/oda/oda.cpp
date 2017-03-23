@@ -1592,10 +1592,128 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
 
  }
 
+ 
+int DA::alignPointsWithDA(std::vector<double>& pts) {
+    // MPI_Comm                        m_mpiCommAll;
+    // int                             m_iRankAll;
+    // int                             m_iNpesAll;
 
+    // m_tnMinAllBlocks 
+  
+  unsigned int balOctMaxD = (m_uiMaxDepth - 1);
+  
+  int numPts = (pts.size())/3;
+  double xyzFac = static_cast<double>(1u << balOctMaxD);
+  
+  std::vector<ot::NodeAndValues<double, 3> > ptsWrapper;
+  
+  for(int i = 0; i < numPts; i++) {
+    ot::NodeAndValues<double, 3> tmpObj;
+    unsigned int xint = static_cast<unsigned int>(pts[(3*i)]*xyzFac);
+    unsigned int yint = static_cast<unsigned int>(pts[(3*i) + 1]*xyzFac);
+    unsigned int zint = static_cast<unsigned int>(pts[(3*i) + 2]*xyzFac);
+    tmpObj.node = ot::TreeNode(xint, yint, zint, m_uiMaxDepth, 3, m_uiMaxDepth);
+    tmpObj.values[0] = pts[(3*i)];
+    tmpObj.values[1] = pts[(3*i) + 1];
+    tmpObj.values[2] = pts[(3*i) + 2];
+    ptsWrapper.push_back(tmpObj);
+  }//end for i
+  
+  //Re-distribute ptsWrapper to align with minBlocks
+  int* sendCnts = new int[m_iNpesAll];
+  int* tmpSendCnts = new int[m_iNpesAll];
 
+  for(int i = 0; i < m_iNpesAll; i++) {
+    sendCnts[i] = 0;
+    tmpSendCnts[i] = 0;
+  }//end for i
 
+  unsigned int *part = NULL;
+    if(numPts) {
+      part = new unsigned int[numPts];
+  }
 
+  for(int i = 0; i < numPts; i++) {
+    bool found = seq::maxLowerBound<ot::TreeNode>(m_tnMinAllBlocks, ptsWrapper[i].node, part[i], NULL, NULL);
+    assert(found);
+    assert(part[i] < m_iNpesAll);
+    sendCnts[part[i]]++;
+  }//end for i
+
+  int* sendDisps = new int[m_iNpesAll];
+
+  sendDisps[0] = 0;
+  for(int i = 1; i < m_iNpesAll; i++) {
+    sendDisps[i] = sendDisps[i-1] + sendCnts[i-1];
+  }//end for i
+
+  std::vector<ot::NodeAndValues<double, 3> > sendList(numPts);
+
+  unsigned int *commMap = NULL;
+  if(numPts) {
+    commMap = new unsigned int[numPts];
+  }
+
+  for(int i = 0; i < numPts; i++) {
+      unsigned int pId = part[i];
+      unsigned int sId = (sendDisps[pId] + tmpSendCnts[pId]);
+      assert(sId < numPts);
+      sendList[sId] = ptsWrapper[i];
+      commMap[sId] = i;
+      tmpSendCnts[pId]++;
+  }//end for i
+
+  if(part) {
+    delete [] part;
+    part = NULL;
+  }
+  delete [] tmpSendCnts;
+
+  ptsWrapper.clear();
+
+  int* recvCnts = new int[m_iNpesAll];
+  assert(recvCnts);
+
+  par::Mpi_Alltoall<int>(sendCnts, recvCnts, 1, m_mpiCommAll);
+
+  int* recvDisps = new int[m_iNpesAll];
+
+  recvDisps[0] = 0;
+  for(int i = 1; i < m_iNpesAll; i++) {
+    recvDisps[i] = recvDisps[i-1] + recvCnts[i-1];
+  }//end for i
+
+  std::vector<ot::NodeAndValues<double, 3> > recvList(recvDisps[m_iNpesAll - 1] + recvCnts[m_iNpesAll - 1]);
+
+  ot::NodeAndValues<double, 3>* sendListPtr = NULL;
+  ot::NodeAndValues<double, 3>* recvListPtr = NULL;
+
+  if(!(sendList.empty())) {
+    sendListPtr = (&(*(sendList.begin())));
+  }
+
+  if(!(recvList.empty())) {
+    recvListPtr = (&(*(recvList.begin())));
+  }
+
+  par::Mpi_Alltoallv_sparse<ot::NodeAndValues<double, 3> >(sendListPtr, 
+        sendCnts, sendDisps, recvListPtr, recvCnts, recvDisps, m_mpiCommAll);
+  sendList.clear();
+  
+  // clear and copy to points ...
+  pts.clear();
+  for (auto x: recvList) {
+    pts.push_back(x.values[0]);
+    pts.push_back(x.values[1]);
+    pts.push_back(x.values[2]);
+  }
+  recvList.clear();
+  // clean up.
+  delete [] sendCnts;
+  delete [] sendDisps;
+  delete [] recvCnts;
+  delete [] recvDisps;
+}
 
 } // end namespace ot
 

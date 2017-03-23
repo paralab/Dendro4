@@ -23,6 +23,8 @@
 #endif
 #endif
 
+#define SQRT_3 1.7320508075688772
+
 namespace ot {
 
   int regularGrid2Octree(const std::vector<double> &elementValues,
@@ -1282,6 +1284,145 @@ sort(newNodes.begin(),newNodes.end());
 PROF_COMPLETE_REGION_END
 }//end function
 */
+
+
+int function2Octree(std::function<double(double,double,double)> fx, std::vector<TreeNode> & nodes, 
+                      unsigned int d_max, bool reject_interior, MPI_Comm comm ) 
+{
+  PROF_F2O_BEGIN
+    int size, rank;
+  unsigned int dim = 3;
+  unsigned maxDepth = 30;
+  
+  MPI_Comm_size(comm, &size);
+  MPI_Comm_rank(comm, &rank);
+  
+  nodes.clear();
+  std::vector<ot::TreeNode> nodes_new;
+
+  unsigned int depth = 1;
+  unsigned int num_intersected=1;
+  
+  double h, h1;
+  std::array<double, 8> dist;
+  Point pt;
+  
+  h = 1.0/(1<<(maxDepth));
+  
+  if (!rank) {
+    // root does the initial refinement
+    ot::TreeNode root = ot::TreeNode(dim, maxDepth);
+    root.addChildren(nodes);
+  
+  while ( (num_intersected > 0 ) && (num_intersected < size*size ) && (depth < d_max) ) {
+    std::cout << "Depth: " << depth << " n = " << nodes.size() << std::endl;
+    num_intersected = 0;
+    for (auto elem: nodes ){
+        if ( elem.getLevel() != depth ) {
+          nodes_new.push_back(elem);
+          continue;
+        } 
+        
+        h1 = h * ( 1 << (maxDepth - elem.getLevel())); 
+        
+        // check and split
+        pt = elem.getAnchor();
+        pt *= h ;
+        
+        dist[0] = fx(pt.x(), pt.y(), pt.z());
+        dist[1] = fx(pt.x()+h1, pt.y(), pt.z());
+        dist[2] = fx(pt.x(), pt.y()+h1, pt.z());
+        dist[3] = fx(pt.x()+h1, pt.y()+h1, pt.z());
+
+        dist[4] = fx(pt.x(), pt.y(), pt.z()+h1);
+        dist[5] = fx(pt.x()+h1, pt.y(), pt.z()+h1);
+        dist[6] = fx(pt.x(), pt.y()+h1, pt.z()+h1);
+        dist[7] = fx(pt.x()+h1, pt.y()+h1, pt.z() +h1);
+        
+        auto inside = [](double d){ return d < 0.0; };
+        
+        if ( std::none_of(dist.begin(), dist.end(), inside )) {
+          // outside, retain but do not refine 
+          nodes_new.push_back(elem);
+        } else if ( std::all_of(dist.begin(), dist.end(), inside ) ) {
+          // if (!skipInternal)
+          nodes_new.push_back(elem);
+        } else {
+          // intersection.
+          elem.addChildren(nodes_new);
+          num_intersected++;
+        }
+      }
+      depth++;
+      
+      std::swap(nodes, nodes_new);
+      nodes_new.clear();
+    }
+  } // !rank
+
+  // now scatter the elements.
+  DendroIntL totalNumOcts = nodes.size(), numOcts;
+  
+  par::Mpi_Bcast<DendroIntL>(&totalNumOcts, 1, 0, comm);
+  
+  // TODO do proper load balancing.
+  numOcts = totalNumOcts/size + (rank < totalNumOcts%size);
+  par::scatterValues<ot::TreeNode>(nodes, nodes_new, numOcts, comm);
+  std::swap(nodes, nodes_new);
+  nodes_new.clear();
+  
+  // now refine in parallel.
+  par::Mpi_Bcast(&depth, 1, 0, comm);
+  num_intersected=1;
+  
+  while ( (num_intersected > 0 ) && (depth < d_max) ) {
+    // std::cout << "Depth: " << depth << " n = " << nodes.size() << std::endl;
+    num_intersected = 0;
+    for (auto elem: nodes ){
+        if ( elem.getLevel() != depth ) {
+          nodes_new.push_back(elem);
+          continue;
+        } 
+        
+        h1 = h * ( 1 << (maxDepth - elem.getLevel())); 
+        
+        // check and split
+        pt = elem.getAnchor();
+        pt *= h ;
+        
+        dist[0] = fx(pt.x(), pt.y(), pt.z());
+        dist[1] = fx(pt.x()+h1, pt.y(), pt.z());
+        dist[2] = fx(pt.x(), pt.y()+h1, pt.z());
+        dist[3] = fx(pt.x()+h1, pt.y()+h1, pt.z());
+
+        dist[4] = fx(pt.x(), pt.y(), pt.z()+h1);
+        dist[5] = fx(pt.x()+h1, pt.y(), pt.z()+h1);
+        dist[6] = fx(pt.x(), pt.y()+h1, pt.z()+h1);
+        dist[7] = fx(pt.x()+h1, pt.y()+h1, pt.z() +h1);
+        
+        auto inside = [](double d){ return d < 0.0; };
+        
+        if ( std::none_of(dist.begin(), dist.end(), inside )) {
+          // outside, retain but do not refine 
+          nodes_new.push_back(elem);
+        } else if ( std::all_of(dist.begin(), dist.end(), inside ) ) {
+          // if (!skipInternal)
+          nodes_new.push_back(elem);
+        } else {
+          // intersection.
+          elem.addChildren(nodes_new);
+          num_intersected++;
+        }
+      }
+      depth++;
+      
+      std::swap(nodes, nodes_new);
+      nodes_new.clear();
+    }
+  
+  PROF_F2O_END
+} // end function2Octree
+
 
 } //end namespace
 

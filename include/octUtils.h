@@ -11,6 +11,7 @@
 
 #include "mpi.h"
 #include <vector>
+#include <functional>
 
 #ifdef PETSC_USE_LOG
 
@@ -47,6 +48,7 @@ namespace ot {
   extern int mergeOctreesEvent;
   extern int rg2oEvent;
   extern int p2oEvent;
+  extern int f2oEvent;
   extern int p2oSeqEvent;
   extern int p2oLocalEvent;
   extern int n2oEvent;
@@ -294,6 +296,13 @@ PetscFunctionReturn(0);
 PetscLogEventBegin(p2oEvent,0,0,0,0);
 #define PROF_P2O_END         \
   PetscLogEventEnd(p2oEvent,0,0,0,0); \
+PetscFunctionReturn(0);
+
+#define PROF_F2O_BEGIN 	\
+  PetscFunctionBegin; \
+PetscLogEventBegin(f2oEvent,0,0,0,0);
+#define PROF_F2O_END         \
+  PetscLogEventEnd(f2oEvent,0,0,0,0); \
 PetscFunctionReturn(0);
 
 #define PROF_P2O_SEQ_BEGIN \
@@ -985,10 +994,26 @@ namespace ot {
 
   int readNodesFromFile_binary (char* filename, std::vector<TreeNode > & nodes);
 
-
-
   unsigned int getNodeWeight(const TreeNode * t);
+  
+  /**
+   * @author  Hari Sundar
+   * @brief   Generates an octree based on a function provided by the user.
+   * @param   fx        the function that taxes $x,y,z$ coordinates and returns the distance to
+   *                    the surface.
+   * @param   maxDepth  The maximum depth that the octree should be refined to.
+   * @param   reject_interior if true, then the elements that are completely in the negative
+   *                          distance are not retained in the octree. 
+   * @param   comm      The MPI communicator to be use for parallel computation.
+   * 
+   * Generates an octree based on a function provided by the user. The function is expected to return the 
+   * signed distance to the surface that needs to be meshed. The coordinates are expected to be in [0,1]^3.
+   */ 
 
+  int function2Octree(std::function<double(double,double,double)> fx, std::vector<TreeNode> & nodes, 
+                      unsigned int maxDepth, bool reject_interior, MPI_Comm comm );
+
+  
 }//end namespace
 
 #endif /*OCTUTILS_H_*/
