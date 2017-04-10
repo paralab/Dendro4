@@ -1345,8 +1345,8 @@ int function2Octree(std::function<double(double,double,double)> fx, std::vector<
           // outside, retain but do not refine 
           nodes_new.push_back(elem);
         } else if ( std::all_of(dist.begin(), dist.end(), inside ) ) {
-          // if (!skipInternal)
-          nodes_new.push_back(elem);
+          if (!skipInternal)
+            nodes_new.push_back(elem);
         } else {
           // intersection.
           elem.addChildren(nodes_new);
