@@ -306,7 +306,10 @@ int main(int argc, char ** argv )
     par::Mpi_Reduce<DendroIntL>(&locSz, &totalSz, 1, MPI_SUM, 0, MPI_COMM_WORLD);
     par::Mpi_Reduce<double>(&localTime, &totalTime, 1, MPI_MAX, 0, MPI_COMM_WORLD);
 
+    DendroIntL balOctSz_g=0;
+
     if (!rank) {
+        balOctSz_g=totalSz;
         std::cout << "# of Balanced Octants: " << totalSz << std::endl;
         std::cout << "bal Time: " << totalTime << std::endl;
     }
@@ -367,7 +370,10 @@ int main(int argc, char ** argv )
     par::Mpi_Reduce<DendroIntL>(&locSz, &totalSz, 1, MPI_SUM, 0, MPI_COMM_WORLD);
     par::Mpi_Reduce<double>(&localTime, &totalTime, 1, MPI_MAX, 0, MPI_COMM_WORLD);
 
+    DendroIntL vertexSz=0;
+
     if(!rank) {
+        vertexSz=totalSz;
         std::cout << "Total # Vertices: "<< totalSz << std::endl;
         std::cout << "Time to build ODA: "<<totalTime << std::endl;
     }
@@ -420,11 +426,28 @@ int main(int argc, char ** argv )
     ptm = gmtime ( &rawtime );
     if(!rank) std::cout<<" MatVec Begin: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
 #endif
-
+double t1=MPI_Wtime();
     for(unsigned int i=0;i<numLoops;i++) {
         iC(Jacobian1MatGetDiagonal(J, diag));
         iC(Jacobian1MatMult(J, in, out));
     }
+double t2=MPI_Wtime();
+double mVecTime=(t2-t1);
+    double mvecTime_g[3]; // min mean max
+    par::Mpi_Reduce(&mVecTime,&mvecTime_g[0],1,MPI_MIN,0,globalComm);
+    par::Mpi_Reduce(&mVecTime,&mvecTime_g[1],1,MPI_SUM,0,globalComm);
+    par::Mpi_Reduce(&mVecTime,&mvecTime_g[2],1,MPI_MAX,0,globalComm);
+
+    mvecTime_g[1]=mvecTime_g[1]/(double)npes;
+
+    if(!rank)
+    {
+        std::cout<<"npes\tgrainSz\tbalOctSz\tvertexSz\tnumLoops\tmVecMin\tmVecMean\tmVecMax"<<std::endl;
+        std::cout<<npes<<"\t"<<grainSize<<"\t"<<balOctSz_g<<"\t"<<vertexSz<<"\t"<<numLoops<<"\t"<<mvecTime_g[0]<<"\t"<<mvecTime_g[1]<<"\t"<<mvecTime_g[2]<<std::endl;
+    }
+
+
+
 
 #ifdef POWER_MEASUREMENT_TIMESTEP
   time ( &rawtime );
