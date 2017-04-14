@@ -442,8 +442,8 @@ double mVecTime=(t2-t1);
 
     if(!rank)
     {
-        std::cout<<"npes\tgrainSz\tbalOctSz\tvertexSz\tnumLoops\tmVecMin\tmVecMean\tmVecMax"<<std::endl;
-        std::cout<<npes<<"\t"<<grainSize<<"\t"<<balOctSz_g<<"\t"<<vertexSz<<"\t"<<numLoops<<"\t"<<mvecTime_g[0]<<"\t"<<mvecTime_g[1]<<"\t"<<mvecTime_g[2]<<std::endl;
+        std::cout<<"npes\tgrainSz\ttol\tbalOctSz\tvertexSz\tnumLoops\tmVecMin\tmVecMean\tmVecMax"<<std::endl;
+        std::cout<<npes<<"\t"<<grainSize<<"\t"<<tol<<"\t"<<balOctSz_g<<"\t"<<vertexSz<<"\t"<<numLoops<<"\t"<<mvecTime_g[0]<<"\t"<<mvecTime_g[1]<<"\t"<<mvecTime_g[2]<<std::endl;
     }
 
 
