@@ -426,6 +426,20 @@ int main(int argc, char ** argv )
     ptm = gmtime ( &rawtime );
     if(!rank) std::cout<<" MatVec Begin: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
 #endif
+
+    unsigned int numLocalNodes=da.getInternalNodeSize();
+    unsigned int numGhostNodes=da.getGhostedNodeSize();
+
+    unsigned int numLocal_max=0;
+    unsigned int numGhost_max=0;
+
+    par::Mpi_Reduce(&numLocalNodes,&numLocal_max,1,MPI_MAX,0,globalComm);
+    par::Mpi_Reduce(&numGhostNodes,&numGhost_max,1,MPI_MAX,0,globalComm);
+
+    if(!rank) std::cout<<" local_max: "<<numLocal_max<<" global_max: "<<numGhost_max<<std::endl;
+
+
+
 double t1=MPI_Wtime();
     for(unsigned int i=0;i<numLoops;i++) {
         iC(Jacobian1MatGetDiagonal(J, diag));
