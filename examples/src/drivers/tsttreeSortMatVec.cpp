@@ -217,36 +217,8 @@ int main(int argc, char ** argv )
     std::swap(tmpNodes,tmpSorted);
     tmpSorted.clear();
 
-/*
-    SFC::parSort::SFC_Sort_RemoveDuplicates(tmpNodes,tol,maxDepth,false,globalComm);
-    std::swap(linOct,tmpNodes);
-
-    //assert( par::test::isUniqueAndSorted(linOct,globalComm));
 
 
-    //par::partitionW(linOct,NULL,globalComm);
-
-    //SFC::parSort::SFC_3D_Sort(linOct,tol,maxDepth,globalComm);
-
-
-    locSz = linOct.size();
-    par::Mpi_Reduce<DendroIntL>(&locSz, &totalSz, 1, MPI_SUM, 0, MPI_COMM_WORLD);
-    if (rank == 0) {
-        std::cout << " # pts= " << totalSz << std::endl;
-    }
-
-    pts.resize(3 * (linOct.size()));
-    ptsLen = (3 * (linOct.size()));
-    for (int i = 0; i < linOct.size(); i++) {
-        pts[3 * i] = (((double) (linOct[i].getX())) + 0.5) / ((double) (1u << maxDepth));
-        pts[(3 * i) + 1] = (((double) (linOct[i].getY())) + 0.5) / ((double) (1u << maxDepth));
-        pts[(3 * i) + 2] = (((double) (linOct[i].getZ())) + 0.5) / ((double) (1u << maxDepth));
-    }//end for i
-    linOct.clear();
-
-    gSize[0] = 1.;
-    gSize[1] = 1.;
-    gSize[2] = 1.;*/
 #ifdef POWER_MEASUREMENT_TIMESTEP
     time ( &rawtime );
     //std::this_thread::sleep_for(std::chrono::milliseconds(10000));
@@ -300,6 +272,7 @@ int main(int argc, char ** argv )
     if(!rank) std::cout<<" balOCt End: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
 #endif
 
+    //treeNodesTovtk(balOct,rank,"balOct");
 
     locSz = balOct.size();
     localTime = endTime - startTime;
@@ -427,26 +400,41 @@ int main(int argc, char ** argv )
     if(!rank) std::cout<<" MatVec Begin: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
 #endif
 
-    unsigned int numLocalNodes=da.getInternalNodeSize();
-    unsigned int numGhostNodes=da.getGhostedNodeSize();
+    double  numLocalNodes=da.getInternalNodeSize();
+    double numGhostNodes=da.getPreAndPostGhostNodeSize();
 
-    unsigned int numLocal_max=0;
-    unsigned int numGhost_max=0;
+    double numLocalNodes_g[3];
+    double numGhostNodes_g[3];
 
-    par::Mpi_Reduce(&numLocalNodes,&numLocal_max,1,MPI_MAX,0,globalComm);
-    par::Mpi_Reduce(&numGhostNodes,&numGhost_max,1,MPI_MAX,0,globalComm);
+    par::Mpi_Reduce(&numLocalNodes,numLocalNodes_g,1,MPI_MIN,0,globalComm);
+    par::Mpi_Reduce(&numLocalNodes,numLocalNodes_g+1,1,MPI_SUM,0,globalComm);
+    par::Mpi_Reduce(&numLocalNodes,numLocalNodes_g+2,1,MPI_MAX,0,globalComm);
 
-    if(!rank) std::cout<<" local_max: "<<numLocal_max<<" global_max: "<<numGhost_max<<std::endl;
+    par::Mpi_Reduce(&numGhostNodes,numGhostNodes_g,1,MPI_MIN,0,globalComm);
+    par::Mpi_Reduce(&numGhostNodes,numGhostNodes_g+1,1,MPI_SUM,0,globalComm);
+    par::Mpi_Reduce(&numGhostNodes,numGhostNodes_g+2,1,MPI_MAX,0,globalComm);
 
+    numLocalNodes_g[1]/=npes;
+    numGhostNodes_g[1]/=npes;
 
+    if(!rank)
+    {
+        std::cout<<" local (min, mean , max): "<<numLocalNodes_g[0]<<" , "<<numLocalNodes_g[1]<<" , "<<numLocalNodes_g[2]<<"\n ghost (min, mean , max): "<<numGhostNodes_g[0]<<" , "<<numGhostNodes_g[1]<<" , "<<numGhostNodes_g[2]<<std::endl;
+    }
 
-double t1=MPI_Wtime();
+ for(unsigned int i=0;i<5;i++) { // warmup
+        iC(Jacobian1MatGetDiagonal(J, diag));
+        iC(Jacobian1MatMult(J, in, out));
+ }
+
+auto mVecBegin=std::chrono::high_resolution_clock::now();
     for(unsigned int i=0;i<numLoops;i++) {
         iC(Jacobian1MatGetDiagonal(J, diag));
         iC(Jacobian1MatMult(J, in, out));
     }
-double t2=MPI_Wtime();
-double mVecTime=(t2-t1);
+auto mVecEnd=std::chrono::high_resolution_clock::now();
+double mVecTime=std::chrono::duration_cast<std::chrono::milliseconds>(mVecEnd - mVecBegin).count();
+
     double mvecTime_g[3]; // min mean max
     par::Mpi_Reduce(&mVecTime,&mvecTime_g[0],1,MPI_MIN,0,globalComm);
     par::Mpi_Reduce(&mVecTime,&mvecTime_g[1],1,MPI_SUM,0,globalComm);

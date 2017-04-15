@@ -809,6 +809,13 @@ namespace ot {
           */
         unsigned int getPreGhostElementSize();
 
+        /** @author Milinda Fernando
+         *  @brief Returns the number of ghost nodes. (pre ghost node + post ghost nodes)
+         *
+         * */
+
+        unsigned int getPreAndPostGhostNodeSize();
+
         /**
           @author Rahul Sampath
           @brief Returns the number of INDEPENDENT elements belonging to this processor. 
