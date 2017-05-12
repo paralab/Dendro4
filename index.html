@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Dendro4 by paralab</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Dendro4</h1>
+      <h2 class="project-tagline"></h2>
+      <a href="https://github.com/paralab/Dendro4" class="btn">View on GitHub</a>
+      <a href="https://github.com/paralab/Dendro4/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/paralab/Dendro4/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <p><img src="https://github.com/paralab/Dendro4/raw/dendro4/fig/dendro.png" alt=""></p>
+
+<h1>
+<a id="what-is-dendro-40-" class="anchor" href="#what-is-dendro-40-" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>What is Dendro-4.0 ?</h1>
+
+<p>Dendro is a distributed memory partial differential equations (PDEs) solver using numerical methods like, Finite Difference Method, Finite Element Method, Wavelet Method etc. It uses adaptive octree meshes as the geometric discretization.  </p>
+
+<hr>
+
+<h1>
+<a id="how-do-we-partition-octree-among-p-processors" class="anchor" href="#how-do-we-partition-octree-among-p-processors" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>How do we partition octree among p processors.</h1>
+
+<p>We Space Filling Curve (SFC) based flexible partitioning scheme to partition the adaptive octree among 'p' processors. Current implementation of Dendro-5.0 supports both Hilbert curve and Morton Curve. We have experimented with the partitions that we get from using Hilbert and Morton , and we found that when we are moving towards large scale Hilbert curve based partitioning gives, more energy and communication efficient partitions compared to Morton curve. </p>
+
+<p><img src="https://github.com/paralab/Dendro4/raw/dendro4/fig/bh_img_1.jpg" alt=""> 
+<img src="https://github.com/paralab/Dendro4/raw/dendro4/fig/bh_octree_1e-5.jpg" alt=""></p>
+
+<hr>
+
+<h1>
+<a id="how-to-run-dendro-40" class="anchor" href="#how-to-run-dendro-40" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>How to run Dendro-4.0</h1>
+
+<p>You can clone the repository using , 'git clone <a href="https://github.com/paralab/Dendro4.git">https://github.com/paralab/Dendro4.git</a>'</p>
+
+<h2>
+<a id="how-to-build-dendro-40-" class="anchor" href="#how-to-build-dendro-40-" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>How to build Dendro-4.0 ?</h2>
+
+<p>You need to install <a href="'PETSC-3.5.x'">http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-3.5.4.tar.gz</a> in order to use dendro4. We will provide support soon for the latest PETSC version. </p>
+
+<p>You need CMake to build dendro. Create a build directory using 'mkdir build'. Then go into the build directory by 'cd build' then execute 'ccmake ..' to generate the make files. You can build Dendro-5.0 with several options. </p>
+
+<ul>
+<li>ALLTOALLV_FIX : OFF,Need to turn off</li>
+<li>DIM_2: OFF, This can be turned on if you need to run Dendro-5.0 in 2D case. default: OFF (Which means it assumes 3D domain) </li>
+<li>HILBERT_ORDERING:ON, This specify which SFC to use to partition the data. HILBERT_ORDERING: ON means it uses Hilbert curve, otherwise it uses Morton curve for partitioning. </li>
+<li>PROFILE_TREE_SORT: OFF </li>
+<li>NUM_NPES_THRESHOLD: square root of P (number of processors) </li>
+<li>SPLITTER_SELECTION_FIX: ON. This will perform the data exchange in the octree partitioning in stages. This is mandatory when you run dendro in very large scale. </li>
+</ul>
+
+<h2>
+<a id="what-can-you-run-" class="anchor" href="#what-can-you-run-" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>What can you run ?</h2>
+
+<p>See the codes in example folder on how to get things started. </p>
+
+<hr>
+
+<h1>
+<a id="scalability-studies-on-dendro-40" class="anchor" href="#scalability-studies-on-dendro-40" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Scalability studies on Dendro-4.0</h1>
+
+<p>We have performed octree generation and partitioning up to 262144 cores in ORNL's titan super computer. We have managed to partition 1.3x10^12 octants among 262144 processors with in 4 seconds.</p>
+
+<p><img src="https://github.com/paralab/Dendro4/raw/dendro4/fig/titan_ws.png" alt="">
+<img src="https://github.com/paralab/Dendro4/raw/dendro4/fig/titan_ss.png" alt=""> </p>
+
+<p>[SC16 Poster: <a href="http://sc16.supercomputing.org/sc-archive/tech_poster/poster_files/post245s2-file2.pdf">http://sc16.supercomputing.org/sc-archive/tech_poster/poster_files/post245s2-file2.pdf</a>)</p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/paralab/Dendro4">Dendro4</a> is maintained by <a href="https://github.com/paralab">paralab</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
