@@ -26,8 +26,6 @@ double gSize[3];
 
 void saveTreeAsVTK(std::vector<ot::TreeNode>& tree, const char *file_prefix, MPI_Comm comm);
 
-
-
 int main(int argc, char ** argv ) {
   int size, rank;
   unsigned int dim = 3;

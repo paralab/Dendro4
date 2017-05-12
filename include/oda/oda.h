@@ -466,6 +466,9 @@ namespace ot {
         Point                           m_ptIndependentOffset;
         Point                           m_ptCurrentOffset;
 
+        // @hari April 2017. Support for holes on mesh
+        std::vector<unsigned char>      m_ucpSkipList;
+        bool                            m_bSkipOctants;
         //------------------------------------------------------------------------
 
         // The number of nodes owned by the current processor.
@@ -556,7 +559,15 @@ namespace ot {
 
         void computeHilbertRotations();
 
-
+        void getDepIndepIndices(unsigned int *el_beg, unsigned int *el_end, unsigned int *indep_el_begin, unsigned int *indep_el_end) {
+            *el_beg = m_uiElementBegin;
+            *el_end = m_uiElementEnd;
+        
+            *indep_el_begin =  m_uiIndependentElementBegin;
+            *indep_el_end = m_uiIndependentElementEnd;
+        }
+        
+        
         /**
           @return the list of blocks owned by the calling processor
           @author Rahul Sampath
@@ -1406,6 +1417,18 @@ namespace ot {
         void printODAStatistics();
         void printODANodeListStatistics(char * nlistFName);
 
+      /** 
+       * @author Hari Sundar
+       * @date   April 2017. 
+       * 
+       * Support for holes on mesh
+       **/
+      
+      void initialize_skiplist();
+      void skip_current();
+      void finalize_skiplist();
+        
+        
       protected:
 
         /**

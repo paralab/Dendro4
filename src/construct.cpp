@@ -1290,7 +1290,7 @@ int function2Octree(std::function<double(double,double,double)> fx, std::vector<
                       unsigned int d_max, bool reject_interior, MPI_Comm comm ) 
 {
   PROF_F2O_BEGIN
-    int size, rank;
+  int size, rank;
   unsigned int dim = 3;
   unsigned maxDepth = 30;
   
@@ -1345,7 +1345,7 @@ int function2Octree(std::function<double(double,double,double)> fx, std::vector<
           // outside, retain but do not refine 
           nodes_new.push_back(elem);
         } else if ( std::all_of(dist.begin(), dist.end(), inside ) ) {
-          if (!skipInternal)
+          if (!reject_interior)
             nodes_new.push_back(elem);
         } else {
           // intersection.
@@ -1406,7 +1406,7 @@ int function2Octree(std::function<double(double,double,double)> fx, std::vector<
           // outside, retain but do not refine 
           nodes_new.push_back(elem);
         } else if ( std::all_of(dist.begin(), dist.end(), inside ) ) {
-          if (!skipInternal)
+          if (!reject_interior)
             nodes_new.push_back(elem);
         } else {
           // intersection.

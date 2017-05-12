@@ -235,6 +235,19 @@ namespace ot {
     return m_dilpLocalToGlobalElems;
   }
 
+  inline void DA::initialize_skiplist() {
+    m_ucpSkipList.clear();
+    m_ucpSkipList.resize(m_uiElementSize, 0);
+    m_bSkipOctants = false;
+  }
+
+  inline void DA::skip_current() {
+    m_ucpSkipList[m_uiCurrent] = 1;
+  }
+
+  inline void DA::finalize_skiplist() {
+    m_bSkipOctants = true;
+  }
 
   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // 
@@ -3995,5 +4008,6 @@ namespace ot {
       daf->vecRestoreBuffer<T>(fVec, fArr, false, false, true, dof);
     }
 
+    
 } // end namespace
 

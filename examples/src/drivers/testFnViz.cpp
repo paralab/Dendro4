@@ -276,9 +276,45 @@ int main(int argc, char ** argv ) {
 
   // std::cout << "Norm: " << nrm << std::endl;
 
+  unsigned int el_beg, el_end, indep_beg, indep_end;
+  da.getDepIndepIndices(&el_beg, &el_end, &indep_beg, &indep_end);
+  
+  std::cout << rank << ": NumElements: " << da.getElementSize() << "(" << el_beg << ", " << el_end << ")" << std::endl;
+  std::cout << rank << ": NumIndependent : " << da.getIndependentSize() << "(" << indep_beg << ", " << indep_end << ")" << std::endl;
+  
  //! write nodal vector to vtk file ...
   saveNodalVecAsVTK(&da, v, "fnViz" );
 
+  
+  for ( da.init<ot::DA_FLAGS::INDEPENDENT>(), da.init<ot::DA_FLAGS::WRITABLE>(); 
+         da.curr() < da.end<ot::DA_FLAGS::INDEPENDENT>(); 
+        da.next<ot::DA_FLAGS::INDEPENDENT>() ) {
+    
+    std::cout << rank << ": indep: " << da.curr() << std::endl;
+  }
+  for ( da.init<ot::DA_FLAGS::W_DEPENDENT>(); 
+         da.curr() < da.end<ot::DA_FLAGS::W_DEPENDENT>(); 
+        da.next<ot::DA_FLAGS::W_DEPENDENT>() ) {
+    
+    std::cout << rank << ": dep: " << da.curr() << std::endl;
+  }
+  
+  // da.init<ot::DA_FLAGS::DEPENDENT>();
+  // std::cout << rank << ": dep_beg: " << da.curr() << " end: " << da.end<ot::DA_FLAGS::DEPENDENT>() << std::endl;
+  
+  /*
+  da.init<ot::DA_FLAGS::INDEPENDENT>();
+  for ( unsigned int i = 0; i<15; ++i ) {
+    std::cout << rank << ": indep: " << da.curr() << std::endl;
+    da.next<ot::DA_FLAGS::INDEPENDENT>();
+  }
+  
+  da.init<ot::DA_FLAGS::DEPENDENT>();
+  for ( unsigned int i = 0; i<15; ++i ) {
+    std::cout << rank << ": dep:   " << da.curr() << std::endl;
+    da.next<ot::DA_FLAGS::DEPENDENT>();
+  }
+  */
 
   // clean up
   VecDestroy(&v);
@@ -406,7 +442,7 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, const char *file_prefix) {
 
   int unit_points = 1 << dim;
   int num_vertices = da->getElementSize() * (unit_points);
-  int num_cells = da->getElementSize();
+  int num_cells = 0; // da->getElementSize();
 
   out << "POINTS " << num_vertices << " float" << std::endl;
 
@@ -416,7 +452,7 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, const char *file_prefix) {
     unsigned int xl, yl, zl;  //! ??
 
     int num_data_field = 2; // rank and data
-    int num_cells_elements = num_cells * unit_points + num_cells;
+    
 
     int dof=1;
     PetscScalar *_vec=NULL;
@@ -437,7 +473,9 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, const char *file_prefix) {
     double xx, yy, zz;
     unsigned int idx[8];
 
-    for ( da->init<ot::DA_FLAGS::WRITABLE>(); da->curr() < da->end<ot::DA_FLAGS::WRITABLE>(); da->next<ot::DA_FLAGS::WRITABLE>() ) {
+    for ( da->init<ot::DA_FLAGS::INDEPENDENT>(), da->init<ot::DA_FLAGS::WRITABLE>(); 
+         da->curr() < da->end<ot::DA_FLAGS::INDEPENDENT>(); 
+        da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
       // set the value
       lev = da->getLevel(da->curr());
       hx = xFac*(1<<(maxD - lev));
@@ -457,9 +495,11 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, const char *file_prefix) {
       out << pt.x()*xFac + hx << " " <<  pt.y()*yFac << " " << pt.z()*zFac + hz << std::endl;
       out << pt.x()*xFac + hx << " " <<  pt.y()*yFac + hy << " " << pt.z()*zFac + hz << std::endl;
       out << pt.x()*xFac << " " <<  pt.y()*yFac + hy << " " << pt.z()*zFac + hz << std::endl;
+      
+      num_cells++;
     }
 
-
+    int num_cells_elements = num_cells * unit_points + num_cells;
 
     out << "CELLS " << da->getElementSize() << " " << num_cells_elements << std::endl;
 
@@ -485,7 +525,9 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, const char *file_prefix) {
 
     PetscScalar* local = new PetscScalar[8];
 
-    for ( da->init<ot::DA_FLAGS::WRITABLE>(); da->curr() < da->end<ot::DA_FLAGS::WRITABLE>(); da->next<ot::DA_FLAGS::WRITABLE>() ) {
+    for ( da->init<ot::DA_FLAGS::INDEPENDENT>(), da->init<ot::DA_FLAGS::WRITABLE>(); 
+         da->curr() < da->end<ot::DA_FLAGS::INDEPENDENT>(); 
+        da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
       da->getNodeIndices(idx);
       interp_global_to_local(_vec, local, da);
 
