@@ -130,6 +130,11 @@ namespace ot {
     return m_uiPreGhostElementSize;
   }
 
+  inline unsigned int DA::getPreAndPostGhostNodeSize() {
+      return (m_uiPreGhostNodeSize+m_uiPostGhostNodeSize);
+  }
+
+
   inline unsigned int DA::getIndependentSize() {
     return m_uiIndependentElementSize;
   }

@@ -217,36 +217,8 @@ int main(int argc, char ** argv )
     std::swap(tmpNodes,tmpSorted);
     tmpSorted.clear();
 
-/*
-    SFC::parSort::SFC_Sort_RemoveDuplicates(tmpNodes,tol,maxDepth,false,globalComm);
-    std::swap(linOct,tmpNodes);
-
-    //assert( par::test::isUniqueAndSorted(linOct,globalComm));
 
 
-    //par::partitionW(linOct,NULL,globalComm);
-
-    //SFC::parSort::SFC_3D_Sort(linOct,tol,maxDepth,globalComm);
-
-
-    locSz = linOct.size();
-    par::Mpi_Reduce<DendroIntL>(&locSz, &totalSz, 1, MPI_SUM, 0, MPI_COMM_WORLD);
-    if (rank == 0) {
-        std::cout << " # pts= " << totalSz << std::endl;
-    }
-
-    pts.resize(3 * (linOct.size()));
-    ptsLen = (3 * (linOct.size()));
-    for (int i = 0; i < linOct.size(); i++) {
-        pts[3 * i] = (((double) (linOct[i].getX())) + 0.5) / ((double) (1u << maxDepth));
-        pts[(3 * i) + 1] = (((double) (linOct[i].getY())) + 0.5) / ((double) (1u << maxDepth));
-        pts[(3 * i) + 2] = (((double) (linOct[i].getZ())) + 0.5) / ((double) (1u << maxDepth));
-    }//end for i
-    linOct.clear();
-
-    gSize[0] = 1.;
-    gSize[1] = 1.;
-    gSize[2] = 1.;*/
 #ifdef POWER_MEASUREMENT_TIMESTEP
     time ( &rawtime );
     //std::this_thread::sleep_for(std::chrono::milliseconds(10000));
@@ -300,13 +272,17 @@ int main(int argc, char ** argv )
     if(!rank) std::cout<<" balOCt End: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
 #endif
 
+    //treeNodesTovtk(balOct,rank,"balOct");
 
     locSz = balOct.size();
     localTime = endTime - startTime;
     par::Mpi_Reduce<DendroIntL>(&locSz, &totalSz, 1, MPI_SUM, 0, MPI_COMM_WORLD);
     par::Mpi_Reduce<double>(&localTime, &totalTime, 1, MPI_MAX, 0, MPI_COMM_WORLD);
 
+    DendroIntL balOctSz_g=0;
+
     if (!rank) {
+        balOctSz_g=totalSz;
         std::cout << "# of Balanced Octants: " << totalSz << std::endl;
         std::cout << "bal Time: " << totalTime << std::endl;
     }
@@ -367,7 +343,10 @@ int main(int argc, char ** argv )
     par::Mpi_Reduce<DendroIntL>(&locSz, &totalSz, 1, MPI_SUM, 0, MPI_COMM_WORLD);
     par::Mpi_Reduce<double>(&localTime, &totalTime, 1, MPI_MAX, 0, MPI_COMM_WORLD);
 
+    DendroIntL vertexSz=0;
+
     if(!rank) {
+        vertexSz=totalSz;
         std::cout << "Total # Vertices: "<< totalSz << std::endl;
         std::cout << "Time to build ODA: "<<totalTime << std::endl;
     }
@@ -421,10 +400,56 @@ int main(int argc, char ** argv )
     if(!rank) std::cout<<" MatVec Begin: "<<(ptm->tm_year+1900)<<"-"<<(ptm->tm_mon+1)<<"-"<<ptm->tm_mday<<" "<<(ptm->tm_hour%24)<<":"<<ptm->tm_min<<":"<<ptm->tm_sec<<std::endl;
 #endif
 
+    double  numLocalNodes=da.getInternalNodeSize();
+    double numGhostNodes=da.getPreAndPostGhostNodeSize();
+
+    double numLocalNodes_g[3];
+    double numGhostNodes_g[3];
+
+    par::Mpi_Reduce(&numLocalNodes,numLocalNodes_g,1,MPI_MIN,0,globalComm);
+    par::Mpi_Reduce(&numLocalNodes,numLocalNodes_g+1,1,MPI_SUM,0,globalComm);
+    par::Mpi_Reduce(&numLocalNodes,numLocalNodes_g+2,1,MPI_MAX,0,globalComm);
+
+    par::Mpi_Reduce(&numGhostNodes,numGhostNodes_g,1,MPI_MIN,0,globalComm);
+    par::Mpi_Reduce(&numGhostNodes,numGhostNodes_g+1,1,MPI_SUM,0,globalComm);
+    par::Mpi_Reduce(&numGhostNodes,numGhostNodes_g+2,1,MPI_MAX,0,globalComm);
+
+    numLocalNodes_g[1]/=npes;
+    numGhostNodes_g[1]/=npes;
+
+    if(!rank)
+    {
+        std::cout<<" local (min, mean , max): "<<numLocalNodes_g[0]<<" , "<<numLocalNodes_g[1]<<" , "<<numLocalNodes_g[2]<<"\n ghost (min, mean , max): "<<numGhostNodes_g[0]<<" , "<<numGhostNodes_g[1]<<" , "<<numGhostNodes_g[2]<<std::endl;
+    }
+
+ for(unsigned int i=0;i<5;i++) { // warmup
+        iC(Jacobian1MatGetDiagonal(J, diag));
+        iC(Jacobian1MatMult(J, in, out));
+ }
+
+auto mVecBegin=std::chrono::high_resolution_clock::now();
     for(unsigned int i=0;i<numLoops;i++) {
         iC(Jacobian1MatGetDiagonal(J, diag));
         iC(Jacobian1MatMult(J, in, out));
     }
+auto mVecEnd=std::chrono::high_resolution_clock::now();
+double mVecTime=std::chrono::duration_cast<std::chrono::milliseconds>(mVecEnd - mVecBegin).count();
+
+    double mvecTime_g[3]; // min mean max
+    par::Mpi_Reduce(&mVecTime,&mvecTime_g[0],1,MPI_MIN,0,globalComm);
+    par::Mpi_Reduce(&mVecTime,&mvecTime_g[1],1,MPI_SUM,0,globalComm);
+    par::Mpi_Reduce(&mVecTime,&mvecTime_g[2],1,MPI_MAX,0,globalComm);
+
+    mvecTime_g[1]=mvecTime_g[1]/(double)npes;
+
+    if(!rank)
+    {
+        std::cout<<"npes\tgrainSz\ttol\tbalOctSz\tvertexSz\tnumLoops\tmVecMin\tmVecMean\tmVecMax"<<std::endl;
+        std::cout<<npes<<"\t"<<grainSize<<"\t"<<tol<<"\t"<<balOctSz_g<<"\t"<<vertexSz<<"\t"<<numLoops<<"\t"<<mvecTime_g[0]<<"\t"<<mvecTime_g[1]<<"\t"<<mvecTime_g[2]<<std::endl;
+    }
+
+
+
 
 #ifdef POWER_MEASUREMENT_TIMESTEP
   time ( &rawtime );

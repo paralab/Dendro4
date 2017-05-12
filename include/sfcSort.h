@@ -17,6 +17,7 @@
 #define SFCSORTBENCH_SFCSORT_H
 
 
+
 #include <iostream>
 #include <vector>
 #include <assert.h>
@@ -31,9 +32,15 @@
 #include <chrono>
 #include "dtypes.h"
 #include "parUtils.h"
-#include <unordered_map>
 #include <set>
+#include <unordered_set>
+#include "dollar.hpp"
+#include <stdio.h>
 
+
+
+
+#define MAXDEAPTH_LEVEL_DIFF 0
 
 #ifdef PROFILE_TREE_SORT
 #include <chrono>
@@ -86,6 +93,7 @@ double stat_property[3]={};
 #endif
 
 
+typedef unsigned __int128 uint128_t;
 
 #ifdef DIM_2
     #define NUM_CHILDREN 4
@@ -114,6 +122,7 @@ double stat_property[3]={};
  *
  * */
 
+#define TS_SORT_ONLY 0
 #define TS_REMOVE_DUPLICATES 1
 #define TS_CONSTRUCT_OCTREE 2
 #define TS_BALANCE_OCTREE 4 // which ensures that balance octree cannote be called without construct octree function.
@@ -149,34 +158,87 @@ struct BucketInfo
 template<typename T>
 struct OctreeComp
 {
-    inline bool operator()(const T & first, const T &other)
-    {
+
+    inline uint64_t splitBy3(unsigned int a) const{
+        uint64_t x=a;
+        x = (x | (x << 16)) & 0x0000FFFF0000FFFF;
+        x = (x | (x << 8)) & 0x00FF00FF00FF00FF;
+        x = (x | (x << 4)) & 0x0F0F0F0F0F0F0F0F;
+        x = (x | (x << 2)) & 0x3333333333333333;
+        x = (x | (x << 1)) & 0x5555555555555555;
+        return x;
+    }
 
 
-            if(first.getLevel()==other.getLevel())
-            {
-                if(first.getX()==other.getX())
-                {
-                    if(first.getY()==other.getY())
-                    {
-                        return first.getZ()<other.getZ();
+     inline bool operator()(const T & first, const T &other) const
+    {//$
 
-                    }else
-                    {
-                        return first.getY()<other.getY();
-                    }
-                }else
-                {
-                    return first.getX()<other.getX();
-                }
-            }else
-            {
-                return (first.getLevel()>other.getLevel());
-            }
+/*        return (((first.getLevel()!=other.getLevel()) && (first.getLevel()>other.getLevel()))
+               || ((first.getLevel()==other.getLevel()) && ((first.getX() != other.getX())) && (first.getX() < other.getX()))
+               || ((first.getLevel()==other.getLevel()) &&(first.getX() == other.getX()) && (first.getY() != other.getY()) && (first.getY() < other.getY()))
+               || ((first.getLevel()==other.getLevel()) && (first.getX() == other.getX()) && (first.getY() == other.getY())  && (first.getZ() < other.getZ())));*/
+
+
+         /*return (((first.getLevel()==other.getLevel()) || (first.getLevel()<other.getLevel()))
+                 && ((first.getLevel()!=other.getLevel()) || ((first.getX() == other.getX())) || (first.getX() > other.getX()))
+                 && ((first.getLevel()!=other.getLevel()) || (first.getX() != other.getX()) || (first.getY() == other.getY()) || (first.getY() > other.getY()))
+                 && ((first.getLevel()!=other.getLevel()) || (first.getX() != other.getX()) || (first.getY() != other.getY())  || (first.getZ() > other.getZ())));*/
+
+
+        uint128_t a1=0;
+        uint128_t a2=0;
+        a1=(((uint128_t)first.getLevel())<<96u) | (((uint128_t)first.getX())<<64u) | (((uint128_t)first.getY())<<32u) |(((uint128_t)first.getZ()));
+        a2=(((uint128_t)other.getLevel())<<96u) | (((uint128_t)other.getX())<<64u) | (((uint128_t)other.getY())<<32u) |(((uint128_t)other.getZ()));
+        return a1<a2;
+
+/*
+        if(first.getLevel()!=other.getLevel())
+        {
+          if(state!=(first.getLevel()>other.getLevel())) std::cout<<" lev first"<<first<<" other: "<<other<<std::endl;
+          return (first.getLevel()>other.getLevel());
+        }else
+        {
+          if(first.getX()!=other.getX())
+          {
+            if(state!=(first.getX()<other.getX())) std::cout<<" x first"<<first<<" other: "<<other<<std::endl;
+            return first.getX()<other.getX();
+          }else
+          {
+             if(first.getY()!=other.getY())
+             {
+               if(state!=(first.getY()<other.getY())) std::cout<<" y first"<<first<<" other: "<<other<<std::endl;
+               return first.getY()<other.getY();
+             }else
+             {
+               if(state!=(first.getZ()<other.getZ())) std::cout<<" z first"<<first<<" other: "<<other<<std::endl;
+               return first.getZ()<other.getZ();
+             }
+          }
+        }*/
 
     }
 
 };
+template<typename T>
+struct OctreeHash{
+
+    inline uint128_t operator() (const T &first) const {
+
+/*        uint64_t answer1 = 0;
+        answer1 |= splitBy3(node.getX()) | splitBy3(node.getY()) << 1 | splitBy3(node.getZ()) << 2;
+        return answer1;*/
+        /*size_t h1 = std::hash<unsigned int>{}(node.getX());
+        size_t h2 = std::hash<unsigned int>{}(node.getY());
+        size_t h3 = std::hash<unsigned int>{}(node.getZ());
+        size_t h4 = std::hash<unsigned int>{}(node.getLevel());
+        return (h4^(h3^((h2 ^ (h1 << 16))<<16))<<16); // or use boost::hash_combine*/
+        uint128_t a1=0;
+        a1=(((uint128_t)first.getLevel())<<96u) | (((uint128_t)first.getX())<<64u) | (((uint128_t)first.getY())<<32u) |(((uint128_t)first.getZ()));
+        return a1;
+        //return (((uint64_t)h4<<48u)|((uint64_t)h3<<32u)|((uint64_t)h2<<16u)|((uint64_t)h1));
+    }
+};
+
 
 
 
@@ -197,9 +259,12 @@ namespace SFC {
         /**
          * @author Milinda Fernando
          * @breif Bottom up construction of the auxilary octants which will be needed in the balancing stage.
+         * * Assumes that ,
+         * 1) input is sorted and complete.
          * */
         template<typename T>
         inline void SFC_bottomUpBalOctantCreation(std::vector<T> & pNodes);
+
 
         /**
          * @author Milinda Fernando
@@ -225,46 +290,136 @@ namespace SFC {
         template<typename T>
         inline void SFC_bucketing(T *pNodes, int lev, unsigned int maxDepth,unsigned char rot_id,DendroIntL &begin, DendroIntL &end, DendroIntL *splitters);
 
+        /**
+         *@brief Finds the local optimal node, in pNodes array.
+         * @param[in] pNodes : pNodes in consideration
+         * @param[in] n: number of elements in the pNodes array
+         * @param[in] pMaxDepthBit initial value should be max depth of the tree. this is automatically decrease as we traverse deper in the tree.
+         * @param[in] pMaxDepth maximum depth of the tree
+         * @param[in] parent: Element which is an ancesotor of all the pNodes elements.
+         * @param[in] rot_id: rotaion id of the parent
+         * @param[in] minimum returns minimum if true. Else return the local maximum
+         * @param[out] optimal: local optimal of the array.
+         * */
 
+        template<typename T>
+        void SFC_treeSortLocalOptimal(T* pNodes , DendroIntL n , unsigned int pMaxDepthBit,unsigned int pMaxDepth, T& parent, unsigned int rot_id,bool minimum,T& optimal);
 
         //========================================================= Function declaration end.==========================================================================================
 
 
+
+
         template<typename T>
         inline void SFC_bottomUpBalOctantCreation(std::vector<T> & pNodes)
-        {
+        {//$
 
             if(pNodes.empty()){ return; }
 
-            std::set<T,OctreeComp<T>> auxBalOctant;
-            auxBalOctant.insert(pNodes.begin(), pNodes.end());
-            std::vector<T> neighbours;
-            std::vector<ot::TreeNode> tmp;
-            for (auto local_it= auxBalOctant.begin(); local_it != auxBalOctant.end(); ++local_it)
-            {
-                //@hari @ milinda vector copy might be a performance bottle neck. Fix this later.
-                tmp=local_it->getParent().getAllNeighbours();
-                neighbours.assign(tmp.begin(),tmp.end());
-                //neighbours.resize(tmp.size());
-                /*for(unsigned int k=0;k<tmp.size();k++)
-                    neighbours[k]=tmp[k];*/
+            T tmpParent;
+            /*std::vector<T> tmpSorted;*/
+            unsigned int m_uiMaxDepth=pNodes.front().getMaxDepth();
+            T root(m_uiDim,m_uiMaxDepth);
+            std::set<T,OctreeComp<T> > auxOct(pNodes.begin(),pNodes.end());
+            std::set<T,OctreeComp<T> > parentAux;
+            unsigned int neighbourCount=0;
 
-                auxBalOctant.insert(neighbours.begin(), neighbours.end());
+            unsigned int newCount=0;
+            unsigned int preSz=0;
+            unsigned int curr=0;
+            unsigned int d_max=(1u<<m_uiMaxDepth);
+
+#ifdef DIM_2
+            neighbourCount=8;
+#else
+            neighbourCount=26;
+#endif
+
+            std::pair<typename std::set<T,OctreeComp<T>>::iterator,bool> hint[neighbourCount];
+            std::pair<typename std::set<T,OctreeComp<T>>::iterator,bool> hintParent;
+
+           /* std::unordered_set<T,OctreeHash<T>> auxOct(pNodes.begin(),pNodes.end());
+            std::pair<typename std::unordered_set<T,OctreeHash<T>>::iterator,bool> hint;*/
+
+
+            for(unsigned int w=0;w<pNodes.size();++w){
+                hintParent=parentAux.emplace(pNodes[w].getParent());
+                if(hintParent.second) {
+                    tmpParent=*(hintParent.first);
+
+#ifdef DIM_2
+
+                auxOct.emplace(tmpParent.getLeft());
+                auxOct.emplace(tmpParent.getRight());
+                auxOct.emplace(tmpParent.getFront());
+                auxOct.emplace(tmpParent.getBack());
+                auxOct.emplace(tmpParent.getLeftBack());
+                auxOct.emplace(tmpParent.getRightBack());
+                auxOct.emplace(tmpParent.getLeftFront());
+                auxOct.emplace(tmpParent.getRightFront());
+
+#else
+
+
+                    preSz=auxOct.size();
+                    hint[0] = auxOct.emplace(tmpParent.getLeft());
+                    hint[1] = auxOct.emplace(tmpParent.getLeftBack());
+                    hint[2] = auxOct.emplace(tmpParent.getLeftFront());
+                    hint[3] = auxOct.emplace(tmpParent.getRight());
+                    hint[4] = auxOct.emplace(tmpParent.getRightBack());
+                    hint[5] = auxOct.emplace(tmpParent.getRightFront());
+                    hint[6] = auxOct.emplace(tmpParent.getBack());
+                    hint[7] = auxOct.emplace(tmpParent.getFront());
+                    hint[8] = auxOct.emplace(tmpParent.getBottom());
+                    hint[9] = auxOct.emplace(tmpParent.getBottomLeft());
+                    hint[10] = auxOct.emplace(tmpParent.getBottomLeftBack());
+                    hint[11] = auxOct.emplace(tmpParent.getBottomLeftFront());
+                    hint[12] = auxOct.emplace(tmpParent.getBottomRight());
+                    hint[13] = auxOct.emplace(tmpParent.getBottomRightBack());
+                    hint[14] = auxOct.emplace(tmpParent.getBottomRightFront());
+                    hint[15] = auxOct.emplace(tmpParent.getBottomBack());
+                    hint[16] = auxOct.emplace(tmpParent.getBottomFront());
+                    hint[17] = auxOct.emplace(tmpParent.getTop());
+                    hint[18] = auxOct.emplace(tmpParent.getTopLeft());
+                    hint[19] = auxOct.emplace(tmpParent.getTopLeftBack());
+                    hint[20] = auxOct.emplace(tmpParent.getTopLeftFront());
+                    hint[21] = auxOct.emplace(tmpParent.getTopRight());
+                    hint[22] = auxOct.emplace(tmpParent.getTopRightBack());
+                    hint[23] = auxOct.emplace(tmpParent.getTopRightFront());
+                    hint[24] = auxOct.emplace(tmpParent.getTopBack());
+                    hint[25] = auxOct.emplace(tmpParent.getTopFront());
+#endif
+
+                    if(auxOct.size()>preSz)
+                    {
+                        curr=0;
+                        pNodes.resize(pNodes.size()+auxOct.size()-preSz);
+                        for(unsigned int kk=0;kk<neighbourCount;kk++)
+                        {
+                            if(hint[kk].second) {
+                                pNodes[preSz + curr] = *(hint[kk].first);
+                                //pNodes.push_back(*(hint[kk].first));
+                                curr++;
+                            }
+
+                        }
+                    }
+                    //std::cout<<"aux Size: "<<auxOct.size()<<" pNodes size: "<<pNodes.size()<<std::endl;
+                }
+
 
             }
-            pNodes.clear();
-            pNodes.resize(auxBalOctant.size());
-            std::copy(auxBalOctant.begin(),auxBalOctant.end(),pNodes.begin());
+
+
 
         }
-
 
 
         template<typename T>
         void SFC_treeSort(T* pNodes , DendroIntL n ,std::vector<T>& pOutSorted,std::vector<T>& pOutConstruct,std::vector<T>& pOutBalanced, unsigned int pMaxDepthBit,unsigned int pMaxDepth, T& parent, unsigned int rot_id,unsigned int k, unsigned int options)
         {
 
-
+            if(n==0) return;
             register unsigned int cnum;
             register unsigned int cnum_prev=0;
             //register unsigned int n=0;
@@ -282,7 +437,7 @@ namespace SFC {
               count[cnum+1]++;
 
             }
-
+            //std::cout<<"initial Count finished"<<std::endl;
             DendroIntL loc[NUM_CHILDREN+1];
             T unsorted[NUM_CHILDREN+1];
             unsigned int live = 0;
@@ -301,27 +456,39 @@ namespace SFC {
                     (i>1) ? cnum_prev = ((rotations[ROTATION_OFFSET * rot_id+i-2] - '0')+2): cnum_prev=1;
                     loc[cnum+1]=count[cnum_prev];
                     count[cnum+2] += count[cnum_prev];
-                    unsorted[live] = pNodes[loc[cnum+1]];
-                    if (loc[cnum+1] < count[cnum+2]) {live++; /*std::cout<<i<<" Live: "<<live<<std::endl;*/}
+                    //std::cout<<" loc[cnum+1]: "<<loc[cnum+1]<<std::endl;
+                    (loc[cnum+1]==n) ? unsorted[live] = pNodes[loc[cnum+1]-1]: unsorted[live] = pNodes[loc[cnum+1]];
+                    if (loc[cnum+1] < count[cnum+2]) {live++; /*std::cout<<i<<" Live after increment: "<<live<<std::endl;*/}
                 }
 
             }
-            live--;
+            //std::cout<<"second pass finished "<<std::endl;
 
-            for (DendroIntL i=0; i < n ; ++i) {
+            if(live>0)
+            {
+
+                live--;
+
+                for (DendroIntL i=0; i < n ; ++i) {
+
 
                     cnum = (lev < unsorted[live].getLevel()) ? ((((unsorted[live].getZ() >> pMaxDepthBit) & 1u) << 2u) | (((unsorted[live].getY() >> pMaxDepthBit) & 1u) << 1u) | ((unsorted[live].getX() >> pMaxDepthBit) & 1u))+ 1: 0 ;
 
                     pNodes[loc[(cnum )]++] = unsorted[live];
-                    unsorted[live] = pNodes[loc[cnum]];
+                    (loc[cnum]==n) ? unsorted[live] = pNodes[loc[cnum]-1] : unsorted[live] = pNodes[loc[cnum]];
                     if ((loc[cnum] == count[cnum + 1])) {
-                        live--;
+                     /* if(i<(n-1)) assert(live>0);
+                        if(live==0) assert(i==(n-1));*/
+                          live--;
+
                     }
 
 
+                }
             }
 
-            if (pMaxDepthBit > 0) {
+
+            if (pMaxDepthBit > MAXDEAPTH_LEVEL_DIFF) {
 
                 DendroIntL numElements=0;
                 for (unsigned int i=1; i<(NUM_CHILDREN+1); i++) {
@@ -361,12 +528,12 @@ namespace SFC {
             {
 
                 // !!!! Note: Please note that all the code here executed only once. In the final stage of the recursion.
+
                 if((options & TS_REMOVE_DUPLICATES)) {
 
 #ifdef PROFILE_TREE_SORT
                     t1=std::chrono::high_resolution_clock::now();//MPI_Wtime();
 #endif
-
 
                     // Note: This is executed only once. In the final stage of the recursion.
                     // Do the remove duplicates here.
@@ -584,7 +751,63 @@ namespace SFC {
         }// end of function SFC_bucketing.
 
 
+        template<typename T>
+        void SFC_treeSortLocalOptimal(T* pNodes , DendroIntL n , unsigned int pMaxDepthBit,unsigned int pMaxDepth, T& parent, unsigned int rot_id,bool minimum,T& optimal)
+        {
 
+            if(n==0 && minimum)
+            {
+                optimal=T(0,0,0,0,m_uiDim,pMaxDepth);
+                return ;
+            }else if(n==0 && (!minimum))
+            {
+                optimal=T(((1u<<pMaxDepth)-1),((1u<<pMaxDepth)-1),((1u<<pMaxDepth)-1),pMaxDepth,m_uiDim,pMaxDepth);
+                return ;
+            }
+
+            unsigned int lev=pMaxDepth-pMaxDepthBit;
+            DendroIntL nNodeBegin=0;
+            DendroIntL nNodeEnd=n;
+
+            unsigned int hindex = 0;
+            unsigned int hindexN = 0;
+            unsigned int index = 0;
+            DendroIntL splitterNodes[(NUM_CHILDREN + 1)];
+            unsigned int bucketIndex=0;
+            if(!minimum) bucketIndex=(NUM_CHILDREN-1);
+
+            if((((nNodeEnd-nNodeBegin)==2) && (pNodes[nNodeBegin]==pNodes[nNodeEnd-1])) || ((nNodeEnd-nNodeBegin)==1))
+            {
+                optimal=pNodes[nNodeBegin];
+                return ;
+            }
+
+            if( (pMaxDepthBit) && ((nNodeEnd-nNodeBegin)>=2)) {
+
+
+
+                SFC::seqSort::SFC_bucketing(pNodes,lev,pMaxDepth,rot_id,nNodeBegin,nNodeEnd,splitterNodes);
+                hindex = (rotations[2 * NUM_CHILDREN * rot_id + bucketIndex] - '0');
+                (bucketIndex == (NUM_CHILDREN - 1)) ? hindexN = bucketIndex + 1: hindexN = (rotations[2 * NUM_CHILDREN * rot_id + bucketIndex + 1] - '0');
+
+                assert(splitterNodes[hindex] <= splitterNodes[hindexN]);
+                if(splitterNodes[hindex]!=splitterNodes[hindexN]) SFC_treeSortLocalOptimal(pNodes+splitterNodes[hindex],(splitterNodes[hindexN]-splitterNodes[hindex]),(pMaxDepthBit-1),pMaxDepth,parent,index,minimum,optimal);
+                else
+                {
+                    //std::cout<<"Calling Seq: sort at Lev: "<<lev<<"size : "<<n<<std::endl;
+                    std::vector<T>tmpVec;
+                    SFC::seqSort::SFC_treeSort(pNodes,n,tmpVec,tmpVec,tmpVec,pMaxDepth,pMaxDepth,parent,ROOT_ROTATION,1,TS_SORT_ONLY);
+                    (minimum) ? optimal=pNodes[0]: optimal=pNodes[n-1];
+                    return ;
+                }
+
+
+
+            }
+
+
+
+        }
 
 
 
@@ -644,7 +867,7 @@ namespace SFC
             MPI_Comm_rank(comm, &rank);
             MPI_Comm_size(comm, &npes);
 
-// #pragma message ("Splitter selection FIX ON")
+#pragma message ("Splitter selection FIX ON")
 
             if (npes > NUM_NPES_THRESHOLD) {
 

@@ -1287,7 +1287,7 @@ PROF_COMPLETE_REGION_END
 
 
 int function2Octree(std::function<double(double,double,double)> fx, std::vector<TreeNode> & nodes, 
-                      unsigned int d_max, bool reject_interior, MPI_Comm comm ) 
+                      unsigned int d_max, bool skipInternal, MPI_Comm comm ) 
 {
   PROF_F2O_BEGIN
   int size, rank;
