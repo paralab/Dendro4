@@ -15,6 +15,7 @@ extern char recvComMapFileName[256];
 
 #include "mpi.h"
 #include <vector>
+#include <functional>
 #include "petscvec.h"
 
 #ifdef __DEBUG__
@@ -207,6 +208,10 @@ namespace ot {
   void assignBoundaryFlags(ot::DA* da, 
       std::vector<unsigned char> & bdyFlagVec);
 
+  
+  ot::DA* function_to_DA(std::function<double(double,double,double)> fx, unsigned int d_max, bool reject_interior, MPI_Comm comm ); 
+  
+  
   /**
     @author Rahul Sampath	
     @return 'true' if the octree is a regular grid

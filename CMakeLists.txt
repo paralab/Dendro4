@@ -137,13 +137,16 @@ file(GLOB DENDRO_TEMPLATES include/*.tcc)
 set(DENDRO_LIBS dendroMG dendroDA dendroTest dendro)
 
 add_library(dendroMG ${OMG_SOURCES})
-add_library(dendroDA ${ODA_SOURCES} ${ODA_PRIVATE_SOURCES} include/hcurvedata.h src/pickBdy.cpp src/blockPart.cpp src/construct.cpp)
+# include/hcurvedata.h src/pickBdy.cpp src/blockPart.cpp src/construct.cpp src/balance.cpp)
 add_library(dendroTest src/test/testUtils.C)
 
 add_library(dendro ${DENDRO_SOURCES}
                    ${DENDRO_HEADERS}
                    ${DENDRO_TEMPLATES} include/hcurvedata.h src/hcurvedata.cpp src/blockPart.cpp)
 
+add_library(dendroDA ${ODA_SOURCES} ${ODA_PRIVATE_SOURCES})
+target_link_libraries(dendroDA dendro)
+                   
 ## executables
 
 ##---------------------------------------------------------------------------------------
