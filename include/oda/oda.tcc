@@ -271,19 +271,37 @@ namespace ot {
       }
       m_uiCurrent++;
 
-      while ( (m_uiCurrent < (m_uiPreGhostElementSize + m_uiElementSize)) &&
-          ( m_ucpLutMasks[(2*m_uiCurrent) + 1]  == ot::DA_FLAGS::FOREIGN) ) {
+      if (m_bSkipOctants) {
+        while ( (m_uiCurrent < (m_uiPreGhostElementSize + m_uiElementSize)) &&
+            ( (m_ucpLutMasks[(2*m_uiCurrent) + 1]  == ot::DA_FLAGS::FOREIGN) || m_ucpSkipList[m_uiCurrent] ) ) {
 
-        if(m_bCompressLut) {
-          updateQuotientCounter();
+          if(m_bCompressLut) {
+            updateQuotientCounter();
+          }
+          if ( m_uiElementBegin && (m_uiCurrent < (m_uiElementBegin - 1)) ) {
+            incrementPreGhostOffset();
+          } else {
+            incrementCurrentOffset();
+          }
+          m_uiCurrent++;
         }
-        if ( m_uiElementBegin && (m_uiCurrent < (m_uiElementBegin - 1)) ) {
-          incrementPreGhostOffset();
-        } else {
-          incrementCurrentOffset();
+      } else {
+        while ( (m_uiCurrent < (m_uiPreGhostElementSize + m_uiElementSize)) &&
+            ( m_ucpLutMasks[(2*m_uiCurrent) + 1]  == ot::DA_FLAGS::FOREIGN) ) {
+
+          if(m_bCompressLut) {
+            updateQuotientCounter();
+          }
+          if ( m_uiElementBegin && (m_uiCurrent < (m_uiElementBegin - 1)) ) {
+            incrementPreGhostOffset();
+          } else {
+            incrementCurrentOffset();
+          }
+          m_uiCurrent++;
         }
-        m_uiCurrent++;
-      }
+      } // skip 
+
+
       //std::cout << YLW"Index is not Foreign element " << m_uiCurrent << std::endl;
       return m_uiCurrent;
     }//end function
@@ -295,15 +313,30 @@ namespace ot {
 #endif
       incrementCurrentOffset();
       m_uiCurrent++;
-      while ( (m_uiCurrent < m_uiIndependentElementEnd) &&
-          (m_ucpOctLevels[m_uiCurrent] & ot::DA_FLAGS::DEP_ELEM) ) {
-        // std::cout << RED"Skipping Dependent Element"NRM <<std::endl;
-        if(m_bCompressLut) {
-          updateQuotientCounter();        
+
+
+      if (m_bSkipOctants) {
+        while ( (m_uiCurrent < m_uiIndependentElementEnd) &&
+            ( (m_ucpOctLevels[m_uiCurrent] & ot::DA_FLAGS::DEP_ELEM) || m_ucpSkipList[m_uiCurrent] ) ) {
+          // std::cout << RED"Skipping Dependent Element"NRM <<std::endl;
+          if(m_bCompressLut) {
+            updateQuotientCounter();        
+          }
+          incrementCurrentOffset();
+          m_uiCurrent++;
         }
-        incrementCurrentOffset();
-        m_uiCurrent++;
-      }
+      } else {
+        while ( (m_uiCurrent < m_uiIndependentElementEnd) &&
+            (m_ucpOctLevels[m_uiCurrent] & ot::DA_FLAGS::DEP_ELEM) ) {
+          // std::cout << RED"Skipping Dependent Element"NRM <<std::endl;
+          if(m_bCompressLut) {
+            updateQuotientCounter();        
+          }
+          incrementCurrentOffset();
+          m_uiCurrent++;
+        }
+      } // skip
+  
       return m_uiCurrent;
     }//end function
 
@@ -319,19 +352,38 @@ namespace ot {
       }
       m_uiCurrent++;
 
-      while ( (m_uiCurrent < (m_uiPreGhostElementSize + m_uiElementSize)) &&
-          (  (!(m_ucpOctLevels[m_uiCurrent] & ot::DA_FLAGS::DEP_ELEM )) ||
-             ( m_ucpLutMasks[(2*m_uiCurrent) + 1] == ot::DA_FLAGS::FOREIGN) ) ) {               
-        if(m_bCompressLut) {
-          updateQuotientCounter();  
+
+      if (m_bSkipOctants) {
+        while ( (m_uiCurrent < (m_uiPreGhostElementSize + m_uiElementSize)) &&
+            (  (!(m_ucpOctLevels[m_uiCurrent] & ot::DA_FLAGS::DEP_ELEM )) ||
+               ( m_ucpLutMasks[(2*m_uiCurrent) + 1] == ot::DA_FLAGS::FOREIGN) || 
+                 m_ucpSkipList[m_uiCurrent]  ) ) {               
+          if(m_bCompressLut) {
+            updateQuotientCounter();  
+          }
+          if ( m_uiElementBegin && (m_uiCurrent < (m_uiElementBegin - 1)) ) {
+            incrementPreGhostOffset();
+          } else {          
+            incrementCurrentOffset();
+          }
+          m_uiCurrent++;   
         }
-        if ( m_uiElementBegin && (m_uiCurrent < (m_uiElementBegin - 1)) ) {
-          incrementPreGhostOffset();
-        } else {          
-          incrementCurrentOffset();
+      } else {
+        while ( (m_uiCurrent < (m_uiPreGhostElementSize + m_uiElementSize)) &&
+            (  (!(m_ucpOctLevels[m_uiCurrent] & ot::DA_FLAGS::DEP_ELEM )) ||
+               ( m_ucpLutMasks[(2*m_uiCurrent) + 1] == ot::DA_FLAGS::FOREIGN) ) ) {               
+          if(m_bCompressLut) {
+            updateQuotientCounter();  
+          }
+          if ( m_uiElementBegin && (m_uiCurrent < (m_uiElementBegin - 1)) ) {
+            incrementPreGhostOffset();
+          } else {          
+            incrementCurrentOffset();
+          }
+          m_uiCurrent++;
         }
-        m_uiCurrent++;
       }
+
       return m_uiCurrent;
     }//end function
 
@@ -342,16 +394,31 @@ namespace ot {
 #endif
       incrementCurrentOffset();
       m_uiCurrent++;
-      while ( (m_uiCurrent < (m_uiPreGhostElementSize + m_uiElementSize)) &&
-          ( (!(m_ucpOctLevels[m_uiCurrent] & ot::DA_FLAGS::DEP_ELEM )) ||
-            ( m_ucpLutMasks[(2*m_uiCurrent) + 1] == ot::DA_FLAGS::FOREIGN) ) ) { 
 
-        if(m_bCompressLut) {
-          updateQuotientCounter();  
+      if (m_bSkipOctants) {
+        while ( (m_uiCurrent < (m_uiPreGhostElementSize + m_uiElementSize)) &&
+            ( (!(m_ucpOctLevels[m_uiCurrent] & ot::DA_FLAGS::DEP_ELEM )) ||
+              ( m_ucpLutMasks[(2*m_uiCurrent) + 1] == ot::DA_FLAGS::FOREIGN) || 
+                m_ucpSkipList[m_uiCurrent]  ) ) { 
+          if(m_bCompressLut) {
+            updateQuotientCounter();  
+          }
+          incrementCurrentOffset();          
+          m_uiCurrent++;
         }
-        incrementCurrentOffset();          
-        m_uiCurrent++;
-      } 
+      } else {
+        while ( (m_uiCurrent < (m_uiPreGhostElementSize + m_uiElementSize)) &&
+            ( (!(m_ucpOctLevels[m_uiCurrent] & ot::DA_FLAGS::DEP_ELEM )) ||
+              ( m_ucpLutMasks[(2*m_uiCurrent) + 1] == ot::DA_FLAGS::FOREIGN) ) ) { 
+
+          if(m_bCompressLut) {
+            updateQuotientCounter();  
+          }
+          incrementCurrentOffset();          
+          m_uiCurrent++;
+        }
+      }
+
       return m_uiCurrent;
     }//end function
 
@@ -362,6 +429,14 @@ namespace ot {
 #endif
       incrementCurrentOffset();
       m_uiCurrent++;
+
+      if (m_bSkipOctants) {
+        while ( m_ucpSkipList[m_uiCurrent] ) {
+          incrementCurrentOffset();
+          m_uiCurrent++;
+        }
+      };
+      
       return m_uiCurrent;
     }//end function
 

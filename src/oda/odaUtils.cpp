@@ -2177,9 +2177,12 @@ namespace ot {
   // TODO do proper load balancing -> partitionW ?
   
   numOcts = totalNumOcts/size + (rank < totalNumOcts%size);
+  std::cout << rank << ": numOcts " <<  numOcts << std::endl;
   par::scatterValues<ot::TreeNode>(nodes, nodes_new, numOcts, comm);
   std::swap(nodes, nodes_new);
   nodes_new.clear();
+  
+  std::cout << rank << ": numOcts after part " <<  nodes.size() << std::endl;
   
   // now refine in parallel.
   par::Mpi_Bcast(&depth, 1, 0, comm);
@@ -2247,18 +2250,18 @@ namespace ot {
 
     ot::DA *da = new ot::DA(nodes_new, comm, comm, compressLut);
 
-    if(rank==0) {
-      std::cout << "finished building DA" << std::endl;
-    }
+    // if(rank==0) {
+    //  std::cout << rank << ": finished building DA" << std::endl;
+    // }
    
     unsigned int lev;
     double hx, hy, hz;
     
     double gSize[3] = {1.0, 1.0, 1.0};
 
-    double xFac = gSize[0]/((double)(1<<(maxDepth-1)));
-    double yFac = gSize[1]/((double)(1<<(maxDepth-1)));
-    double zFac = gSize[2]/((double)(1<<(maxDepth-1)));
+    double xFac = gSize[0]/((double)(1<<(maxDepth)));
+    double yFac = gSize[1]/((double)(1<<(maxDepth)));
+    double zFac = gSize[2]/((double)(1<<(maxDepth)));
     
     // now process the DA to skip interior elements
     if (reject_interior) {
@@ -2288,6 +2291,7 @@ namespace ot {
 
         da->finalize_skiplist();
     }
+    std::cout << rank << ": finished removing interior." << std::endl;
 
     return da;
   } // end of function.
