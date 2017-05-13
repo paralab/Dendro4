@@ -2405,6 +2405,7 @@ namespace SFC
 
 
 
+#ifdef SPLITTER_SELECTION_FIX
         template <typename T>
         void SFC_PartitionW(std::vector<T>&pNodes,double loadFlexibility, unsigned int maxDepth,MPI_Comm comm)
         {
@@ -2414,7 +2415,7 @@ namespace SFC
             tmp.clear();
         }
 
-
+#endif
 
 
 

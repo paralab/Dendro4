@@ -64,9 +64,10 @@ if(REMOVE_DUPLICATES)
 endif()
 
 
+add_definitions(-DNUM_NPES_THRESHOLD=${NUM_NPES_THRESHOLD})
+
 if(SPLITTER_SELECTION_FIX)
     add_definitions(-DSPLITTER_SELECTION_FIX)
-    add_definitions(-DNUM_NPES_THRESHOLD=${NUM_NPES_THRESHOLD})
 endif()
 
 if(USE_64BIT_INDICES)
@@ -146,7 +147,7 @@ add_library(dendro ${DENDRO_SOURCES}
 
 add_library(dendroDA ${ODA_SOURCES} ${ODA_PRIVATE_SOURCES})
 target_link_libraries(dendroDA dendro)
-                   
+
 ## executables
 
 ##---------------------------------------------------------------------------------------
@@ -174,8 +175,8 @@ add_executable(testFnViz examples/src/drivers/testFnViz.cpp examples/include/gen
     target_link_libraries(testFnViz dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
 add_executable(holeMesh examples/src/drivers/holeMesh.cpp include/test/testUtils.h include/test/testUtils.tcc src/test/testUtils.C )
-    target_link_libraries(holeMesh dendroDA dendro petsc ${MPI_LIBRARIES} m)    
-    
+    target_link_libraries(holeMesh dendroDA dendro petsc ${MPI_LIBRARIES} m)
+
 ##---------------------------------------------------------------------------------------
 ## Octree Construct-Balance Apps
 ##---------------------------------------------------------------------------------------
