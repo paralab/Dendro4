@@ -24,6 +24,7 @@ namespace ot {
     class NodeAndValues {
 
     public:
+        int label;
         ot::TreeNode node; /**< The octant */
         T values[ARR_LEN]; /**< The values */
 
@@ -70,6 +71,7 @@ namespace ot {
           for(unsigned int i = 0; i < ARR_LEN; i++) {
             this->values[i] = other.values[i];
           }
+          this->label = other.label;
           return *this;
         }//end fn.
 
@@ -92,6 +94,7 @@ namespace ot {
           for(unsigned int i = 0; i < ARR_LEN; i++) {
             this->values[i] = other.values[i];
           }
+          this->label = other.label;
         }
         //@}
 

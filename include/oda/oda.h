@@ -1087,7 +1087,7 @@ namespace ot {
          * 
          * Note that the points will be redistributed and contents will be modified.
          */ 
-        int alignPointsWithDA(std::vector<double>& points);
+        int alignPointsWithDA(std::vector<double>& points, std::vector<int>& labels);
         
         
         /**

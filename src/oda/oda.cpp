@@ -1595,7 +1595,7 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
  }
 
  
-int DA::alignPointsWithDA(std::vector<double>& pts) {
+int DA::alignPointsWithDA(std::vector<double>& pts, std::vector<int>& labels) {
     // MPI_Comm                        m_mpiCommAll;
     // int                             m_iRankAll;
     // int                             m_iNpesAll;
@@ -1618,6 +1618,7 @@ int DA::alignPointsWithDA(std::vector<double>& pts) {
     tmpObj.values[0] = pts[(3*i)];
     tmpObj.values[1] = pts[(3*i) + 1];
     tmpObj.values[2] = pts[(3*i) + 2];
+    tmpObj.label = labels[i];
     ptsWrapper.push_back(tmpObj);
   }//end for i
   
@@ -1704,10 +1705,12 @@ int DA::alignPointsWithDA(std::vector<double>& pts) {
   
   // clear and copy to points ...
   pts.clear();
+  labels.clear();
   for (auto x: recvList) {
     pts.push_back(x.values[0]);
     pts.push_back(x.values[1]);
     pts.push_back(x.values[2]);
+    labels.push_back(x.label);
   }
   recvList.clear();
   // clean up.
