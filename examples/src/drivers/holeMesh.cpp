@@ -31,7 +31,7 @@
 
 #define SQRT_3 1.7320508075688772
 
-void saveNodalVecAsVTK(ot::DA* da, Vec vec, const char *fname);
+void saveNodalVecAsVTK(ot::DA* da, Vec vec, double* gsz, const char *fname);
 void interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::DA* m_octDA);
 void interp_local_to_global(PetscScalar* __restrict loc, PetscScalar* glo, ot::DA* m_octDA);
 
@@ -49,15 +49,18 @@ int main(int argc, char ** argv ) {
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  double ctr[3] = {0.5, 0.5, 0.5};
+  double gsz[3] = {1.0, 1.0, 5.0};
+  double ctr[3] = {0.5, 0.5, 2.5};
   double r = 0.2;
   
-  auto fx = [ctr, r](double x, double y, double z) { return sqrt((x-ctr[0])*(x-ctr[0]) + (y-ctr[1])*(y-ctr[1])) - r; };
+  auto fx = [ctr, r](double x, double y, double z) -> double { return sqrt((x-ctr[0])*(x-ctr[0]) + (z-ctr[2])*(z-ctr[2])) - r; };
   
   // function2Octree(fx, nodes, 8, false, MPI_COMM_WORLD);
-  ot::DA *da =  ot::function_to_DA(fx, 8, true, MPI_COMM_WORLD); 
-  
-  std::cout << rank << ": finished building DA" << std::endl;
+
+  ot::DA *da =  ot::function_to_DA(fx, 5, 9, gsz, true, MPI_COMM_WORLD);
+  // ot::DA *da =  ot::function_to_DA(fx, 8, true, MPI_COMM_WORLD);
+
+  std::cout << rank << ": finished building DA" << std::endl ;
   
   PetscScalar zero = 1.0, nrm;
   Vec v;
@@ -67,7 +70,7 @@ int main(int argc, char ** argv ) {
   VecSet(v, zero);
   
   std::cout << rank << ": saving vtk" << std::endl;
-  saveNodalVecAsVTK(da, v, "fnViz" );
+  saveNodalVecAsVTK(da, v, gsz, "fnViz" );
   
   // clean up
   VecDestroy(&v);
@@ -77,7 +80,7 @@ int main(int argc, char ** argv ) {
   PetscFinalize();
 }//end main
 
-void saveNodalVecAsVTK(ot::DA* da, Vec vec, const char *file_prefix) {
+void saveNodalVecAsVTK(ot::DA* da, Vec vec, double* gSize, const char *file_prefix) {
   int rank, size;
   char fname[256];
 
@@ -134,7 +137,7 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, const char *file_prefix) {
     double hx, hy, hz;
     Point pt;
     
-    double gSize[3] = {1.0, 1.0, 1.0};
+    // double gSize[3] = {1.0, 1.0, 1.0};
 
     double xFac = gSize[0]/((double)(1<<(maxD-1)));
     double yFac = gSize[1]/((double)(1<<(maxD-1)));

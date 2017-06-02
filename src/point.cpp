@@ -64,6 +64,12 @@ void Point::operator *= (const double factor){
 	_z*=factor;
 }
 
+void Point::operator *= (const Point &other) {
+	_x *= other._x;
+	_y *= other._y;
+	_z *= other._z;
+}
+
 void Point::operator /= (const int divisor){
 	if (divisor == 0) return;
 	_x /= static_cast<double>(divisor);

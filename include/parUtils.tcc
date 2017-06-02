@@ -1872,8 +1872,6 @@ namespace par {
       treenode_split.push_back(temp);
       // std::cout <<"Rank: "<<rank<<"  "<<sendSplits[i-1]<<std::endl;
 
-
-
     }//end for i
 
 
@@ -1910,7 +1908,7 @@ namespace par {
 // 	  std::cout<<"Rank:"<<rank<<":"<<(splittersPtr->m_uiX)<<std::endl;
     //splittersPtr[i].printTreeNode();
     //}
-    sendSplits.clear();
+   sendSplits.clear();
 
     int *sendcnts = new int[npes];
     assert(sendcnts);
@@ -1930,7 +1928,8 @@ namespace par {
     }
 
     //To be parallelized
-/*      int k = 0;
+/*      
+      int k = 0;
       for (DendroIntL j = 0; j < nelem; j++) {
         if (arr[j] <= splitters[k]) {
           sendcnts[k]++;

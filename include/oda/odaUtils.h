@@ -209,7 +209,10 @@ namespace ot {
       std::vector<unsigned char> & bdyFlagVec);
 
   
-  ot::DA* function_to_DA(std::function<double(double,double,double)> fx, unsigned int d_max, bool reject_interior, MPI_Comm comm ); 
+  /**
+   * @author Hari Sundar
+   */ 
+  DA* function_to_DA (std::function<double ( double, double, double ) > fx, unsigned int d_min, unsigned int d_max, double* gSize, bool reject_interior, MPI_Comm comm );
   
   
   /**

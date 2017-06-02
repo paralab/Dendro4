@@ -2095,7 +2095,7 @@ namespace ot {
   }// end of the function
 
 
-  ot::DA* function_to_DA(std::function<double(double,double,double)> fx, unsigned int d_max, bool reject_interior, MPI_Comm comm ) {
+  ot::DA* function_to_DA(std::function<double(double,double,double)> fx, unsigned int d_min, unsigned int d_max, double* gSize, bool reject_interior, MPI_Comm comm ) {
     // PROF_F2O_BEGIN
     int size, rank;
     unsigned int dim = 3;
@@ -2112,14 +2112,18 @@ namespace ot {
     unsigned int depth = 1;
     unsigned int num_intersected=1;
   
-    double h, h1;
+    double hx, hy, hz;
     std::array<double, 8> dist;
     Point pt;
         
     auto inside = [](double d){ return d < 0.0; };
-  
-    h = 1.0/(1<<(maxDepth));
-  
+
+    double xFac = gSize[0]/((double)(1<<(maxDepth)));
+    double yFac = gSize[1]/((double)(1<<(maxDepth)));
+    double zFac = gSize[2]/((double)(1<<(maxDepth)));
+
+    Point p2(xFac, yFac, zFac);
+
     if (!rank) {
       // root does the initial refinement
       ot::TreeNode root = ot::TreeNode(dim, maxDepth);
@@ -2132,28 +2136,35 @@ namespace ot {
           if ( elem.getLevel() != depth ) {
             nodes_new.push_back(elem);
             continue;
-          } 
-        
-          h1 = h * ( 1 << (maxDepth - elem.getLevel())); 
-        
+          }
+          if (depth < d_min) {
+            elem.addChildren(nodes_new);
+            num_intersected++;
+            continue;
+          }
+
+          hx = xFac * ( 1 << (maxDepth - elem.getLevel()));
+          hy = xFac * ( 1 << (maxDepth - elem.getLevel()));
+          hz = zFac * ( 1 << (maxDepth - elem.getLevel()));
+
           // check and split
           pt = elem.getAnchor();
-          pt *= h ;
-        
-          dist[0] = fx(pt.x(), pt.y(), pt.z());
-          dist[1] = fx(pt.x()+h1, pt.y(), pt.z());
-          dist[2] = fx(pt.x(), pt.y()+h1, pt.z());
-          dist[3] = fx(pt.x()+h1, pt.y()+h1, pt.z());
+          pt *= p2;
 
-          dist[4] = fx(pt.x(), pt.y(), pt.z()+h1);
-          dist[5] = fx(pt.x()+h1, pt.y(), pt.z()+h1);
-          dist[6] = fx(pt.x(), pt.y()+h1, pt.z()+h1);
-          dist[7] = fx(pt.x()+h1, pt.y()+h1, pt.z() +h1);
-        
-          if ( std::none_of(dist.begin(), dist.end(), inside )) {
-            // outside, retain but do not refine 
+          dist[0] = fx(pt.x(), pt.y(), pt.z());
+          dist[1] = fx(pt.x()+hx, pt.y(), pt.z());
+          dist[2] = fx(pt.x(), pt.y()+hy, pt.z());
+          dist[3] = fx(pt.x()+hx, pt.y()+hy, pt.z());
+
+          dist[4] = fx(pt.x(), pt.y(), pt.z()+hz);
+          dist[5] = fx(pt.x()+hx, pt.y(), pt.z()+hz);
+          dist[6] = fx(pt.x(), pt.y()+hy, pt.z()+hz);
+          dist[7] = fx(pt.x()+hy, pt.y()+hy, pt.z() +hz);
+
+          if (std::none_of(dist.begin(), dist.end(), inside)) {
+            // outside, retain but do not refine
             nodes_new.push_back(elem);
-          } else if ( std::all_of(dist.begin(), dist.end(), inside ) ) {
+          } else if (std::all_of(dist.begin(), dist.end(), inside)) {
             // if (!reject_interior)
             nodes_new.push_back(elem);
           } else {
@@ -2188,30 +2199,37 @@ namespace ot {
   par::Mpi_Bcast(&depth, 1, 0, comm);
   num_intersected=1;
   
-  while ( (num_intersected > 0 ) && (depth < d_max) ) {
+  while ( (depth < d_max) || ( (num_intersected > 0 ) && (depth < d_max) ) ) {
     // std::cout << "Depth: " << depth << " n = " << nodes.size() << std::endl;
     num_intersected = 0;
     for (auto elem: nodes ){
         if ( elem.getLevel() != depth ) {
           nodes_new.push_back(elem);
           continue;
-        } 
-        
-        h1 = h * ( 1 << (maxDepth - elem.getLevel())); 
+        }
+        if (depth < d_min) {
+          elem.addChildren(nodes_new);
+          num_intersected++;
+          continue;
+        }
+
+        hx = xFac * ( 1 << (maxDepth - elem.getLevel()));
+        hy = xFac * ( 1 << (maxDepth - elem.getLevel()));
+        hz = zFac * ( 1 << (maxDepth - elem.getLevel()));
         
         // check and split
         pt = elem.getAnchor();
-        pt *= h ;
-        
-        dist[0] = fx(pt.x(), pt.y(), pt.z());
-        dist[1] = fx(pt.x()+h1, pt.y(), pt.z());
-        dist[2] = fx(pt.x(), pt.y()+h1, pt.z());
-        dist[3] = fx(pt.x()+h1, pt.y()+h1, pt.z());
+        pt *= p2;
 
-        dist[4] = fx(pt.x(), pt.y(), pt.z()+h1);
-        dist[5] = fx(pt.x()+h1, pt.y(), pt.z()+h1);
-        dist[6] = fx(pt.x(), pt.y()+h1, pt.z()+h1);
-        dist[7] = fx(pt.x()+h1, pt.y()+h1, pt.z() +h1);
+        dist[0] = fx(pt.x(), pt.y(), pt.z());
+        dist[1] = fx(pt.x()+hx, pt.y(), pt.z());
+        dist[2] = fx(pt.x(), pt.y()+hy, pt.z());
+        dist[3] = fx(pt.x()+hx, pt.y()+hy, pt.z());
+
+        dist[4] = fx(pt.x(), pt.y(), pt.z()+hz);
+        dist[5] = fx(pt.x()+hx, pt.y(), pt.z()+hz);
+        dist[6] = fx(pt.x(), pt.y()+hy, pt.z()+hz);
+        dist[7] = fx(pt.x()+hy, pt.y()+hy, pt.z() +hz);
         
         if ( std::none_of(dist.begin(), dist.end(), inside )) {
           // outside, retain but do not refine 
@@ -2255,14 +2273,12 @@ namespace ot {
     // }
    
     unsigned int lev;
-    double hx, hy, hz;
-    
-    double gSize[3] = {1.0, 1.0, 1.0};
-
+    /*
     double xFac = gSize[0]/((double)(1<<(maxDepth)));
     double yFac = gSize[1]/((double)(1<<(maxDepth)));
     double zFac = gSize[2]/((double)(1<<(maxDepth)));
-    
+    */
+
     // now process the DA to skip interior elements
     if (reject_interior) {
         da->initialize_skiplist();

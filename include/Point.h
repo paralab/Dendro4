@@ -66,6 +66,7 @@ class Point{
     void operator /= (const double divisor);
     void operator *= (const int factor);
     void operator *= (const double factor);
+    void operator *= (const Point &other);
 
     Point& operator=(const Point &other);
     Point  operator+(const Point &other);
