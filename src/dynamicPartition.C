@@ -159,7 +159,7 @@ void UpdateBoundaryCalculation(std::vector<ot::TreeNode>& partition,int begin, i
 
 
             int l=0;
-            int pow=(2-2*abs(new_octant.getLevel()-partition[found_oct].getLevel()));
+            int pow=(2-2*std::labs(new_octant.getLevel()-partition[found_oct].getLevel()));
 
             l=(1u<<pow); // this gives us how much we need to reduce,
             assert(pow==0 || pow==2);

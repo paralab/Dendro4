@@ -1387,7 +1387,7 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
                    pre=false;
                }else
                {
-                   diff_pre=abs(last_pre-nList[k]);
+                   diff_pre=std::labs(last_pre-nList[k]);
                    //std::cout<<"diff_pre:"<<diff_pre<<std::endl;
                    last_pre=nList[k];
                }
@@ -1412,7 +1412,7 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
                    mine=false;
                }else
                {
-                   diff_mine=abs(last_mine-nList[k]);
+                   diff_mine=std::labs(last_mine-nList[k]);
                    last_mine=nList[k];
                }
 
@@ -1434,7 +1434,7 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
                    post=false;
                }else
                {
-                   diff_post=abs(last_post-nList[k]);
+                   diff_post = std::labs(last_post-nList[k]);
                    last_post=nList[k];
                }
 
@@ -1703,16 +1703,19 @@ int DA::alignPointsWithDA(std::vector<double>& pts, std::vector<int>& labels) {
         sendCnts, sendDisps, recvListPtr, recvCnts, recvDisps, m_mpiCommAll);
   sendList.clear();
   
+  par::sampleSort(recvList, sendList, m_mpiCommAll);
+  
+  recvList.clear();
   // clear and copy to points ...
   pts.clear();
   labels.clear();
-  for (auto x: recvList) {
+  for (auto x: sendList) {
     pts.push_back(x.values[0]);
     pts.push_back(x.values[1]);
     pts.push_back(x.values[2]);
     labels.push_back(x.label);
   }
-  recvList.clear();
+  sendList.clear();
   // clean up.
   delete [] sendCnts;
   delete [] sendDisps;
