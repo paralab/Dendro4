@@ -49,11 +49,15 @@ int main(int argc, char ** argv ) {
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  double gsz[3] = {1.0, 1.0, 5.0};
-  double ctr[3] = {0.5, 0.5, 2.5};
-  double r = 0.2;
+  double gsz[3] = {1.0, 1.0, 1.0};
+  double ctr[3] = {0.5, 0.5, 0.5};
+  double yr[2] = {0.4375, 0.5875};         //  .25 .375 .4375 .5 .5875 .625 .75
+  double r = 0.025;
   
-  auto fx = [ctr, r](double x, double y, double z) -> double { return sqrt((x-ctr[0])*(x-ctr[0]) + (z-ctr[2])*(z-ctr[2])) - r; };
+  auto fx = [ctr, r, yr](double x, double y, double z) -> double { 
+    if ( (y < yr[0]) || (y > yr[1]) || (x < yr[0]) || (x > yr[1])  ) return -1.0;
+    return sqrt((x-ctr[0])*(x-ctr[0]) + (z-ctr[2])*(z-ctr[2])) - r; 
+  };
   
   // function2Octree(fx, nodes, 8, false, MPI_COMM_WORLD);
 

@@ -10,6 +10,7 @@
 #include "colors.h"
 #include "testUtils.h"
 #include "dendro.h"
+#include <iomanip>
 
 #ifdef __DEBUG__
 #ifndef __DEBUG_DA__
@@ -137,64 +138,97 @@ namespace ot {
         return errCode;
     }  // end function
 
-  int DA::setValuesInMatrix(Mat mat, std::vector<ot::MatRecord>& records, unsigned int dof, InsertMode mode) {
+    int DA::setValuesInMatrix(Mat mat, std::vector<ot::MatRecord> &records, unsigned int dof, InsertMode mode)
+    {
 
-    PROF_SET_MAT_VALUES_BEGIN 
+      PROF_SET_MAT_VALUES_BEGIN
 
       assert(m_bComputedLocalToGlobal);
-    std::vector<PetscScalar> values;
-    std::vector<PetscInt> colIndices;
+      std::vector<PetscScalar> values;
+      std::vector<PetscInt> colIndices;
 
-    //Can make it more efficient later.
-    if(!records.empty()) {
-      //Sort Order: row first, col next, val last
-      std::sort(records.begin(), records.end());
+      /* >>= @hari - Oct 12 2017 - debug for Taly integration + SNES
+      char talyfile[256];
+      sprintf(talyfile, "records.%d.%d.txt", m_iRankAll, m_iNpesAll);
 
-      unsigned int currRecord = 0;
+      std::ofstream out(talyfile, std::ofstream::app);
 
-        while(currRecord < (records.size()-1)) {
-        values.push_back(records[currRecord].val);
-        colIndices.push_back( static_cast<PetscInt>(
-              (dof*m_dilpLocalToGlobal[records[currRecord].colIdx]) +
-              records[currRecord].colDim) );
-        if( (records[currRecord].rowIdx != records[currRecord+1].rowIdx) ||
-            (records[currRecord].rowDim != records[currRecord+1].rowDim) ) {
-          PetscInt rowId = static_cast<PetscInt>(
-              (dof*m_dilpLocalToGlobal[records[currRecord].rowIdx]) + 
-              records[currRecord].rowDim);
-          MatSetValues(mat,1,&rowId,colIndices.size(),(&(*colIndices.begin())),
-              (&(*values.begin())),mode);
+      // =<< @hari - Oct 12 2017 - debug for Taly integration + SNES */
+
+      //Can make it more efficient later.
+      if (!records.empty())
+      {
+        //Sort Order: row first, col next, val last
+        std::sort(records.begin(), records.end());
+
+        unsigned int currRecord = 0;
+
+        while (currRecord < (records.size() - 1))
+        {
+          values.push_back(records[currRecord].val);
+          colIndices.push_back(static_cast<PetscInt>(
+              (dof * m_dilpLocalToGlobal[records[currRecord].colIdx]) +
+              records[currRecord].colDim));
+          if ((records[currRecord].rowIdx != records[currRecord + 1].rowIdx) ||
+              (records[currRecord].rowDim != records[currRecord + 1].rowDim))
+          {
+            PetscInt rowId = static_cast<PetscInt>(
+                (dof * m_dilpLocalToGlobal[records[currRecord].rowIdx]) +
+                records[currRecord].rowDim);
+            MatSetValues(mat, 1, &rowId, colIndices.size(), (&(*colIndices.begin())),
+                         (&(*values.begin())), mode);
+            // >>= @hari - Oct 12 2017 - debug for Taly integration + SNES
+            // for (int q = 0; q < colIndices.size(); ++q) {
+            //   out << std::setfill('0') << std::setw(5) << rowId << " " << std::setfill('0') << std::setw(5) << colIndices[q] << " " << values[q] << std::endl;
+            // }
+            // =<< @hari - Oct 12 2017 - debug for Taly integration + SNES
+
+              colIndices.clear();
+            values.clear();
+          }
+          currRecord++;
+        } //end while
+
+        PetscInt rowId = static_cast<PetscInt>(
+            (dof * m_dilpLocalToGlobal[records[currRecord].rowIdx]) +
+            records[currRecord].rowDim);
+        if (values.empty())
+        {
+          //Last row is different from the previous row
+          PetscInt colId = static_cast<PetscInt>(
+              (dof * m_dilpLocalToGlobal[records[currRecord].colIdx]) +
+              records[currRecord].colDim);
+          PetscScalar value = records[currRecord].val;
+          MatSetValues(mat, 1, &rowId, 1, &colId, &value, mode);
+                      // >>= @hari - Oct 12 2017 - debug for Taly integration + SNES
+                      //  out << std::setfill('0') << std::setw(5) << rowId << " " << std::setfill('0') << std::setw(5) << colId << " " << value << std::endl;
+                      // =<< @hari - Oct 12 2017 - debug for Taly integration + SNES
+        }
+        else
+        {
+          //Last row is same as the previous row
+          values.push_back(records[currRecord].val);
+          colIndices.push_back(static_cast<PetscInt>(
+              (dof * m_dilpLocalToGlobal[records[currRecord].colIdx]) +
+              records[currRecord].colDim));
+          MatSetValues(mat, 1, &rowId, colIndices.size(), (&(*colIndices.begin())),
+                       (&(*values.begin())), mode);
+                      // >>= @hari - Oct 12 2017 - debug for Taly integration + SNES
+                      // for (int q = 0; q < colIndices.size(); ++q) {
+                      //   out << std::setfill('0') << std::setw(5) << rowId << " " << std::setfill('0') << std::setw(5) << colIndices[q] << " " << values[q] << std::endl;
+                      // }
+                      // =<< @hari - Oct 12 2017 - debug for Taly integration + SNES
           colIndices.clear();
           values.clear();
         }
-        currRecord++;
-      }//end while
+        records.clear();
+      } // records not empty
 
-      PetscInt rowId = static_cast<PetscInt>(
-          (dof*m_dilpLocalToGlobal[records[currRecord].rowIdx]) +
-          records[currRecord].rowDim);
-        if(values.empty()) {
-        //Last row is different from the previous row
-        PetscInt colId = static_cast<PetscInt>(
-            (dof*m_dilpLocalToGlobal[records[currRecord].colIdx]) + 
-            records[currRecord].colDim);
-        PetscScalar value = records[currRecord].val;
-        MatSetValues(mat,1,&rowId,1,&colId,&value,mode);
-      }else {
-        //Last row is same as the previous row
-        values.push_back(records[currRecord].val);
-        colIndices.push_back( static_cast<PetscInt>(
-              (dof*m_dilpLocalToGlobal[records[currRecord].colIdx]) + 
-              records[currRecord].colDim) );
-        MatSetValues(mat,1,&rowId,colIndices.size(),(&(*colIndices.begin())),
-            (&(*values.begin())),mode);
-        colIndices.clear();
-        values.clear();
-      }
-      records.clear();
-    } // records not empty
+      // >>= @hari - Oct 12 2017 - debug for Taly integration + SNES
+      // out.close();
+      // =<< @hari - Oct 12 2017 - debug for Taly integration + SNES
 
-    PROF_SET_MAT_VALUES_END
+      PROF_SET_MAT_VALUES_END
   }//end function
 
   //***************Constructor*****************//
@@ -739,8 +773,14 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
 
     // get the local Petsc Arrray,
     PetscScalar *array = NULL;
-    VecGetArray(in, &array);
+    // VecGetArray(in, &array);
 
+    if (isReadOnly) {
+      VecGetArrayRead(in, (const PetscScalar**) &array);
+    } else {  
+      VecGetArray(in, &array);
+    }
+    
     // allocate except for the case of ghosted-elemental vectors...
     if(isGhosted && isElemental) {
       //simply copy the pointer
@@ -820,9 +860,13 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
     }
 
     if(!(isGhosted && isElemental)) {
-      VecRestoreArray(in, &array);
+      if (isReadOnly) {
+        VecRestoreArrayRead(in, (const PetscScalar**) &array);
+      } else {
+        VecRestoreArray(in, &array);
+      }
     }
-
+    
     return 0;
   }
 
@@ -870,7 +914,11 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
       //If it is ghosted and elemental, simply restore the array.
       //out was not allocated expicitly in this case. It was just a copy of the
       //array's pointer. The readOnly flag is immaterial for this case.
-      VecRestoreArray(in, &out);
+      if (isReadOnly) {
+        VecRestoreArrayRead(in, (const PetscScalar**) &out);
+      } else {
+        VecRestoreArray(in, &out);
+      }
       out = NULL;
     }  else if ( isReadOnly ) {
       // no need to write back ... simply clean up and return
@@ -932,7 +980,11 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
         }
       }
 
-      VecRestoreArray(in, &array);
+      if (isReadOnly) {
+        VecRestoreArrayRead(in, (const PetscScalar**) &array);
+      } else {
+        VecRestoreArray(in, &array);
+      }
       //Since this is not an elemental and ghosted vector, out was allocated
       //explicitly 
       if(out) {

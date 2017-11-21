@@ -44,6 +44,7 @@ class Point{
     Point(int newx, int newy, int newz);
     Point(unsigned int newx, unsigned int newy, unsigned int newz);
     Point(const Point &newpoint);
+    Point(Point &&newpoint);
     //@}
 
     /** @name Getters */

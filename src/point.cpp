@@ -41,6 +41,12 @@ Point::Point(const Point &newposition) :
   _x(newposition._x), _y(newposition._y), _z(newposition._z)
 {
 }
+
+Point::Point(Point &&newposition) :
+_x(newposition._x), _y(newposition._y), _z(newposition._z)
+{
+}
+
 /*
 Point::~Point()
 {
