@@ -212,8 +212,8 @@ namespace ot {
   /**
    * @author Hari Sundar
    */ 
-  DA* function_to_DA (std::function<double ( double, double, double ) > fx, unsigned int d_min, unsigned int d_max, double* gSize, bool reject_interior, MPI_Comm comm );
-  
+  // DA* function_to_DA (std::function<double ( double, double, double ) > fx, unsigned int d_min, unsigned int d_max, double* gSize, bool reject_interior, MPI_Comm comm );
+  DA* function_to_DA (std::function<double ( double, double, double ) > fx_refine, std::function<double ( double, double, double ) > fx_retain, unsigned int d_min, unsigned int d_max, double* gSize, bool reject_interior, MPI_Comm comm );
   
   /**
     @author Rahul Sampath	

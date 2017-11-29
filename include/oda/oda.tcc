@@ -460,13 +460,25 @@ namespace ot {
       m_uiCurrent = 0;
       m_uiQuotientCounter = 0;
       m_uiPreGhostQuotientCnt= 0;
-      if ( (m_uiCurrent < (m_uiPreGhostElementSize + m_uiElementSize))
-          && ( m_ucpLutMasks[(2*m_uiCurrent) + 1]  == ot::DA_FLAGS::FOREIGN) ) {
-        if(m_bCompressLut) {
-          updateQuotientCounter();
+      
+      if (m_bSkipOctants) {
+        if ( ( (m_uiCurrent < (m_uiPreGhostElementSize + m_uiElementSize))
+          && ( m_ucpLutMasks[(2*m_uiCurrent) + 1]  == ot::DA_FLAGS::FOREIGN) ) || m_ucpSkipList[m_uiCurrent] ) {
+          if(m_bCompressLut) {
+            updateQuotientCounter();
+          }
+          next<ot::DA_FLAGS::ALL>();
         }
-        next<ot::DA_FLAGS::ALL>();
+      } else {
+        if ( (m_uiCurrent < (m_uiPreGhostElementSize + m_uiElementSize))
+          && ( m_ucpLutMasks[(2*m_uiCurrent) + 1]  == ot::DA_FLAGS::FOREIGN) ) {
+          if(m_bCompressLut) {
+            updateQuotientCounter();
+          }
+          next<ot::DA_FLAGS::ALL>();
+          }  
       }
+      
     }//end function
 
   template<>	
@@ -477,7 +489,15 @@ namespace ot {
       m_ptCurrentOffset = m_ptIndependentOffset;
       m_uiCurrent = m_uiIndependentElementBegin;
       m_uiQuotientCounter = m_uiIndependentElementQuotient;
-      m_uiPreGhostQuotientCnt = static_cast<unsigned int>(m_ptsPreGhostOffsets.size());      
+      m_uiPreGhostQuotientCnt = static_cast<unsigned int>(m_ptsPreGhostOffsets.size());
+
+      if (m_bSkipOctants) {
+        while ( m_ucpSkipList[m_uiCurrent] ) {
+          incrementCurrentOffset();
+          m_uiCurrent++;
+        }
+      };
+      
     }//end function
 
   template<>	
@@ -492,14 +512,31 @@ namespace ot {
       //Process for the case where m_idxCurrent is actually independent ...
       if (m_iNpesActive==1) {
         m_uiCurrent = m_uiPreGhostElementSize + m_uiElementSize;           
-      }else {
-        if ( (m_uiCurrent < (m_uiPreGhostElementSize + m_uiElementSize) ) &&
-            ( ( m_ucpLutMasks[(2*m_uiCurrent) + 1]  == ot::DA_FLAGS::FOREIGN) ||
-              (!(m_ucpOctLevels[m_uiCurrent] & ot::DA_FLAGS::DEP_ELEM)) ) ) {
-          if(m_bCompressLut) {
-            updateQuotientCounter();  
+        if (m_bSkipOctants) {
+          while ( m_ucpSkipList[m_uiCurrent] ) {
+            incrementCurrentOffset();
+            m_uiCurrent++;
           }
-          next<ot::DA_FLAGS::DEPENDENT>(); 
+        };
+      }else {
+        if (m_bSkipOctants) {
+          if ( ( (m_uiCurrent < (m_uiPreGhostElementSize + m_uiElementSize) ) &&
+            ( ( m_ucpLutMasks[(2*m_uiCurrent) + 1]  == ot::DA_FLAGS::FOREIGN) ||
+            (!(m_ucpOctLevels[m_uiCurrent] & ot::DA_FLAGS::DEP_ELEM)) ) ) || m_ucpSkipList[m_uiCurrent] ) {
+            if(m_bCompressLut) {
+              updateQuotientCounter();  
+            }
+            next<ot::DA_FLAGS::DEPENDENT>(); 
+            }
+        } else {
+          if ( (m_uiCurrent < (m_uiPreGhostElementSize + m_uiElementSize) ) &&
+            ( ( m_ucpLutMasks[(2*m_uiCurrent) + 1]  == ot::DA_FLAGS::FOREIGN) ||
+            (!(m_ucpOctLevels[m_uiCurrent] & ot::DA_FLAGS::DEP_ELEM)) ) ) {
+            if(m_bCompressLut) {
+              updateQuotientCounter();  
+            }
+            next<ot::DA_FLAGS::DEPENDENT>(); 
+            }
         }
       }
     }//end function
@@ -513,6 +550,13 @@ namespace ot {
       m_uiCurrent = m_uiElementBegin;
       m_uiQuotientCounter = m_uiElementQuotient;
       m_uiPreGhostQuotientCnt = m_ptsPreGhostOffsets.size();
+      
+      if (m_bSkipOctants) {
+        while ( m_ucpSkipList[m_uiCurrent] ) {
+          incrementCurrentOffset();
+          m_uiCurrent++;
+        }
+      };
     }//end function
 
   template<>	
@@ -525,6 +569,13 @@ namespace ot {
       m_uiCurrent = m_lcLoopInfo.currentIndex;
       m_uiQuotientCounter = m_lcLoopInfo.qCounter;
       m_uiPreGhostQuotientCnt = m_lcLoopInfo.pgQcounter;			
+      
+      if (m_bSkipOctants) {
+        while ( m_ucpSkipList[m_uiCurrent] ) {
+          incrementCurrentOffset();
+          m_uiCurrent++;
+        }
+      };
     }//end function
 
   template<>	
@@ -539,14 +590,31 @@ namespace ot {
       //Process for the case where m_idxCurrent is actually independent ...
       if (m_iNpesActive==1) {
         m_uiCurrent = m_uiPreGhostElementSize + m_uiElementSize;
+        if (m_bSkipOctants) {
+          while ( m_ucpSkipList[m_uiCurrent] ) {
+            incrementCurrentOffset();
+            m_uiCurrent++;
+          }
+        };
       }else {
-        if ( (m_uiCurrent < (m_uiPreGhostElementSize + m_uiElementSize) ) &&
+        if (m_bSkipOctants) {
+        if ( ( (m_uiCurrent < (m_uiPreGhostElementSize + m_uiElementSize) ) &&
             ( ( m_ucpLutMasks[(2*m_uiCurrent) + 1]  == ot::DA_FLAGS::FOREIGN) ||
-              (!(m_ucpOctLevels[m_uiCurrent] & ot::DA_FLAGS::DEP_ELEM)) ) ) {
+            (!(m_ucpOctLevels[m_uiCurrent] & ot::DA_FLAGS::DEP_ELEM)) ) ) || m_ucpSkipList[m_uiCurrent] ) {
           if(m_bCompressLut) {
             updateQuotientCounter();  
           }
           next<ot::DA_FLAGS::W_DEPENDENT>(); 
+        } 
+        } else {
+          if ( (m_uiCurrent < (m_uiPreGhostElementSize + m_uiElementSize) ) &&
+            ( ( m_ucpLutMasks[(2*m_uiCurrent) + 1]  == ot::DA_FLAGS::FOREIGN) ||
+            (!(m_ucpOctLevels[m_uiCurrent] & ot::DA_FLAGS::DEP_ELEM)) ) ) {
+            if(m_bCompressLut) {
+              updateQuotientCounter();  
+            }
+            next<ot::DA_FLAGS::W_DEPENDENT>(); 
+            }
         }
       }
     }//end function

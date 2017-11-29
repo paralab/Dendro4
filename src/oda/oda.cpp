@@ -1646,6 +1646,8 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
 
  }
 
+// int DA::alignPointsWithDA(std::vector<ot::NodeAndValues<double,3>>& pts);  
+ 
  
 int DA::alignPointsWithDA(std::vector<double>& pts, std::vector<int>& labels) {
     // MPI_Comm                        m_mpiCommAll;
@@ -1768,6 +1770,13 @@ int DA::alignPointsWithDA(std::vector<double>& pts, std::vector<int>& labels) {
     labels.push_back(x.label);
   }
   sendList.clear();
+  
+  //  Options
+  // 1. Return intPts in addition
+  // 2. Return only intPoints (TreeNode) ... you can compare and test for membership. Recover pt from TN 
+  
+  
+  
   // clean up.
   delete [] sendCnts;
   delete [] sendDisps;

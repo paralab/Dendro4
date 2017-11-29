@@ -2095,8 +2095,9 @@ namespace ot {
   }// end of the function
 
 
-  ot::DA* function_to_DA(std::function<double(double,double,double)> fx, unsigned int d_min, unsigned int d_max, double* gSize, bool reject_interior, MPI_Comm comm ) {
-    // PROF_F2O_BEGIN
+  // ot::DA* function_to_DA(std::function<double(double,double,double)> fx, unsigned int d_min, unsigned int d_max, double* gSize, bool reject_interior, MPI_Comm comm ) {
+  DA* function_to_DA (std::function<double ( double, double, double ) > fx_refine, std::function<double ( double, double, double ) > fx_retain, unsigned int d_min, unsigned int d_max, double* gSize, bool reject_interior, MPI_Comm comm ) {
+  // PROF_F2O_BEGIN
     int size, rank;
     unsigned int dim = 3;
     unsigned maxDepth = 30;
@@ -2151,15 +2152,15 @@ namespace ot {
           pt = elem.getAnchor();
           pt *= p2;
 
-          dist[0] = fx(pt.x(), pt.y(), pt.z());
-          dist[1] = fx(pt.x()+hx, pt.y(), pt.z());
-          dist[2] = fx(pt.x(), pt.y()+hy, pt.z());
-          dist[3] = fx(pt.x()+hx, pt.y()+hy, pt.z());
+          dist[0] = fx_refine(pt.x(), pt.y(), pt.z());
+          dist[1] = fx_refine(pt.x()+hx, pt.y(), pt.z());
+          dist[2] = fx_refine(pt.x(), pt.y()+hy, pt.z());
+          dist[3] = fx_refine(pt.x()+hx, pt.y()+hy, pt.z());
 
-          dist[4] = fx(pt.x(), pt.y(), pt.z()+hz);
-          dist[5] = fx(pt.x()+hx, pt.y(), pt.z()+hz);
-          dist[6] = fx(pt.x(), pt.y()+hy, pt.z()+hz);
-          dist[7] = fx(pt.x()+hy, pt.y()+hy, pt.z() +hz);
+          dist[4] = fx_refine(pt.x(), pt.y(), pt.z()+hz);
+          dist[5] = fx_refine(pt.x()+hx, pt.y(), pt.z()+hz);
+          dist[6] = fx_refine(pt.x(), pt.y()+hy, pt.z()+hz);
+          dist[7] = fx_refine(pt.x()+hy, pt.y()+hy, pt.z() +hz);
 
           if (std::none_of(dist.begin(), dist.end(), inside)) {
             // outside, retain but do not refine
@@ -2221,15 +2222,15 @@ namespace ot {
         pt = elem.getAnchor();
         pt *= p2;
 
-        dist[0] = fx(pt.x(), pt.y(), pt.z());
-        dist[1] = fx(pt.x()+hx, pt.y(), pt.z());
-        dist[2] = fx(pt.x(), pt.y()+hy, pt.z());
-        dist[3] = fx(pt.x()+hx, pt.y()+hy, pt.z());
+        dist[0] = fx_refine(pt.x(), pt.y(), pt.z());
+        dist[1] = fx_refine(pt.x()+hx, pt.y(), pt.z());
+        dist[2] = fx_refine(pt.x(), pt.y()+hy, pt.z());
+        dist[3] = fx_refine(pt.x()+hx, pt.y()+hy, pt.z());
 
-        dist[4] = fx(pt.x(), pt.y(), pt.z()+hz);
-        dist[5] = fx(pt.x()+hx, pt.y(), pt.z()+hz);
-        dist[6] = fx(pt.x(), pt.y()+hy, pt.z()+hz);
-        dist[7] = fx(pt.x()+hy, pt.y()+hy, pt.z() +hz);
+        dist[4] = fx_refine(pt.x(), pt.y(), pt.z()+hz);
+        dist[5] = fx_refine(pt.x()+hx, pt.y(), pt.z()+hz);
+        dist[6] = fx_refine(pt.x(), pt.y()+hy, pt.z()+hz);
+        dist[7] = fx_refine(pt.x()+hy, pt.y()+hy, pt.z() +hz);
         
         if ( std::none_of(dist.begin(), dist.end(), inside )) {
           // outside, retain but do not refine 
@@ -2290,16 +2291,23 @@ namespace ot {
 
           pt = da->getCurrentOffset();
 
-          dist[0] = fx(pt.x()*xFac, pt.y()*yFac, pt.z()*zFac);
-          dist[1] = fx(pt.x()*xFac+hx, pt.y()*yFac, pt.z()*zFac);
-          dist[2] = fx(pt.x()*xFac, pt.y()*yFac+hy, pt.z()*zFac);
-          dist[3] = fx(pt.x()*xFac+hx, pt.y()*yFac+hy, pt.z()*zFac);
+          dist[0] = fx_retain(pt.x()*xFac, pt.y()*yFac, pt.z()*zFac);
+          dist[1] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac, pt.z()*zFac);
+          dist[2] = fx_retain(pt.x()*xFac, pt.y()*yFac+hy, pt.z()*zFac);
+          dist[3] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac+hy, pt.z()*zFac);
 
-          dist[4] = fx(pt.x()*xFac, pt.y()*yFac, pt.z()*zFac+hz);
-          dist[5] = fx(pt.x()*xFac+hx, pt.y()*yFac, pt.z()*zFac+hz);
-          dist[6] = fx(pt.x()*xFac, pt.y()*yFac+hy, pt.z()*zFac+hz);
-          dist[7] = fx(pt.x()*xFac+hx, pt.y()*yFac+hy, pt.z()*zFac +hz);
+          dist[4] = fx_retain(pt.x()*xFac, pt.y()*yFac, pt.z()*zFac+hz);
+          dist[5] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac, pt.z()*zFac+hz);
+          dist[6] = fx_retain(pt.x()*xFac, pt.y()*yFac+hy, pt.z()*zFac+hz);
+          dist[7] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac+hy, pt.z()*zFac +hz);
 
+          /*
+          if (pt == Point(0,0,0)) {
+            for (auto dd: dist)
+              std::cout << "HS: " << dd << std::endl;
+          }
+          */
+          
           if ( std::all_of( dist.begin(), dist.end(), inside ) ) {
             da->skip_current();
           } 

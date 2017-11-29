@@ -54,14 +54,20 @@ int main(int argc, char ** argv ) {
   double yr[2] = {0.4375, 0.5875};         //  .25 .375 .4375 .5 .5875 .625 .75
   double r = 0.025;
   
-  auto fx = [ctr, r, yr](double x, double y, double z) -> double { 
+  auto fx_refine = [ctr, r, yr](double x, double y, double z) -> double { 
     if ( (y < yr[0]) || (y > yr[1]) || (x < yr[0]) || (x > yr[1])  ) return -1.0;
     return sqrt((x-ctr[0])*(x-ctr[0]) + (z-ctr[2])*(z-ctr[2])) - r; 
   };
   
+  auto fx_retain = [ctr, r, yr](double x, double y, double z) -> double { 
+    if ( (y < yr[0]) || (y > yr[1]) || (x < yr[0]) || (x > yr[1])  ) return -1.0;
+    return 1.0;
+    // return sqrt((x-ctr[0])*(x-ctr[0]) + (z-ctr[2])*(z-ctr[2])) - r; 
+  };
+  
   // function2Octree(fx, nodes, 8, false, MPI_COMM_WORLD);
 
-  ot::DA *da =  ot::function_to_DA(fx, 5, 9, gsz, true, MPI_COMM_WORLD);
+  ot::DA *da =  ot::function_to_DA(fx_refine, fx_retain, 5, 9, gsz, true, MPI_COMM_WORLD);
   // ot::DA *da =  ot::function_to_DA(fx, 8, true, MPI_COMM_WORLD);
 
   std::cout << rank << ": finished building DA" << std::endl ;
@@ -110,7 +116,7 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, double* gSize, const char *file_pref
   int unit_points = 1 << dim;
   int num_cells = 0; // da->getElementSize();
     
-  for ( da->init<ot::DA_FLAGS::INDEPENDENT>(), da->init<ot::DA_FLAGS::WRITABLE>(); 
+  for ( da->init<ot::DA_FLAGS::INDEPENDENT>(); 
          da->curr() < da->end<ot::DA_FLAGS::INDEPENDENT>(); 
         da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
 
@@ -149,7 +155,7 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, double* gSize, const char *file_pref
     double xx, yy, zz;
     unsigned int idx[8];
 
-    for ( da->init<ot::DA_FLAGS::INDEPENDENT>(), da->init<ot::DA_FLAGS::WRITABLE>(); 
+    for ( da->init<ot::DA_FLAGS::INDEPENDENT>(); 
          da->curr() < da->end<ot::DA_FLAGS::INDEPENDENT>(); 
         da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
       // set the value
@@ -201,7 +207,7 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, double* gSize, const char *file_pref
 
     PetscScalar* local = new PetscScalar[8];
 
-    for ( da->init<ot::DA_FLAGS::INDEPENDENT>(), da->init<ot::DA_FLAGS::WRITABLE>(); 
+    for ( da->init<ot::DA_FLAGS::INDEPENDENT>(); 
          da->curr() < da->end<ot::DA_FLAGS::INDEPENDENT>(); 
         da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
       da->getNodeIndices(idx);
