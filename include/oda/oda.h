@@ -22,6 +22,7 @@
 #include "petscvec.h"
 #include "petscmat.h"
 #include "dendro.h"
+#include "nodeAndValues.h"
 #include <unordered_map>
 
 #ifndef iC
@@ -1089,6 +1090,7 @@ namespace ot {
          */ 
         int alignPointsWithDA(std::vector<double>& points, std::vector<int>& labels);
         
+        int alignPointsWithDA(std::vector<ot::NodeAndValues<double,3>>& pts);  
         
         /**
           @author Hari Sundar

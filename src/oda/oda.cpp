@@ -1646,7 +1646,101 @@ inline Point DA::getNextOffset(Point p, unsigned char d) {
 
  }
 
-// int DA::alignPointsWithDA(std::vector<ot::NodeAndValues<double,3>>& pts);  
+
+int DA::alignPointsWithDA(std::vector<ot::NodeAndValues<double,3>>& pts) {
+  //Re-distribute pts to align with minBlocks
+  
+  int* sendCnts = new int[m_iNpesAll];
+  int* tmpSendCnts = new int[m_iNpesAll];
+
+  for(int i = 0; i < m_iNpesAll; i++) {
+    sendCnts[i] = 0;
+    tmpSendCnts[i] = 0;
+  }//end for i
+
+  int numPts = pts.size();
+  unsigned int *part = NULL;
+    if(numPts) {
+      part = new unsigned int[numPts];
+  }
+
+  for(int i = 0; i < numPts; i++) {
+    bool found = seq::maxLowerBound<ot::TreeNode>(m_tnMinAllBlocks, pts[i].node, part[i], NULL, NULL);
+    assert(found);
+    assert(part[i] < m_iNpesAll);
+    sendCnts[part[i]]++;
+  }//end for i
+
+  int* sendDisps = new int[m_iNpesAll];
+
+  sendDisps[0] = 0;
+  for(int i = 1; i < m_iNpesAll; i++) {
+    sendDisps[i] = sendDisps[i-1] + sendCnts[i-1];
+  }//end for i
+
+  std::vector<ot::NodeAndValues<double, 3> > sendList(numPts);
+
+  unsigned int *commMap = NULL;
+  if(numPts) {
+    commMap = new unsigned int[numPts];
+  }
+
+  for(int i = 0; i < numPts; i++) {
+      unsigned int pId = part[i];
+      unsigned int sId = (sendDisps[pId] + tmpSendCnts[pId]);
+      assert(sId < numPts);
+      sendList[sId] = pts[i];
+      commMap[sId] = i;
+      tmpSendCnts[pId]++;
+  }//end for i
+
+  if(part) {
+    delete [] part;
+    part = NULL;
+  }
+  delete [] tmpSendCnts;
+
+  int* recvCnts = new int[m_iNpesAll];
+  assert(recvCnts);
+
+  par::Mpi_Alltoall<int>(sendCnts, recvCnts, 1, m_mpiCommAll);
+
+  int* recvDisps = new int[m_iNpesAll];
+
+  recvDisps[0] = 0;
+  for(int i = 1; i < m_iNpesAll; i++) {
+    recvDisps[i] = recvDisps[i-1] + recvCnts[i-1];
+  }//end for i
+
+  std::vector<ot::NodeAndValues<double, 3> > recvList(recvDisps[m_iNpesAll - 1] + recvCnts[m_iNpesAll - 1]);
+
+  ot::NodeAndValues<double, 3>* sendListPtr = NULL;
+  ot::NodeAndValues<double, 3>* recvListPtr = NULL;
+
+  if(!(sendList.empty())) {
+    sendListPtr = (&(*(sendList.begin())));
+  }
+
+  if(!(recvList.empty())) {
+    recvListPtr = (&(*(recvList.begin())));
+  }
+
+  par::Mpi_Alltoallv_sparse<ot::NodeAndValues<double, 3> >(sendListPtr, 
+        sendCnts, sendDisps, recvListPtr, recvCnts, recvDisps, m_mpiCommAll);
+  sendList.clear();
+  
+  par::sampleSort(recvList, pts, m_mpiCommAll);
+  
+  recvList.clear();
+  sendList.clear();
+    
+  // clean up.
+  delete [] sendCnts;
+  delete [] sendDisps;
+  delete [] recvCnts;
+  delete [] recvDisps;
+
+}
  
  
 int DA::alignPointsWithDA(std::vector<double>& pts, std::vector<int>& labels) {
