@@ -1729,8 +1729,9 @@ int DA::alignPointsWithDA(std::vector<ot::NodeAndValues<double,3>>& pts) {
         sendCnts, sendDisps, recvListPtr, recvCnts, recvDisps, m_mpiCommAll);
   sendList.clear();
   
-  par::sampleSort(recvList, pts, m_mpiCommAll);
-  
+  std::sort(recvList.begin(), recvList.end());
+  pts = std::move(recvList);
+
   recvList.clear();
   sendList.clear();
     
@@ -1851,7 +1852,8 @@ int DA::alignPointsWithDA(std::vector<double>& pts, std::vector<int>& labels) {
         sendCnts, sendDisps, recvListPtr, recvCnts, recvDisps, m_mpiCommAll);
   sendList.clear();
   
-  par::sampleSort(recvList, sendList, m_mpiCommAll);
+  std::sort(recvList.begin(), recvList.end());
+  sendList = std::move(recvList);
   
   recvList.clear();
   // clear and copy to points ...
