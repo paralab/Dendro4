@@ -53,6 +53,10 @@ class Point{
     double& y() {return _y; };
     double& z() {return _z; };
 
+    double x() const {return _x; };
+    double y() const {return _y; };
+    double z() const {return _z; };
+
     int xint() const {return static_cast<int>(_x); };
     int yint() const {return static_cast<int>(_y); };
     int zint() const {return static_cast<int>(_z); };
