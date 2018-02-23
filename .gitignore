@@ -4,3 +4,4 @@ bin/*
 dendro.vp*
 build/*
 .idea/*
+cmake-build-debug/*

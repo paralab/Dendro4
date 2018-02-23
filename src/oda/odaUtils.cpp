@@ -2096,7 +2096,7 @@ namespace ot {
 
 
   // ot::DA* function_to_DA(std::function<double(double,double,double)> fx, unsigned int d_min, unsigned int d_max, double* gSize, bool reject_interior, MPI_Comm comm ) {
-  DA* function_to_DA (std::function<double ( double, double, double ) > fx_refine, std::function<double ( double, double, double ) > fx_retain, unsigned int d_min, unsigned int d_max, double* gSize, bool reject_interior, MPI_Comm comm ) {
+  DA* function_to_DA (std::function<double ( double, double, double ) > fx_refine, unsigned int d_min, unsigned int d_max, double* gSize, MPI_Comm comm ) {
   // PROF_F2O_BEGIN
     int size, rank;
     unsigned int dim = 3;
@@ -2281,6 +2281,7 @@ namespace ot {
     */
 
     // now process the DA to skip interior elements
+    /* moved to subDA
     if (reject_interior) {
         da->initialize_skiplist();
         for ( da->init<ot::DA_FLAGS::ALL>(); da->curr() < da->end<ot::DA_FLAGS::ALL>(); da->next<ot::DA_FLAGS::ALL>() ) {
@@ -2301,12 +2302,14 @@ namespace ot {
           dist[6] = fx_retain(pt.x()*xFac, pt.y()*yFac+hy, pt.z()*zFac+hz);
           dist[7] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac+hy, pt.z()*zFac +hz);
 
-          /*
+          / 
+          *
           if (pt == Point(0,0,0)) {
             for (auto dd: dist)
               std::cout << "HS: " << dd << std::endl;
           }
-          */
+          * 
+          /
           
           if ( std::all_of( dist.begin(), dist.end(), inside ) ) {
             da->skip_current();
@@ -2316,6 +2319,7 @@ namespace ot {
         da->finalize_skiplist();
     }
     std::cout << rank << ": finished removing interior." << std::endl;
+    */
 
     return da;
   } // end of function.

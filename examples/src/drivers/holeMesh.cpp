@@ -1,4 +1,3 @@
-
 #include "mpi.h"
 #include "petsc.h"
 #include "sys.h"
@@ -10,6 +9,8 @@
 #include "externVars.h"
 #include "dendro.h"
 #include <TreeNode.h>
+
+#include <sub_oda.h>
 
 #ifdef MPI_WTIME_IS_GLOBAL
 #undef MPI_WTIME_IS_GLOBAL
@@ -32,6 +33,8 @@
 #define SQRT_3 1.7320508075688772
 
 void saveNodalVecAsVTK(ot::DA* da, Vec vec, double* gsz, const char *fname);
+void saveNodalVecAsVTK(ot::subDA* da, Vec vec, double* gsz, const char *fname);
+
 void interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::DA* m_octDA);
 void interp_local_to_global(PetscScalar* __restrict loc, PetscScalar* glo, ot::DA* m_octDA);
 
@@ -67,8 +70,8 @@ int main(int argc, char ** argv ) {
   
   // function2Octree(fx, nodes, 8, false, MPI_COMM_WORLD);
 
-  ot::DA *da =  ot::function_to_DA(fx_refine, fx_retain, 5, 9, gsz, true, MPI_COMM_WORLD);
-  // ot::DA *da =  ot::function_to_DA(fx, 8, true, MPI_COMM_WORLD);
+  ot::DA *main_da =  ot::function_to_DA(fx_refine, 5, 9, gsz, MPI_COMM_WORLD);
+  ot::subDA *da =  new ot::subDA(main_da, fx_retain, gsz);
 
   std::cout << rank << ": finished building DA" << std::endl ;
   
@@ -255,6 +258,159 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, double* gSize, const char *file_pref
 
     out << std::endl;
 */
+    da->vecRestoreBuffer(vec,  _vec, false, false, true,  dof);
+  }
+
+  out.close();
+}
+
+void saveNodalVecAsVTK(ot::subDA* da, Vec vec, double* gSize, const char *file_prefix) {
+  int rank, size;
+  char fname[256];
+
+
+	MPI_Comm_rank(da->getComm(), &rank);
+	MPI_Comm_size(da->getComm(), &size);
+
+  sprintf(fname, "%s_%05d.vtk", file_prefix, rank);
+
+  if ( !rank ) std::cout << "Writing to VTK file: " << fname << std::endl;
+
+  std::ofstream out;
+  out.open( fname );
+
+
+  out << "# vtk DataFile Version 2.0" << std::endl;
+  out << "DENDRO OCTREES" << std::endl;
+  out << "ASCII" << std::endl;
+  out << "DATASET UNSTRUCTURED_GRID" << std::endl;
+
+  int dim = 3;
+
+  int unit_points = 1 << dim;
+  int num_cells = 0; // da->getElementSize();
+    
+  for ( da->init<ot::DA_FLAGS::INDEPENDENT>(); 
+         da->curr() < da->end<ot::DA_FLAGS::INDEPENDENT>(); 
+        da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
+
+    num_cells++;
+  }
+  int num_vertices = num_cells * (unit_points);
+
+  out << "POINTS " << num_vertices << " float" << std::endl;
+
+  { // dim = 3
+
+    unsigned int len; //!  ??
+    unsigned int xl, yl, zl;  //! ??
+
+    int num_data_field = 2; // rank and data
+    
+
+    int dof=1;
+    PetscScalar *_vec=NULL;
+
+    da->vecGetBuffer(vec,   _vec, false, false, true,  dof);
+
+    da->ReadFromGhostsBegin<PetscScalar>(_vec, dof);
+    da->ReadFromGhostsEnd<PetscScalar>(_vec);
+
+    unsigned int maxD = da->getMaxDepth();
+    unsigned int lev;
+    double hx, hy, hz;
+    Point pt;
+    
+    // double gSize[3] = {1.0, 1.0, 1.0};
+
+    double xFac = gSize[0]/((double)(1<<(maxD-1)));
+    double yFac = gSize[1]/((double)(1<<(maxD-1)));
+    double zFac = gSize[2]/((double)(1<<(maxD-1)));
+    double xx, yy, zz;
+    unsigned int idx[8];
+
+    for ( da->init<ot::DA_FLAGS::INDEPENDENT>(); 
+         da->curr() < da->end<ot::DA_FLAGS::INDEPENDENT>(); 
+        da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
+      // set the value
+      lev = da->getLevel(da->curr());
+      hx = xFac*(1<<(maxD - lev));
+      hy = yFac*(1<<(maxD - lev));
+      hz = zFac*(1<<(maxD - lev));
+
+      pt = da->getCurrentOffset();
+
+      xx = pt.x()*xFac; yy = pt.y()*yFac; zz = pt.z()*zFac;
+
+      out << pt.x()*xFac << " " <<  pt.y()*yFac << " " << pt.z()*zFac << std::endl;
+      out << pt.x()*xFac + hx << " " <<  pt.y()*yFac << " " << pt.z()*zFac << std::endl;
+      out << pt.x()*xFac + hx << " " <<  pt.y()*yFac + hy << " " << pt.z()*zFac << std::endl;
+      out << pt.x()*xFac << " " <<  pt.y()*yFac + hy << " " << pt.z()*zFac << std::endl;
+
+      out << pt.x()*xFac << " " <<  pt.y()*yFac << " " << pt.z()*zFac + hz<< std::endl;
+      out << pt.x()*xFac + hx << " " <<  pt.y()*yFac << " " << pt.z()*zFac + hz << std::endl;
+      out << pt.x()*xFac + hx << " " <<  pt.y()*yFac + hy << " " << pt.z()*zFac + hz << std::endl;
+      out << pt.x()*xFac << " " <<  pt.y()*yFac + hy << " " << pt.z()*zFac + hz << std::endl;
+      
+      // num_cells++;
+    }
+
+    int num_cells_elements = num_cells * unit_points + num_cells;
+
+    out << "CELLS " << num_cells << " " << num_cells_elements << std::endl;
+
+    for (int i = 0; i < num_cells; i++) {
+      out << unit_points << " ";
+      for (int j = 0; j < unit_points; j++) {
+        out << (i * unit_points + j) << " ";
+      }
+      out << std::endl;
+    }
+
+    out << "CELL_TYPES " << num_cells << std::endl;
+    for (int i = 0; i < num_cells; i++) {
+      out << VTK_HEXAHEDRON << std::endl;
+    }
+
+    //myfile<<"CELL_DATA "<<num_cells<<std::endl;
+
+    out << std::endl;
+    out << "POINT_DATA " << num_vertices  << std::endl;
+    out << "SCALARS foo float 1" << std::endl;
+    out << "LOOKUP_TABLE default" << std::endl;
+
+    PetscScalar* local = new PetscScalar[8];
+
+    for ( da->init<ot::DA_FLAGS::INDEPENDENT>(); 
+         da->curr() < da->end<ot::DA_FLAGS::INDEPENDENT>(); 
+        da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
+      da->getNodeIndices(idx);
+      interp_global_to_local(_vec, local, da->global_domain());
+
+
+        out << local[0] << " ";
+        out << local[1] << " ";
+        out << local[3] << " ";
+        out << local[2] << " ";
+        out << local[4] << " ";
+        out << local[5] << " ";
+        out << local[7] << " ";
+        out << local[6] << " ";
+        /*
+        out << _vec[idx[0]] << " ";
+        out << _vec[idx[1]] << " ";
+        out << _vec[idx[3]] << " ";
+        out << _vec[idx[2]] << " ";
+        out << _vec[idx[4]] << " ";
+        out << _vec[idx[5]] << " ";
+        out << _vec[idx[7]] << " ";
+        out << _vec[idx[6]] << " "; */
+
+    }
+
+    out << std::endl;
+
+
     da->vecRestoreBuffer(vec,  _vec, false, false, true,  dof);
   }
 

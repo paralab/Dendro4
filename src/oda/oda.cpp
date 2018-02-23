@@ -32,8 +32,6 @@
 
 namespace ot {
 
-
-
   int DA::computeLocalToGlobalElemMappings() {
     DendroIntL localElemSize = getElementSize();
     DendroIntL off1, globalOffset;
@@ -1728,11 +1726,20 @@ int DA::alignPointsWithDA(std::vector<ot::NodeAndValues<double,3>>& pts) {
   par::Mpi_Alltoallv_sparse<ot::NodeAndValues<double, 3> >(sendListPtr, 
         sendCnts, sendDisps, recvListPtr, recvCnts, recvDisps, m_mpiCommAll);
   sendList.clear();
-  
+
   par::sampleSort(recvList, pts, m_mpiCommAll);
-  
+
   recvList.clear();
   sendList.clear();
+
+  // Stage 2 - send points to procs if the point is within an element that is a ghost on another proc.
+  
+  //== loop over pts and boundary elements simultaneously 
+
+
+  // 
+
+  
     
   // clean up.
   delete [] sendCnts;

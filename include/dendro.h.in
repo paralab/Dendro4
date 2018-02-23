@@ -11,6 +11,9 @@
 #define DENDRO_VERSION_MAJOR @Dendro_VERSION_MAJOR@
 #define DENDRO_VERSION_MINOR @Dendro_VERSION_MINOR@
 
+#ifndef NULL
+#define NULL 0
+#endif
 
 #ifdef USE_64BIT_INDICES
 #define DendroIntL long long
