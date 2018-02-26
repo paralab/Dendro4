@@ -35,7 +35,7 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   //std::cout << "ghosted element size: " << m_ucpSkipList.size() << ", " << m_da->getNodeSize() << std::endl;
 
   m_ucpSkipNodeList.clear();
-  // m_ucpSkipNodeList.resize(m_da->getGhostedNodeSize(), 1);
+  m_ucpSkipNodeList.resize(m_da->getGhostedNodeSize(), 1);
 
   // m_uiNodeSize + m_uiBoundaryNodeSize + m_uiPreGhostNodeSize + m_uiPreGhostBoundaryNodeSize + m_uiPostGhostNodeSize
 
@@ -76,15 +76,17 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
             // std::cout << "subDA: skip element" << std::endl;
             // std::cout << "s" << da->curr() << ", ";
             m_ucpSkipList[m_da->curr()] = 1;
-          } /*
+          }
           else {
             // touch nodes ....
             for(int k = 0; k < 8; k++) {
-              m_ucpSkipNodeList[indices[k]] = 0;
-              if ( indices[k] >= m_ucpSkipList.size() )
-                std::cout << "skipList node index out of bound: " << indices[k] << std::endl;
+              if ( indices[k] < m_ucpSkipList.size() )
+                m_ucpSkipNodeList[indices[k]] = 0;
+              // else
+              //  std::cout << "skipList node index out of bound: " << indices[k] << std::endl;
+              
             }
-          }*/
+          }
 
         } // for 
    // std::cout << std::endl;
