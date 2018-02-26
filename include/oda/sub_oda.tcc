@@ -14,6 +14,7 @@ namespace ot {
     inline unsigned int subDA::next() {
       unsigned int current = m_da->next<type>();
       while ( m_ucpSkipList[current] ) {
+        // std::cout << "Skipping" << std::endl;
         current = m_da->next<type>();
       } 
       return current;
@@ -23,8 +24,10 @@ namespace ot {
   template<ot::DA_FLAGS::loopType type>	
     inline void subDA::init() {
       m_da->init<type>();
-      if ( m_ucpSkipList[ m_da->curr() ] )
+      while ( m_ucpSkipList[ m_da->curr() ] )
         m_da->next<type>();
+
+      // std::cout << "Init: " << m_ucpSkipList[]  
     }//end function
 
 

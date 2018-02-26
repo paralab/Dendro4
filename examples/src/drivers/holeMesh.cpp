@@ -29,6 +29,8 @@
 #define NODE_6 64u
 #define NODE_7 128u
 
+#define DOF 1
+
 
 #define SQRT_3 1.7320508075688772
 
@@ -70,7 +72,7 @@ int main(int argc, char ** argv ) {
   
   // function2Octree(fx, nodes, 8, false, MPI_COMM_WORLD);
 
-  ot::DA *main_da =  ot::function_to_DA(fx_refine, 5, 9, gsz, MPI_COMM_WORLD);
+  ot::DA *main_da =  ot::function_to_DA(fx_refine, 4, 7, gsz, MPI_COMM_WORLD);
   ot::subDA *da =  new ot::subDA(main_da, fx_retain, gsz);
 
   std::cout << rank << ": finished building DA" << std::endl ;
@@ -78,7 +80,7 @@ int main(int argc, char ** argv ) {
   PetscScalar zero = 1.0, nrm;
   Vec v;
   std::cout << rank << ": creating vector" << std::endl;
-  da->createVector(v, false, false, 1);
+  da->createVector(v, false, false, DOF);
 
   VecSet(v, zero);
   
@@ -137,7 +139,7 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, double* gSize, const char *file_pref
     int num_data_field = 2; // rank and data
     
 
-    int dof=1;
+    int dof=DOF;
     PetscScalar *_vec=NULL;
 
     da->vecGetBuffer(vec,   _vec, false, false, true,  dof);
@@ -308,7 +310,7 @@ void saveNodalVecAsVTK(ot::subDA* da, Vec vec, double* gSize, const char *file_p
     int num_data_field = 2; // rank and data
     
 
-    int dof=1;
+    int dof=DOF;
     PetscScalar *_vec=NULL;
 
     da->vecGetBuffer(vec,   _vec, false, false, true,  dof);
@@ -384,6 +386,9 @@ void saveNodalVecAsVTK(ot::subDA* da, Vec vec, double* gSize, const char *file_p
     for ( da->init<ot::DA_FLAGS::INDEPENDENT>(); 
          da->curr() < da->end<ot::DA_FLAGS::INDEPENDENT>(); 
         da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
+
+          // std::cout << da->curr() << ", "; // std::endl;
+
       da->getNodeIndices(idx);
       interp_global_to_local(_vec, local, da->global_domain());
 

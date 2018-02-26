@@ -36,7 +36,7 @@ namespace ot {
           */
         //@{
 
-        subDA(DA* da, std::function<bool ( double, double, double ) > fx_retain, double* gSize);
+        subDA(DA* da, std::function<double ( double, double, double ) > fx_retain, double* gSize);
 
         /**
           @author Hari Sundar

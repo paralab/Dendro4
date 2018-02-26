@@ -8,13 +8,14 @@
 namespace ot {
 
 //***************Constructor*****************//
-subDA::subDA(DA* da, std::function<bool ( double, double, double ) > fx_retain, double* gSize) {
+subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain, double* gSize) {
   m_da = da;
   unsigned int lev;
   
-  // fixme change this to not be hard-coded
-  unsigned maxDepth = 30;
+  unsigned maxDepth = m_da->getMaxDepth() - 1;
 
+
+  // std::cout << "subDA: mD= " << maxDepth << std::endl;
   auto inside = [](double d){ return d < 0.0; };
 
   double hx, hy, hz;
@@ -31,13 +32,19 @@ subDA::subDA(DA* da, std::function<bool ( double, double, double ) > fx_retain, 
   m_ucpSkipList.clear();
   m_ucpSkipList.resize(m_da->getGhostedElementSize(), 0);
 
+  //std::cout << "ghosted element size: " << m_ucpSkipList.size() << ", " << m_da->getNodeSize() << std::endl;
+
   m_ucpSkipNodeList.clear();
-  m_ucpSkipNodeList.resize(m_da->getGhostedNodeSize(), 1);
+  // m_ucpSkipNodeList.resize(m_da->getGhostedNodeSize(), 1);
+
+  // m_uiNodeSize + m_uiBoundaryNodeSize + m_uiPreGhostNodeSize + m_uiPreGhostBoundaryNodeSize + m_uiPostGhostNodeSize
+
+  // std::cout << "ghosted node Size: " << m_ucpSkipNodeList.size() << std::endl;
       
   for ( m_da->init<ot::DA_FLAGS::ALL>(); 
         m_da->curr() < m_da->end<ot::DA_FLAGS::ALL>(); 
         m_da->next<ot::DA_FLAGS::ALL>() ) {
-          
+
           lev = m_da->getLevel(m_da->curr());
           hx = xFac*(1<<(maxDepth - lev));
           hy = yFac*(1<<(maxDepth - lev));
@@ -58,20 +65,29 @@ subDA::subDA(DA* da, std::function<bool ( double, double, double ) > fx_retain, 
           dist[6] = fx_retain(pt.x()*xFac, pt.y()*yFac+hy, pt.z()*zFac+hz);
           dist[7] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac+hy, pt.z()*zFac +hz);
 
-          if ( std::all_of( dist.begin(), dist.end(), inside ) ) {
-            // element to skip.
-            m_ucpSkipList[m_da->curr()] = 1;
-          } 
           /*
-          else {
-            // touch nodes ....
-            for(int k = 0; k < 8; k++)
-              m_ucpSkipNodeList[indices[k]] = 0;
-          }
+          for (auto q: dist)
+            std::cout << q << ", ";
+          std::cout << std::endl;
           */
 
-        } // for 
+          if ( std::all_of( dist.begin(), dist.end(), inside ) ) {
+            // element to skip.
+            // std::cout << "subDA: skip element" << std::endl;
+            // std::cout << "s" << da->curr() << ", ";
+            m_ucpSkipList[m_da->curr()] = 1;
+          } /*
+          else {
+            // touch nodes ....
+            for(int k = 0; k < 8; k++) {
+              m_ucpSkipNodeList[indices[k]] = 0;
+              if ( indices[k] >= m_ucpSkipList.size() )
+                std::cout << "skipList node index out of bound: " << indices[k] << std::endl;
+            }
+          }*/
 
+        } // for 
+   // std::cout << std::endl;
   // update counts ...
 
 } // subDA constructor.
