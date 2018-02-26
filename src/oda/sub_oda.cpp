@@ -61,11 +61,14 @@ subDA::subDA(DA* da, std::function<bool ( double, double, double ) > fx_retain, 
           if ( std::all_of( dist.begin(), dist.end(), inside ) ) {
             // element to skip.
             m_ucpSkipList[m_da->curr()] = 1;
-          } else {
+          } 
+          /*
+          else {
             // touch nodes ....
             for(int k = 0; k < 8; k++)
               m_ucpSkipNodeList[indices[k]] = 0;
           }
+          */
 
         } // for 
 
