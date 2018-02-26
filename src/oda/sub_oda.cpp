@@ -80,7 +80,7 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
           else {
             // touch nodes ....
             for(int k = 0; k < 8; k++) {
-              if ( indices[k] < m_ucpSkipList.size() )
+              if ( indices[k] < m_ucpSkipNodeList.size() )
                 m_ucpSkipNodeList[indices[k]] = 0;
               // else
               //  std::cout << "skipList node index out of bound: " << indices[k] << std::endl;
