@@ -177,6 +177,9 @@ add_executable(testFnViz examples/src/drivers/testFnViz.cpp examples/include/gen
 add_executable(holeMesh examples/src/drivers/holeMesh.cpp include/test/testUtils.h include/test/testUtils.tcc src/test/testUtils.C )
     target_link_libraries(holeMesh dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
+add_executable(testIntergrid examples/src/drivers/testIntergrid.cpp include/test/testUtils.h include/test/testUtils.tcc src/test/testUtils.C )
+    target_link_libraries(testIntergrid dendroDA dendro petsc ${MPI_LIBRARIES} m)
+
 ##---------------------------------------------------------------------------------------
 ## Octree Construct-Balance Apps
 ##---------------------------------------------------------------------------------------

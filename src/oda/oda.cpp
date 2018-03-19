@@ -153,6 +153,11 @@ namespace ot {
 
       // =<< @hari - Oct 12 2017 - debug for Taly integration + SNES */
 
+      std::cout << "NodeSize: " << m_uiNodeSize << std::endl;
+      std::cout << "BdyNodes: " << m_uiBoundaryNodeSize << std::endl;
+      std::cout << "other: " << m_uiPreGhostBoundaryNodeSize << ", " << m_uiPreGhostNodeSize << ", " << std::endl;
+      std::cout << "elems: " << m_uiElementBegin << ", " << m_uiIndependentElementBegin << std::endl;
+
       //Can make it more efficient later.
       if (!records.empty())
       {
@@ -163,10 +168,18 @@ namespace ot {
 
         while (currRecord < (records.size() - 1))
         {
+          // >>= Hari, subDA debug
+          std::cout << "setValuesInMatrix: " << " indices ... " << m_uiNodeSize << " === ("  << records[currRecord].rowIdx << ", " << records[currRecord].colIdx << ")" << std::endl;
+               
+          // =<< subDA debug  
+
           values.push_back(records[currRecord].val);
+//          std::cout << "\t >>= pushed values" << std::endl;
+//          std::cout << "\t >>= local2global: " << m_dilpLocalToGlobal[10] << std::endl;
           colIndices.push_back(static_cast<PetscInt>(
               (dof * m_dilpLocalToGlobal[records[currRecord].colIdx]) +
               records[currRecord].colDim));
+//          std::cout << "\t  >>= pushed colIndices" << std::endl;
           if ((records[currRecord].rowIdx != records[currRecord + 1].rowIdx) ||
               (records[currRecord].rowDim != records[currRecord + 1].rowDim))
           {
@@ -181,11 +194,13 @@ namespace ot {
             // }
             // =<< @hari - Oct 12 2017 - debug for Taly integration + SNES
 
-              colIndices.clear();
+            colIndices.clear();
             values.clear();
           }
           currRecord++;
         } //end while
+
+        std::cout << "=== === === === ===" << std::endl;
 
         PetscInt rowId = static_cast<PetscInt>(
             (dof * m_dilpLocalToGlobal[records[currRecord].rowIdx]) +

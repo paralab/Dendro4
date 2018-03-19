@@ -260,6 +260,8 @@ namespace ot {
   void interpolateData(ot::DA* da, Vec in, Vec out, Vec* gradOut,
       unsigned int dof, std::vector<double>& pts);
 
+  void getNodeCoordinates(ot::DA* da, std::vector<double> &pts, double* problemSize);
+
   /**
     @author Rahul Sampath
     @return the minimum level in the octree

@@ -764,6 +764,112 @@ namespace ot {
 
   }//end function
 
+  void getNodeCoordinates(ot::DA* da, std::vector<double> &pts, double* problemSize) {
+    DendroIntL localNodeSize = da->getNodeSize();
+
+    pts.clear();
+    pts.resize(localNodeSize*3);
+    // std::cout << da->getRankAll() << "pts size: " << localNodeSize << " --> " << pts.size() << "\n";
+    unsigned int maxD = da->getMaxDepth();
+    unsigned int lev;
+    double hx, hy, hz;
+    Point pt;
+
+  
+  std::vector<DendroIntL> NonGhostNodes(localNodeSize); 
+  for(DendroIntL i = 0; i < localNodeSize; i++) {
+    NonGhostNodes[i] = i;   
+  }
+
+  DendroIntL* node_map;
+  da->vecGetBuffer<DendroIntL>(NonGhostNodes, node_map, false, false, true, 1);
+
+  unsigned int postG_beg = da->getIdxPostGhostBegin();
+  unsigned int elem_beg = da->getIdxElementBegin();
+
+  DendroIntL index;
+  double xFac = problemSize[0] / ((double) (1 << (maxD - 1)));
+  double yFac = problemSize[1] / ((double) (1 << (maxD - 1)));
+  double zFac = problemSize[2] / ((double) (1 << (maxD - 1)));
+  double xx[8], yy[8], zz[8];
+  unsigned int idx[8];
+  for ( da->init<ot::DA_FLAGS::ALL>(); da->curr() < da->end<ot::DA_FLAGS::ALL>(); da->next<ot::DA_FLAGS::ALL>() ) {
+
+    da->getNodeIndices(idx);
+    pt = da->getCurrentOffset();
+    unsigned char hangingMask = da->getHangingNodeIndex(da->curr());
+    if (!(hangingMask & (1u << 0)) && (idx[0] >= elem_beg) && (idx[0] < postG_beg))
+    {
+        //! get the correct coordinates of the nodes ...
+        xx[0] = pt.x() * xFac;
+        yy[0] = pt.y() * yFac;
+        zz[0] = pt.z() * zFac;
+        index = 3*node_map[idx[0]];
+        pts.at(index) = xx[0];
+        pts.at(index+1) = yy[0];
+        pts.at(index+2) = zz[0];
+        // std::cout << da->curr() << " -> " << idx[0] << std::endl;
+    }
+
+    if (da->isBoundaryOctant())
+    {
+      // std::cout << "=== Boundary ===" << std::endl;
+        lev = da->getLevel(da->curr());
+        hx = xFac * (1 << (maxD - lev));
+        hy = yFac * (1 << (maxD - lev));
+        hz = zFac * (1 << (maxD - lev));
+        xx[0] = pt.x() * xFac;
+        yy[0] = pt.y() * yFac;
+        zz[0] = pt.z() * zFac;
+        xx[1] = pt.x() * xFac + hx;
+        yy[1] = pt.y() * yFac;
+        zz[1] = pt.z() * zFac;
+        xx[2] = pt.x() * xFac;
+        yy[2] = pt.y() * yFac + hy;
+        zz[2] = pt.z() * zFac;
+        xx[3] = pt.x() * xFac + hx;
+        yy[3] = pt.y() * yFac + hy;
+        zz[3] = pt.z() * zFac;
+
+        xx[4] = pt.x() * xFac;
+        yy[4] = pt.y() * yFac;
+        zz[4] = pt.z() * zFac + hz;
+        xx[5] = pt.x() * xFac + hx;
+        yy[5] = pt.y() * yFac;
+        zz[5] = pt.z() * zFac + hz;
+        xx[6] = pt.x() * xFac;
+        yy[6] = pt.y() * yFac + hy;
+        zz[6] = pt.z() * zFac + hz;
+        xx[7] = pt.x() * xFac + hx;
+        yy[7] = pt.y() * yFac + hy;
+        zz[7] = pt.z() * zFac + hz;
+
+        for (int a=0; a<8; a++)
+        {
+            if (!(hangingMask & (1u << a)))
+            {
+                // boundary at x = 1, y = 1, z = 1
+                if ( ( idx[a] >= elem_beg ) && ( idx[a] < postG_beg) &&  (fabs(xx[a] - 1) < 1e-6 || fabs(yy[a] - 1) < 1e-6 || fabs(zz[a] - 1) < 1e-6) )
+                {
+                    // add node
+                    // std::cout << idx[a]*3 << " " << idx[a]*3 + 1 << " " << idx[a]*3 + 2 << "\n"; 
+                    index = 3*node_map[idx[a]];
+                    // std::cout <<  da->getRankAll() <<  ">>= " << da->curr() << " -> " << node_map[idx[a]] << " =<< (" << xx[a] << ", " << yy[a] << ", " << zz[a] << ") " << std::endl;
+                    pts[index] = xx[a];
+                    pts.at(index+1) = yy[a];
+                    pts.at(index+2) = zz[a];
+                }
+            }
+        } // for
+        // std::cout << "=== ===" << std::endl;
+    } // is Boundary
+  } // loop over Writable
+
+  da->vecRestoreBuffer(NonGhostNodes, node_map, false, false, true, 1);
+
+  } // function.
+
+
   void writePartitionVTK(ot::DA* da, const char* outFileName) {
     int rank = da->getRankAll();
     //Only processor writes
@@ -2189,12 +2295,12 @@ namespace ot {
   // TODO do proper load balancing -> partitionW ?
   
   numOcts = totalNumOcts/size + (rank < totalNumOcts%size);
-  std::cout << rank << ": numOcts " <<  numOcts << std::endl;
+  // std::cout << rank << ": numOcts " <<  numOcts << std::endl;
   par::scatterValues<ot::TreeNode>(nodes, nodes_new, numOcts, comm);
   std::swap(nodes, nodes_new);
   nodes_new.clear();
   
-  std::cout << rank << ": numOcts after part " <<  nodes.size() << std::endl;
+  // std::cout << rank << ": numOcts after part " <<  nodes.size() << std::endl;
   
   // now refine in parallel.
   par::Mpi_Bcast(&depth, 1, 0, comm);
@@ -2252,9 +2358,7 @@ namespace ot {
     // PROF_F2O_END 
     
     // partition 
-    if(!rank){
-      std::cout <<"Partitioning Input... " << std::endl;
-    }
+    // if(!rank){       std::cout <<"Partitioning Input... " << std::endl;    }
 
     par::partitionW<ot::TreeNode>(nodes, NULL, comm);
     
@@ -2262,11 +2366,11 @@ namespace ot {
     ot::balanceOctree (nodes, nodes_new, dim, maxDepth, incCorner, comm, NULL, NULL);
   
     // build DA.
-    
+  /*  
     if(rank==0) {
       std::cout << "building DA" << std::endl;
     }
-
+*/
     ot::DA *da = new ot::DA(nodes_new, comm, comm, compressLut);
 
     // if(rank==0) {

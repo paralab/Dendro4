@@ -1738,7 +1738,7 @@ namespace par {
     int rank;
     MPI_Comm_rank(comm, &rank);
 
-    std::cout << rank << "Nodes Input : " << __func__ << arr.size() << std::endl;
+    // std::cout << rank << "Nodes Input : " << __func__ << arr.size() << std::endl;
 
     //--
 

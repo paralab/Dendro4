@@ -32,7 +32,7 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   m_ucpSkipList.clear();
   m_ucpSkipList.resize(m_da->getGhostedElementSize(), 0);
 
-  //std::cout << "ghosted element size: " << m_ucpSkipList.size() << ", " << m_da->getNodeSize() << std::endl;
+  // std::cout << "[HARI] ghosted element size: " << m_ucpSkipList.size() << ", " << m_da->getNodeSize() << std::endl;
 
   m_ucpSkipNodeList.clear();
   m_ucpSkipNodeList.resize(m_da->getGhostedNodeSize(), 1);
