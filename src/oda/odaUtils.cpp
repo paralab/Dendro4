@@ -214,7 +214,7 @@ namespace ot {
         unsigned char elemType = 0;
         GET_ETYPE_BLOCK(elemType, hnMask, childNum)
 
-          double x0 = (pt.x())*hxFac;
+        double x0 = (pt.x())*hxFac;
         double y0 = (pt.y())*hxFac;
         double z0 = (pt.z())*hxFac;
         double hxOct = (static_cast<double>(1u << (maxDepth - currLev)))*hxFac;
@@ -222,9 +222,14 @@ namespace ot {
         //All the recieved points lie within some octant or the other.
         //So the ptsCtr will be incremented properly inside this loop.
         //Evaluate at all points within this octant
+        unsigned bdy_max = 1u << (maxDepth - 1);
         while( (ptsCtr < localList.size()) &&
             ( (currOct == ((localList[ptsCtr].value)->node)) ||
-              (currOct.isAncestor(((localList[ptsCtr].value)->node))) ) ) {
+              (currOct.isAncestor(((localList[ptsCtr].value)->node))) 
+              || ( (localList[ptsCtr].value)->node.getX() == bdy_max) 
+              || ( (localList[ptsCtr].value)->node.getY() == bdy_max) 
+              || ( (localList[ptsCtr].value)->node.getZ() == bdy_max)  
+              ) ) {
 
           double px = ((localList[ptsCtr].value)->values)[0];
           double py = ((localList[ptsCtr].value)->values)[1];
@@ -292,6 +297,7 @@ namespace ot {
         }//end while
 
       }//end writable loop
+      // std::cout << "Interpolate Data: " << ptsCtr << "/" << localList.size() << std::endl;
     } else {
       assert(localList.empty());
     }//end if active
