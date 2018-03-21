@@ -169,7 +169,7 @@ namespace ot {
         while (currRecord < (records.size() - 1))
         {
           // >>= Hari, subDA debug
-          std::cout << "setValuesInMatrix: " << " indices ... " << m_uiNodeSize << " === ("  << records[currRecord].rowIdx << ", " << records[currRecord].colIdx << ")" << std::endl;
+          // std::cout << "setValuesInMatrix: " << " indices ... " << m_uiNodeSize << " === ("  << records[currRecord].rowIdx << ", " << records[currRecord].colIdx << ")" << std::endl;
                
           // =<< subDA debug  
 
