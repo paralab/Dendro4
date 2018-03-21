@@ -206,7 +206,16 @@ namespace ot {
       //interpolate at the received points
       //The pts must be inside the domain and not on the positive boundaries
       unsigned int ptsCtr = 0;
-      double hxFac = (1.0/static_cast<double>(1u << balOctMaxD));
+      double hxFac, hyFac, hzFac;
+      if (problemSize == NULL) {
+        hxFac = (1.0/static_cast<double>(1u << balOctMaxD));
+        hyFac = (1.0/static_cast<double>(1u << balOctMaxD));
+        hzFac = (1.0/static_cast<double>(1u << balOctMaxD));
+      } else {
+        hxFac = (problemSize[0]/static_cast<double>(1u << balOctMaxD));
+        hyFac = (problemSize[1]/static_cast<double>(1u << balOctMaxD));
+        hzFac = (problemSize[2]/static_cast<double>(1u << balOctMaxD));
+      }
       for(da->init<ot::DA_FLAGS::WRITABLE>();
           (da->curr() < da->end<ot::DA_FLAGS::WRITABLE>()) && 
           (ptsCtr < localList.size()); da->next<ot::DA_FLAGS::WRITABLE>()) {
@@ -225,8 +234,9 @@ namespace ot {
         GET_ETYPE_BLOCK(elemType, hnMask, childNum)
 
         double x0 = (pt.x())*hxFac;
-        double y0 = (pt.y())*hxFac;
-        double z0 = (pt.z())*hxFac;
+        double y0 = (pt.y())*hyFac;
+        double z0 = (pt.z())*hzFac;
+        double fac = (1.0/static_cast<double>(1u << balOctMaxD));
         double hxOct = (static_cast<double>(1u << (maxDepth - currLev)))*hxFac;
 
         //All the recieved points lie within some octant or the other.
