@@ -159,7 +159,7 @@ namespace ot {
       std::cout << "other: " << m_uiPreGhostBoundaryNodeSize << ", " << m_uiPreGhostNodeSize << ", " << std::endl;
       std::cout << "elems: " << m_uiElementBegin << ", " << m_uiIndependentElementBegin << std::endl;
       */
-      
+
       //Can make it more efficient later.
       if (!records.empty())
       {
@@ -202,7 +202,7 @@ namespace ot {
           currRecord++;
         } //end while
 
-        std::cout << "=== === === === ===" << std::endl;
+        // std::cout << "=== === === === ===" << std::endl;
 
         PetscInt rowId = static_cast<PetscInt>(
             (dof * m_dilpLocalToGlobal[records[currRecord].rowIdx]) +
