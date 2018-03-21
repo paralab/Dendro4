@@ -793,6 +793,7 @@ namespace ot {
   unsigned int postG_beg = da->getIdxPostGhostBegin();
   unsigned int elem_beg = da->getIdxElementBegin();
 
+  unsigned int domain_max = 1u << (maxD - 1);
   DendroIntL index;
   double xFac = problemSize[0] / ((double) (1 << (maxD - 1)));
   double yFac = problemSize[1] / ((double) (1 << (maxD - 1)));
@@ -855,7 +856,7 @@ namespace ot {
             if (!(hangingMask & (1u << a)))
             {
                 // boundary at x = 1, y = 1, z = 1
-                if ( ( idx[a] >= elem_beg ) && ( idx[a] < postG_beg) &&  (fabs(xx[a] - 1) < 1e-6 || fabs(yy[a] - 1) < 1e-6 || fabs(zz[a] - 1) < 1e-6) )
+                if ( ( idx[a] >= elem_beg ) && ( idx[a] < postG_beg) &&  (fabs(xx[a] - problemSize[0]) < hx/2 || fabs(yy[a] - problemSize[1]) < hy/2 || fabs(zz[a] - problemSize[2]) < hz/2) )
                 {
                     // add node
                     // std::cout << idx[a]*3 << " " << idx[a]*3 + 1 << " " << idx[a]*3 + 2 << "\n"; 
