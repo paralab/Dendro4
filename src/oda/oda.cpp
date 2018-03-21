@@ -153,11 +153,13 @@ namespace ot {
 
       // =<< @hari - Oct 12 2017 - debug for Taly integration + SNES */
 
+      /*
       std::cout << "NodeSize: " << m_uiNodeSize << std::endl;
       std::cout << "BdyNodes: " << m_uiBoundaryNodeSize << std::endl;
       std::cout << "other: " << m_uiPreGhostBoundaryNodeSize << ", " << m_uiPreGhostNodeSize << ", " << std::endl;
       std::cout << "elems: " << m_uiElementBegin << ", " << m_uiIndependentElementBegin << std::endl;
-
+      */
+      
       //Can make it more efficient later.
       if (!records.empty())
       {
