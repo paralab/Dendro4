@@ -258,7 +258,7 @@ namespace ot {
     @author Rahul Sampath
     */
   void interpolateData(ot::DA* da, Vec in, Vec out, Vec* gradOut,
-      unsigned int dof, std::vector<double>& pts);
+      unsigned int dof, std::vector<double>& pts, double* problemSize=NULL);
 
   void getNodeCoordinates(ot::DA* da, std::vector<double> &pts, double* problemSize);
 

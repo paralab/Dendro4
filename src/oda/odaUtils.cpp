@@ -35,7 +35,7 @@ namespace ot {
   extern double**** ShapeFnCoeffs; 
 
   void interpolateData(ot::DA* da, Vec in, Vec out, Vec* gradOut,
-      unsigned int dof, std::vector<double>& pts) {
+      unsigned int dof, std::vector<double>& pts, double* problemSize) {
 
     assert(da != NULL);
 
@@ -67,12 +67,22 @@ namespace ot {
     std::vector<ot::NodeAndValues<double, 3> > ptsWrapper;
 
     int numPts = (pts.size())/3;
-    double xyzFac = static_cast<double>(1u << balOctMaxD);
+    double xFac, yFac, zFac;
+    
+    if (problemSize != NULL) {
+    xFac = static_cast<double>(1u << balOctMaxD)/problemSize[0];
+    yFac = static_cast<double>(1u << balOctMaxD)/problemSize[1];
+    zFac = static_cast<double>(1u << balOctMaxD)/problemSize[2];
+    } else {
+      xFac = static_cast<double>(1u << balOctMaxD);
+      yFac = static_cast<double>(1u << balOctMaxD);
+      zFac = static_cast<double>(1u << balOctMaxD);
+    }
     for(int i = 0; i < numPts; i++) {
       ot::NodeAndValues<double, 3> tmpObj;
-      unsigned int xint = static_cast<unsigned int>(pts[(3*i)]*xyzFac);
-      unsigned int yint = static_cast<unsigned int>(pts[(3*i) + 1]*xyzFac);
-      unsigned int zint = static_cast<unsigned int>(pts[(3*i) + 2]*xyzFac);
+      unsigned int xint = static_cast<unsigned int>(pts[(3*i)]*xFac);
+      unsigned int yint = static_cast<unsigned int>(pts[(3*i) + 1]*yFac);
+      unsigned int zint = static_cast<unsigned int>(pts[(3*i) + 2]*zFac);
       tmpObj.node = ot::TreeNode(xint, yint, zint, maxDepth, 3, maxDepth);
       tmpObj.values[0] = pts[(3*i)];
       tmpObj.values[1] = pts[(3*i) + 1];
@@ -863,8 +873,8 @@ namespace ot {
                     index = 3*node_map[idx[a]];
                     // std::cout <<  da->getRankAll() <<  ">>= " << da->curr() << " -> " << node_map[idx[a]] << " =<< (" << xx[a] << ", " << yy[a] << ", " << zz[a] << ") " << std::endl;
                     pts[index] = xx[a];
-                    pts.at(index+1) = yy[a];
-                    pts.at(index+2) = zz[a];
+                    pts[index+1] = yy[a];
+                    pts[index+2] = zz[a];
                 }
             }
         } // for
