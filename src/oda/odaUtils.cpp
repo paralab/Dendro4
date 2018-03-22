@@ -35,7 +35,7 @@ namespace ot {
   extern double**** ShapeFnCoeffs; 
 
   void interpolateData(ot::DA* da, Vec in, Vec out, Vec* gradOut,
-      unsigned int dof, std::vector<double>& pts, double* problemSize) {
+      unsigned int dof, const std::vector<double>& pts, const double* problemSize) {
 
     assert(da != NULL);
 
@@ -790,7 +790,7 @@ namespace ot {
 
   }//end function
 
-  void getNodeCoordinates(ot::DA* da, std::vector<double> &pts, double* problemSize) {
+  void getNodeCoordinates(ot::DA* da, std::vector<double> &pts, const double* problemSize) {
     DendroIntL localNodeSize = da->getNodeSize();
 
     pts.clear();
