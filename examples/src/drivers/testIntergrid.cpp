@@ -56,10 +56,10 @@ int main(int argc, char ** argv ) {
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  double gsz[3] = {1.0, 1.0, 1.0};
-  double ctr[3] = {0.5, 0.5, 0.5};
-  double yr[2] = {0.4375, 0.5875};         //  .25 .375 .4375 .5 .5875 .625 .75
-  double r = 0.025;
+  double gsz[3] = {8.0, 8.0, 8.0};
+  double ctr[3] = {5.5, 5.5, 5.5};
+  double yr[2] = {4.4375, 5.5875};         //  .25 .375 .4375 .5 .5875 .625 .75
+  double r = 0.25;
   
   auto fx_refine = [ctr, r, yr](double x, double y, double z) -> double { 
     if ( (y < yr[0]) || (y > yr[1]) || (x < yr[0]) || (x > yr[1])  ) return -1.0;
@@ -67,7 +67,7 @@ int main(int argc, char ** argv ) {
   };
 
   auto fx_u = [yr](double x, double y, double z) -> double { 
-    return cos(M_PI*(1.0 - (x-0.5)*(x-0.5)*2.0))*cos(M_PI*(1.0 - (y-0.5)*(y-0.5)*2.0));
+    return 1.0 + sin(M_PI*x)*sin(M_PI*y)*sin(M_PI*z)  ; //cos(M_PI*(1.0 - (x-0.5)*(x-0.5)*2.0))*cos(M_PI*(1.0 - (y-0.5)*(y-0.5)*2.0));
   };
     
   ot::DA *da =  ot::function_to_DA(fx_refine, 3, 5, gsz, MPI_COMM_WORLD);
@@ -86,14 +86,14 @@ int main(int argc, char ** argv ) {
 
   if (!rank) std::cout << "======================================" << std::endl;
   // === === === === === ===   
-  ctr[0] = 0.6;
-  ctr[1] = 0.6;
-  ctr[2] = 0.6;
+  ctr[0] = 6.6;
+  ctr[1] = 6.6;
+  ctr[2] = 6.6;
 
-  yr[0] = 0.5375;
-  yr[1] = 0.6875;
+  yr[0] = 5.5375;
+  yr[1] = 6.6875;
 
-  r = 0.04;
+  r = 0.4;
 
   ot::DA *da_new =  ot::function_to_DA(fx_refine, 4, 6, gsz, MPI_COMM_WORLD);  
 
@@ -113,7 +113,7 @@ int main(int argc, char ** argv ) {
   VecSet(v_n, minus_two);
   
   // now interpolate 
-  interpolateData(da, v, v_n, NULL, 1, pts);
+  interpolateData(da, v, v_n, NULL, 1, pts, gsz);
 
   // write out ...
   if (!rank) std::cout << "Saving interpolated vtk" << std::endl;

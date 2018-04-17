@@ -57,22 +57,29 @@ int main(int argc, char ** argv ) {
   double gsz[3] = {1.0, 1.0, 1.0};
   double ctr[3] = {0.5, 0.5, 0.5};
   double yr[2] = {0.4375, 0.5875};         //  .25 .375 .4375 .5 .5875 .625 .75
-  double r = 0.025;
+  double r = 0.04;
+
+  double r_s = 0.02;
+  double ctr_s[3] = {0.5, 0.5, 0.2};
+
+
   
-  auto fx_refine = [ctr, r, yr](double x, double y, double z) -> double { 
+  auto fx_refine = [ctr, r, yr, ctr_s, r_s](double x, double y, double z) -> double { 
     if ( (y < yr[0]) || (y > yr[1]) || (x < yr[0]) || (x > yr[1])  ) return -1.0;
-    return sqrt((x-ctr[0])*(x-ctr[0]) + (z-ctr[2])*(z-ctr[2])) - r; 
+    double d1 = sqrt((x-ctr[0])*(x-ctr[0]) + (z-ctr[2])*(z-ctr[2])) - r;
+    double d2 = sqrt((x-ctr_s[0])*(x-ctr_s[0]) + (y-ctr_s[1])*(y-ctr_s[1]) +  (z-ctr_s[2])*(z-ctr_s[2])) - r_s;
+
+    return std::min(d1, d2); 
   };
   
   auto fx_retain = [ctr, r, yr](double x, double y, double z) -> double { 
     if ( (y < yr[0]) || (y > yr[1]) || (x < yr[0]) || (x > yr[1])  ) return -1.0;
-    return 1.0;
-    // return sqrt((x-ctr[0])*(x-ctr[0]) + (z-ctr[2])*(z-ctr[2])) - r; 
+    return sqrt((x-ctr[0])*(x-ctr[0]) + (z-ctr[2])*(z-ctr[2])) - r; 
   };
   
   // function2Octree(fx, nodes, 8, false, MPI_COMM_WORLD);
 
-  ot::DA *main_da =  ot::function_to_DA(fx_refine, 4, 7, gsz, MPI_COMM_WORLD);
+  ot::DA *main_da =  ot::function_to_DA(fx_refine, 4, 10, gsz, MPI_COMM_WORLD);
   ot::subDA *da =  new ot::subDA(main_da, fx_retain, gsz);
 
   std::cout << rank << ": finished building DA" << std::endl ;

@@ -213,8 +213,11 @@ namespace ot {
    * @author Hari Sundar
    */ 
   // DA* function_to_DA (std::function<double ( double, double, double ) > fx, unsigned int d_min, unsigned int d_max, double* gSize, bool reject_interior, MPI_Comm comm );
+  // dist variant
   DA* function_to_DA (std::function<double ( double, double, double ) > fx_refine, unsigned int d_min, unsigned int d_max, double* gSize, MPI_Comm comm );
   
+  DA* function_to_DA_bool (std::function<bool ( double, double, double ) > fx_refine, unsigned int d_min, unsigned int d_max, double* gSize, MPI_Comm comm );
+
   /**
     @author Rahul Sampath	
     @return 'true' if the octree is a regular grid
