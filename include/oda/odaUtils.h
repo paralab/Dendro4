@@ -218,6 +218,9 @@ namespace ot {
   
   DA* function_to_DA_bool (std::function<bool ( double, double, double ) > fx_refine, unsigned int d_min, unsigned int d_max, double* gSize, MPI_Comm comm );
 
+  // levels is an non-ghosted elemental array, created by the original DA and populated with the desired levels
+  ot::DA* remesh_DA (ot::DA* da, std::vector<unsigned int> levels, double* gSize, MPI_Comm comm);
+
   /**
     @author Rahul Sampath	
     @return 'true' if the octree is a regular grid

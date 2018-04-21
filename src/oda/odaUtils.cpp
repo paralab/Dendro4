@@ -2677,6 +2677,62 @@ namespace ot {
   } // end of function f2DA_bool
   
 
+  ot::DA* remesh_DA (ot::DA* da, std::vector<unsigned int> levels, double* gSize, MPI_Comm comm) {
+
+    unsigned int dim = 3;
+    unsigned int maxNumPts = 1;
+    bool incCorner = 1;
+    bool compressLut = false;
+    unsigned int maxDepth = da->getMaxDepth();
+
+    // elemental loop - create new points
+    std::vector<double> pts;
+    std::vector<ot::TreeNode> tmpNodes, linOct;
+    
+    for(da->init<ot::DA_FLAGS::WRITABLE>(); da->curr() < da->end<ot::DA_FLAGS::WRITABLE>(); da->next<ot::DA_FLAGS::WRITABLE>()) {
+      // get coords of current element
+      Point pt = da->getCurrentOffset();
+      unsigned int currLev = da->getLevel(da->curr());
+      unsigned int newLev = levels[da->curr()];
+
+      ot::TreeNode currOct(pt.xint(), pt.yint(), pt.zint(), currLev, 3, maxDepth-1);
+      // XXX might have an off-by-one issue with the levels ...
+      ot::TreeNode newOct;
+      if (currLev > newLev )
+        newOct = currOct.getAncestor(newLev);
+      else 
+        newOct = ot::TreeNode(pt.xint(), pt.yint(), pt.zint(), newLev, dim, maxDepth-1);
+
+      tmpNodes.push_back(newOct);
+    }
+    
+    par::removeDuplicates<ot::TreeNode>(tmpNodes,false,MPI_COMM_WORLD);	
+    std::swap(linOct, tmpNodes);
+    tmpNodes.clear();
+    par::partitionW<ot::TreeNode>(linOct, NULL,MPI_COMM_WORLD);
+
+    maxDepth--; 
+
+    pts.resize(3*(linOct.size()));
+    unsigned int ptsLen = (3*(linOct.size()));
+    for(int i = 0; i < linOct.size(); i++) {
+      pts[3*i] = (((double)(linOct[i].getX())) + 0.5)/((double)(1u << maxDepth));
+      pts[(3*i)+1] = (((double)(linOct[i].getY())) +0.5)/((double)(1u << maxDepth));
+      pts[(3*i)+2] = (((double)(linOct[i].getZ())) +0.5)/((double)(1u << maxDepth));
+    }//end for i
+    linOct.clear();
+
+    ot::points2Octree(pts, gSize, linOct, dim, maxDepth, maxNumPts, comm);
+
+    ot::balanceOctree (linOct, tmpNodes, dim, maxDepth, incCorner, comm, NULL, NULL);
+
+    std::swap(linOct, tmpNodes);
+    tmpNodes.clear();
+
+    ot::DA *new_da = new ot::DA(linOct, comm, comm, compressLut);
+
+    return new_da;
+
+  } // remesh_DA
+
 }//end namespace
-
-
