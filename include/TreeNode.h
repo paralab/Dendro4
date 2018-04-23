@@ -313,6 +313,7 @@ namespace ot {
         @brief appends the children (sorted) of this octant to 'list'
         */
       int addChildren(std::vector<ot::TreeNode>& children) const;
+      int addChildren(std::vector<ot::TreeNode>& children, unsigned int lev_deep) const;
 
       int addChildrenMorton(std::vector<ot::TreeNode>& children) const;
 

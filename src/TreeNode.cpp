@@ -333,6 +333,21 @@ int TreeNode  ::addChildren(std::vector<ot::TreeNode>& children) const {
 } //end function
 
 
+int TreeNode::addChildren(std::vector<ot::TreeNode>& children, unsigned int lev_deep) const {
+  if (lev_deep < 2) {
+    this->addChildren(children);
+    return 1;
+  }  
+  // deeper.
+  std::vector<ot::TreeNode> tmp;
+  this->addChildren(tmp, lev_deep-1);
+  for (auto c: tmp) {
+    c.addChildren(children);
+  }
+  return 1;
+}
+
+
 int TreeNode::addChildrenMorton(std::vector<ot::TreeNode>& children) const
 {
   unsigned int dim = m_uiDim;

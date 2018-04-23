@@ -2697,13 +2697,12 @@ namespace ot {
 
       ot::TreeNode currOct(pt.xint(), pt.yint(), pt.zint(), currLev, 3, maxDepth-1);
       // XXX might have an off-by-one issue with the levels ...
-      ot::TreeNode newOct;
-      if (currLev > newLev )
-        newOct = currOct.getAncestor(newLev);
-      else 
-        newOct = ot::TreeNode(pt.xint(), pt.yint(), pt.zint(), newLev, dim, maxDepth-1);
-
-      tmpNodes.push_back(newOct);
+      if (currLev > newLev ) {
+        ot::TreeNode newOct = currOct.getAncestor(newLev);
+        tmpNodes.push_back(newOct);
+      } else {
+        currOct.addChildren(tmpNodes, newLev - currLev);
+      }
     }
     
     par::removeDuplicates<ot::TreeNode>(tmpNodes,false,MPI_COMM_WORLD);	
@@ -2716,9 +2715,9 @@ namespace ot {
     pts.resize(3*(linOct.size()));
     unsigned int ptsLen = (3*(linOct.size()));
     for(int i = 0; i < linOct.size(); i++) {
-      pts[3*i] = (((double)(linOct[i].getX())) + 0.5)/((double)(1u << maxDepth));
-      pts[(3*i)+1] = (((double)(linOct[i].getY())) +0.5)/((double)(1u << maxDepth));
-      pts[(3*i)+2] = (((double)(linOct[i].getZ())) +0.5)/((double)(1u << maxDepth));
+      pts[3*i] = (((double)(linOct[i].getX())) + 0.5)/((double)(1u << maxDepth))* gSize[0];
+      pts[(3*i)+1] = (((double)(linOct[i].getY())) +0.5)/((double)(1u << maxDepth))* gSize[1];
+      pts[(3*i)+2] = (((double)(linOct[i].getZ())) +0.5)/((double)(1u << maxDepth))* gSize[2];
     }//end for i
     linOct.clear();
 
