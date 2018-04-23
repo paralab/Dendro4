@@ -2692,20 +2692,21 @@ namespace ot {
     for(da->init<ot::DA_FLAGS::WRITABLE>(); da->curr() < da->end<ot::DA_FLAGS::WRITABLE>(); da->next<ot::DA_FLAGS::WRITABLE>()) {
       // get coords of current element
       Point pt = da->getCurrentOffset();
-      unsigned int currLev = da->getLevel(da->curr());
+      unsigned int currLev = da->getLevel(da->curr()) - 1;
       unsigned int newLev = levels[da->curr()];
 
       ot::TreeNode currOct(pt.xint(), pt.yint(), pt.zint(), currLev, 3, maxDepth-1);
-      // XXX might have an off-by-one issue with the levels ...
       if (currLev > newLev ) {
         ot::TreeNode newOct = currOct.getAncestor(newLev);
         tmpNodes.push_back(newOct);
-      } else {
+      } else if (currLev == newLev) {
+        tmpNodes.push_back(currOct);
+      } else  {
         currOct.addChildren(tmpNodes, newLev - currLev);
       }
     }
-    
-    par::removeDuplicates<ot::TreeNode>(tmpNodes,false,MPI_COMM_WORLD);	
+
+    par::removeDuplicates<ot::TreeNode>(tmpNodes,false,MPI_COMM_WORLD);
     std::swap(linOct, tmpNodes);
     tmpNodes.clear();
     par::partitionW<ot::TreeNode>(linOct, NULL,MPI_COMM_WORLD);
