@@ -2477,7 +2477,7 @@ namespace ot {
     std::array<bool, 8> dist;
     Point pt;
         
-    auto inside = [](double d){ return d < 0.0; };
+    auto inside = [](bool d){ return d; };
 
     double xFac = gSize[0]/((double)(1<<(maxDepth)));
     double yFac = gSize[1]/((double)(1<<(maxDepth)));
