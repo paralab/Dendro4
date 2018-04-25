@@ -35,7 +35,7 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   // std::cout << "[HARI] ghosted element size: " << m_ucpSkipList.size() << ", " << m_da->getNodeSize() << std::endl;
 
   m_ucpSkipNodeList.clear();
-  m_ucpSkipNodeList.resize(m_da->getGhostedNodeSize(), 1);
+  m_ucpSkipNodeList.resize(m_da->getLocalBufferSize(), 1);
 
   // m_uiNodeSize + m_uiBoundaryNodeSize + m_uiPreGhostNodeSize + m_uiPreGhostBoundaryNodeSize + m_uiPostGhostNodeSize
 
@@ -46,9 +46,9 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
         m_da->next<ot::DA_FLAGS::ALL>() ) {
 
           lev = m_da->getLevel(m_da->curr());
-          hx = xFac*(1<<(maxDepth - lev));
-          hy = yFac*(1<<(maxDepth - lev));
-          hz = zFac*(1<<(maxDepth - lev));
+          hx = xFac*(1<<(maxDepth +1 - lev));
+          hy = yFac*(1<<(maxDepth +1 - lev));
+          hz = zFac*(1<<(maxDepth +1 - lev));
 
           pt = m_da->getCurrentOffset();
 
