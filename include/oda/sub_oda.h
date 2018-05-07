@@ -72,6 +72,10 @@ namespace ot {
           */
         int getNpesAll() { return m_da->getNpesAll(); }
 
+        const std::vector<unsigned char>& getSkipList() { return m_ucpSkipNodeList; }
+
+        const std::vector<unsigned char>& getSkipElemList() { return m_ucpSkipList; }
+
         /**
           @return the number of active processors
           @author Hari Sundar
@@ -472,13 +476,20 @@ namespace ot {
           // std::cout << "HARI: " << "m_uiNodeSize: " << m_da->getNodeSize() << std::endl;
 
           // std::cout << "creating Matrix" << std::endl;
-		      int r = m_da->createMatrix(M, mtype, dof);
-          
+          return m_da->createMatrix(M, mtype, dof);
+        }
+
+        /**
+          @brief Sets the diagonal in the matrix for nodes in the skiplist to 1 (to prevent missing diagonal errors when solving). This should be called once before assembly each time the matrix is zeroed.
+          @param M matrix
+          @param dof number of degrees of freedom
+          */
+        void setMatrixDiagonalForSkippedNodes(Mat M, unsigned int dof) {
           unsigned int indices[8];
           std::vector<ot::MatRecord> records;
           ot::MatRecord mr;
-		      // set non-dof diagonal entries to be 1
-        for ( m_da->init<ot::DA_FLAGS::ALL>(); 
+		  // set non-dof diagonal entries to be 1
+          for ( m_da->init<ot::DA_FLAGS::ALL>(); 
               m_da->curr() < m_da->end<ot::DA_FLAGS::ALL>(); 
               m_da->next<ot::DA_FLAGS::ALL>() ) {
             
@@ -492,15 +503,12 @@ namespace ot {
                   mr.colDim = j;
                   mr.val = 1.0;
                   records.push_back(mr);
-                } 
+                }
               }
             }
           }
           // std::cout << "setting values in Matrix" << std::endl;
           m_da->setValuesInMatrix(M, records, dof, ADD_VALUES);
-          // std::cout << "done creating Matrix" << std::endl;
-          
-          return r;
         }
 
         /**
