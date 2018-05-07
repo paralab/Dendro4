@@ -57,6 +57,7 @@ namespace ot {
     par::Mpi_Bcast<int>(&npesActive, 1, 0, comm);
 
     unsigned int balOctMaxD = (maxDepth - 1);
+    const unsigned int octMaxCoord = (1u << balOctMaxD);
 
     if(rank) {
       minBlocks.resize(npesActive);
@@ -83,6 +84,22 @@ namespace ot {
       unsigned int xint = static_cast<unsigned int>(pts[(3*i)]*xFac);
       unsigned int yint = static_cast<unsigned int>(pts[(3*i) + 1]*yFac);
       unsigned int zint = static_cast<unsigned int>(pts[(3*i) + 2]*zFac);
+
+      // fix for positive boundaries...
+      /*
+       * Basically, if the point is on the boundary, then the interpolation needs to happen on the face that overlaps
+       * with the boundary. This face can be part of 2 elements, one that is inside the domain and one that is outside.
+       * By default we always go for the "right" element, but this is not correct for those on the positive boundaries,
+       * hence the error. You can fix it when you compute the TreeNode corresponding to the element.
+       *   Hari, May 7, 2018
+       */
+      if (xint == octMaxCoord)
+        xint = octMaxCoord - 1;
+      if (yint == octMaxCoord)
+        yint = octMaxCoord - 1;
+      if (zint == octMaxCoord)
+        zint = octMaxCoord - 1;
+
       tmpObj.node = ot::TreeNode(xint, yint, zint, maxDepth, 3, maxDepth);
       tmpObj.values[0] = pts[(3*i)];
       tmpObj.values[1] = pts[(3*i) + 1];
@@ -454,6 +471,7 @@ namespace ot {
     par::Mpi_Bcast<int>(&npesActive, 1, 0, comm);
 
     unsigned int balOctMaxD = (maxDepth - 1);
+    const unsigned int octMaxCoord = (1u << balOctMaxD);
 
     if(rank) {
       minBlocks.resize(npesActive);
@@ -470,6 +488,22 @@ namespace ot {
       unsigned int xint = static_cast<unsigned int>(pts[(3*i)]*xyzFac);
       unsigned int yint = static_cast<unsigned int>(pts[(3*i) + 1]*xyzFac);
       unsigned int zint = static_cast<unsigned int>(pts[(3*i) + 2]*xyzFac);
+
+      // fix for positive boundaries...
+      /*
+       * Basically, if the point is on the boundary, then the interpolation needs to happen on the face that overlaps
+       * with the boundary. This face can be part of 2 elements, one that is inside the domain and one that is outside.
+       * By default we always go for the "right" element, but this is not correct for those on the positive boundaries,
+       * hence the error. You can fix it when you compute the TreeNode corresponding to the element.
+       *   Hari, May 7, 2018
+       */
+      if (xint == octMaxCoord)
+        xint = octMaxCoord - 1;
+      if (yint == octMaxCoord)
+        yint = octMaxCoord - 1;
+      if (zint == octMaxCoord)
+        zint = octMaxCoord - 1;
+
       tmpObj.node = ot::TreeNode(xint, yint, zint, maxDepth, 3, maxDepth);
       tmpObj.values[0] = pts[(3*i)];
       tmpObj.values[1] = pts[(3*i) + 1];
