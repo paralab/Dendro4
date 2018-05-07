@@ -1787,6 +1787,14 @@ int DA::alignPointsWithDA(std::vector<double>& pts, std::vector<int>& labels) {
     unsigned int xint = static_cast<unsigned int>(pts[(3*i)]*xyzFac);
     unsigned int yint = static_cast<unsigned int>(pts[(3*i) + 1]*xyzFac);
     unsigned int zint = static_cast<unsigned int>(pts[(3*i) + 2]*xyzFac);
+
+    if (xint == xyzFac) 
+      xint = xyzFac - 1;
+    if (yint == xyzFac) 
+      yint = xyzFac -1;
+    if (zint == xyzFac) 
+      zint = xyzFac -1;
+
     tmpObj.node = ot::TreeNode(xint, yint, zint, m_uiMaxDepth, 3, m_uiMaxDepth);
     tmpObj.values[0] = pts[(3*i)];
     tmpObj.values[1] = pts[(3*i) + 1];
