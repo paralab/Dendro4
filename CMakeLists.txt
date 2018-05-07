@@ -55,6 +55,9 @@ option(ALLTOALLV_FIX "Use K-way all to all v" OFF)
 option(POWER_MEASUREMENT_TIMESTEP "Print the time step for mat vec loops" OFF)
 option (SPLITTER_SELECTION_FIX "use the splitter fix for the treeSort" ON)
 option (DIM_2 "To enable DIM2 version of Sorting. Tree sort part is tested and works wioth DIM 2 but rest of the dendro might not " OFF)
+option(BUILD_HELPER_APPS "Build helper apps" ON)
+option(BUILD_DENDROTALY_EXAMPLES "Build dendro-taly integration examples/tests" ON)
+option(BUILD_CONSTRUCT_EXAMPLES "Build octree construct/balance examples/tests" ON)
 set(KWAY 128 CACHE INT 128)
 set(NUM_NPES_THRESHOLD 16 CACHE INT 16)
 
@@ -144,6 +147,7 @@ add_library(dendroTest src/test/testUtils.C)
 add_library(dendro ${DENDRO_SOURCES}
                    ${DENDRO_HEADERS}
                    ${DENDRO_TEMPLATES} include/hcurvedata.h src/hcurvedata.cpp src/blockPart.cpp)
+target_include_directories(dendro PUBLIC "${PROJECT_BINARY_DIR}" include include/oda)
 
 add_library(dendroDA ${ODA_SOURCES} ${ODA_PRIVATE_SOURCES})
 target_link_libraries(dendroDA dendro)
@@ -153,6 +157,7 @@ target_link_libraries(dendroDA dendro)
 ##---------------------------------------------------------------------------------------
 ##  Helper APPS
 ##---------------------------------------------------------------------------------------
+if (BUILD_HELPER_APPS)
 add_executable(genGauss scripts/genGaussSeq.C)
 add_executable(splitPoints scripts/splitPoints.C)
 
@@ -161,11 +166,13 @@ target_link_libraries(gen2spheres dendro petsc ${MPI_LIBRARIES} m)
 
 add_executable(genPrlFBMpts scripts/genPrlFBMpts.C)
 target_link_libraries(genPrlFBMpts ${MPI_LIBRARIES} m)
+endif()
 ##---------------------------------------------------------------------------------------
 
 ##---------------------------------------------------------------------------------------
 ##----------- integration with Taly -----------------------------------------------------
 ##---------------------------------------------------------------------------------------
+if (BUILD_DENDROTALY_EXAMPLES)
 add_executable(heat examples/heat/main.cpp examples/heat/parabolic.h
   examples/heat/timeStepper.cpp examples/heat/rhs.h)
 target_link_libraries(heat dendroDA dendro petsc ${MPI_LIBRARIES} m)
@@ -179,10 +186,12 @@ add_executable(holeMesh examples/src/drivers/holeMesh.cpp include/test/testUtils
 
 add_executable(testIntergrid examples/src/drivers/testIntergrid.cpp include/test/testUtils.h include/test/testUtils.tcc src/test/testUtils.C )
     target_link_libraries(testIntergrid dendroDA dendro petsc ${MPI_LIBRARIES} m)
+endif()
 
 ##---------------------------------------------------------------------------------------
 ## Octree Construct-Balance Apps
 ##---------------------------------------------------------------------------------------
+if(BUILD_CONSTRUCT_EXAMPLES)
 add_executable(testRipple examples/src/drivers/tstRipple.C)
 target_link_libraries(testRipple dendro petsc ${MPI_LIBRARIES} m)
 
@@ -209,6 +218,7 @@ target_link_libraries(testConAndBal dendro petsc ${MPI_LIBRARIES} m)
 add_executable(testConBalAndCoarsen
   examples/src/drivers/testConBalAndCoarsen)
 target_link_libraries(testConBalAndCoarsen dendro dendroDA petsc ${MPI_LIBRARIES} m)
+endif()
 ##---------------------------------------------------------------------------------------
 
 ##---------------------------------------------------------------------------------------

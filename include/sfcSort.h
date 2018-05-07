@@ -891,7 +891,7 @@ namespace SFC
 
                 DendroIntL localSz = pNodes.size();
                 DendroIntL globalSz = 0;
-                MPI_Allreduce(&localSz, &globalSz, 1, MPI_LONG_LONG, MPI_SUM, comm);
+                par::Mpi_Allreduce<DendroIntL>(&localSz, &globalSz, 1, MPI_SUM, comm);
 
                 // Number of initial buckets. This should be larger than npes.
 
@@ -1485,7 +1485,8 @@ namespace SFC
             unsigned int totalNumBuckets =1u << (dim * firstSplitLevel);
             DendroIntL localSz=pNodes.size();
             DendroIntL globalSz=0;
-            MPI_Allreduce(&localSz,&globalSz,1,MPI_LONG_LONG,MPI_SUM,comm);
+
+            par::Mpi_Allreduce<DendroIntL>(&localSz, &globalSz, 1, MPI_SUM, comm);
             //if(!rank) std::cout<<"First Split Level : "<<firstSplitLevel<<" Total number of buckets: "<<totalNumBuckets <<std::endl;
             //if(!rank) std::cout<<"NUM_CHILDREN: "<<NUM_CHILDREN<<std::endl;
             // Number of initial buckets. This should be larger than npes.

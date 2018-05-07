@@ -1764,7 +1764,7 @@ int DA::alignPointsWithDA(std::vector<ot::NodeAndValues<double,3>>& pts) {
   delete [] sendDisps;
   delete [] recvCnts;
   delete [] recvDisps;
-
+  delete [] commMap;
 }
  
  
