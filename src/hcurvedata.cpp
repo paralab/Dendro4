@@ -549,7 +549,7 @@ else if(pDim==3) {
     rotations = new char[16];
     HILBERT_TABLE = new char[8];
 
-    strcpy(rotations + 0, "0123456701234567\0");
+    memcpy(rotations + 0, "0123456701234567", 16);
 
     HILBERT_TABLE[0] = 0;
     HILBERT_TABLE[1] = 0;
