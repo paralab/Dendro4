@@ -1804,6 +1804,22 @@ namespace par {
       MPI_Barrier(comm);
 #endif
 
+      // check if we need to repartition so that every process has at least one element
+      {
+        char is_empty = SortedElem.empty();
+        char total_empty;
+        par::Mpi_Allreduce<char>(&is_empty, &total_empty, 1, MPI_SUM, new_comm);
+        if (total_empty != 0) {
+          // if (!rank) std::cout << "[samplesort-bitonicsort] repartitioning input" << std::endl;
+          par::partitionW<T>(SortedElem, NULL, comm);
+        }
+
+        // verify that it worked
+        is_empty = SortedElem.empty();
+        par::Mpi_Allreduce<char>(&is_empty, &total_empty, 1, MPI_SUM, new_comm);
+        assert (total_empty == 0);
+      }
+
       if (!SortedElem.empty()) {
         par::bitonicSort<T>(SortedElem, new_comm);
         //std::cout<<"Rank:"<<rank<<" bitonic search complete"<<std::endl;
