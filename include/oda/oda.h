@@ -1436,8 +1436,25 @@ namespace ot {
       void initialize_skiplist();
       void skip_current();
       void finalize_skiplist();
-        
-        
+
+      // hari - for subDA. clean up later   
+      unsigned int getScatterMapSize() {
+        return m_uipScatterMap.size();
+      }
+      unsigned int getScatterMapEntry(unsigned int i) {
+        return m_uipScatterMap[i];
+      }
+      unsigned int getSendProcSize() {
+        return m_uipSendProcs.size();
+      }
+      unsigned int getSendProcEntry(unsigned int i) {
+        return m_uipSendProcs[i];
+      }
+      unsigned int getSendCountsEntry(unsigned int i) {
+        return m_uipSendCounts[i];
+      }
+
+
       protected:
 
         /**

@@ -10,6 +10,8 @@
 #pragma once
 
 #include <functional>
+#include <iostream>
+
 #include "oda.h"
 
 namespace ot {
@@ -28,8 +30,59 @@ namespace ot {
 
         // will contain extra mapping information as compared to the DA
         std::vector<unsigned char>      m_ucpSkipList;
-        std::vector<unsigned char>      m_ucpSkipNodeList;      
+        std::vector<unsigned char>      m_ucpSkipNodeList;
+        
+        unsigned int                    m_uiElementSize;
+        unsigned int                    m_uiPreGhostElementSize;
 
+        unsigned int                    m_uiLocalBufferSize;
+
+        unsigned int                    m_uiNodeSize;
+        
+        unsigned int                    m_uiPreGhostNodeSize;
+        unsigned int                    m_uiPostGhostNodeSize;
+        
+        unsigned int                    m_uiBoundaryNodeSize;
+        unsigned int                    m_uiPreGhostBoundaryNodeSize;
+
+        bool                            m_bComputedLocalToGlobal;
+        bool                            m_bComputedLocalToGlobalElems;
+
+        // need estimates of local & global owned nodes
+
+        std::vector<unsigned int>       m_uip_sub2DA_ElemMap;      
+        std::vector<unsigned int>       m_uip_DA2sub_ElemMap;      
+
+        std::vector<unsigned int>       m_uip_sub2DA_NodeMap;      
+        std::vector<unsigned int>       m_uip_DA2sub_NodeMap;
+
+        DendroIntL*                      m_dilpLocalToGlobal;
+        DendroIntL*                      m_dilpLocalToGlobalElems;      
+
+        std::vector<unsigned int>               m_uipScatterMap;
+        std::vector<unsigned int>               m_uipSendOffsets;
+        std::vector<unsigned int>               m_uipSendProcs;
+        std::vector<unsigned int>               m_uipSendCounts;
+
+        std::vector<unsigned int>               m_uipRecvOffsets;
+        std::vector<unsigned int>               m_uipRecvProcs;
+        std::vector<unsigned int>               m_uipRecvCounts;
+
+        // tags and contexts ...
+        std::vector<updateContext>              m_mpiContexts;
+        unsigned int                            m_uiCommTag;
+
+        /*  
+        std::vector<unsigned int>               m_uipElemScatterMap;
+        std::vector<unsigned int>               m_uipElemSendOffsets;
+        std::vector<unsigned int>               m_uipElemSendProcs;
+        std::vector<unsigned int>               m_uipElemSendCounts;
+
+        std::vector<unsigned int>               m_uipElemRecvOffsets;
+        std::vector<unsigned int>               m_uipElemRecvProcs;
+        std::vector<unsigned int>               m_uipElemRecvCounts;
+        */
+       
       public:
         /**
           @name Constructors and destructors
@@ -155,7 +208,7 @@ namespace ot {
         void incrementCurrentOffset() { m_da->incrementCurrentOffset(); }
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @brief Points to the anchor of the next pre-ghost octant.
           This function is required because we only 
           store the levels of the octants and not their anchors. So the anchors are
@@ -164,7 +217,7 @@ namespace ot {
         void incrementPreGhostOffset() { m_da->incrementPreGhostOffset(); }
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @brief Call this function to check if curr() points to an octant
           touching the domain boundaries from the inside. This function is for real octants only, 
           pseudo-octants can not be tested using this function.
@@ -177,7 +230,7 @@ namespace ot {
         bool isBoundaryOctant(unsigned char *flags=NULL) { return m_da->isBoundaryOctant(flags); }
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @return The local to global map computed using the function computeLocalToGlobalMappings()      
           @see computeLocalToGlobalMappings
           @see computedLocalToGlobal
@@ -187,7 +240,7 @@ namespace ot {
         }
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @return The local to global map computed using the function computeLocalToGlobalElemMappings()      
           @see computeLocalToGlobalElemMappings
           @see computedLocalToGlobalElems
@@ -204,27 +257,27 @@ namespace ot {
           @return The number of local nodes.
           */
         unsigned int getNodeSize() {
-          return m_da->getNodeSize(); 
+          return (m_uiNodeSize + m_uiBoundaryNodeSize);
         }
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @brief Returns the total number of positive Boundary Nodes belonging to this processor. 
           This does not include the ghost nodes. 
           @return The number of local (positive) boundary nodes.
           */
         unsigned int getBoundaryNodeSize() {
-          return m_da->getBoundaryNodeSize();
+          return m_uiBoundaryNodeSize;
         }
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @brief Returns the total number of internal Nodes belonging to this processor. 
           This does not include the ghost nodes and positive boundaries . 
           @return The number of local internal nodes.
           */
         unsigned int getInternalNodeSize() {
-          return m_da->getInternalNodeSize();
+          return m_uiNodeSize;
         }
 
         /**
@@ -234,15 +287,15 @@ namespace ot {
           @return The number of local elements.
           */
         unsigned int getElementSize() {
-          return m_da->getElementSize();
+          return m_uiElementSize;
         }
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @brief Returns the total number of pre-ghost elements. 
           */
         unsigned int getPreGhostElementSize() {
-          return m_da->getPreGhostElementSize();
+          return m_uiPreGhostElementSize;
         }
 
         /** @author Milinda Fernando
@@ -251,15 +304,16 @@ namespace ot {
          * */
 
         unsigned int getPreAndPostGhostNodeSize() {
-          return m_da->getPreAndPostGhostNodeSize();
+          return (m_uiPreGhostNodeSize+m_uiPostGhostNodeSize);
         }
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @brief Returns the number of INDEPENDENT elements belonging to this processor. 
           @return The number of local elements.
           */
         unsigned int getIndependentSize() {
+          std::cout << "[subDA::DEBUG] potential source of BUG. " << __FILE__ << ":" << __LINE__ << std::endl;
           return m_da->getIndependentSize();
         }
 
@@ -271,7 +325,9 @@ namespace ot {
           @return The number of nodes.
           */
         unsigned int getGhostedNodeSize() {
-          return m_da->getGhostedNodeSize();
+          return (m_uiNodeSize + m_uiBoundaryNodeSize +
+                  m_uiPreGhostNodeSize + m_uiPreGhostBoundaryNodeSize +
+                  m_uiPostGhostNodeSize);
         }
 
         /**
@@ -281,7 +337,7 @@ namespace ot {
           @return The number of nodes.
           */
         unsigned int getGhostedElementSize() {
-          return m_da->getGhostedElementSize();
+          return (m_uiElementSize + m_uiPreGhostElementSize);
         }
 
         /**
@@ -293,7 +349,7 @@ namespace ot {
         }
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @return the index of the last local element
           */
         unsigned int getIdxElementEnd() {
@@ -342,7 +398,7 @@ namespace ot {
 
         /**
           @author Hari Sundar
-          @author Rahul Sampath	 
+          @author Hari Sundar	 
           @brief Updates the ghost values by obtaining values from the processors which own them.
 
           @param arr		the local buffer which needs to be updated. This must be obtained with a call to
@@ -356,43 +412,35 @@ namespace ot {
           */
         //Communicating Ghost Nodes
         template <typename T>
-          int ReadFromGhostsBegin ( T* arr, unsigned int dof=1) {
-            return m_da->ReadFromGhostsBegin<T>(arr, dof);
-          }
+          int ReadFromGhostsBegin ( T* arr, unsigned int dof=1);
 
         /**
           @author Hari Sundar
-          @author Rahul Sampath
+          @author Hari Sundar
          * @brief Waits for updates of the ghost values to finish.
         **/ 
         template <typename T>
-          int ReadFromGhostsEnd(T* arr) {
-            return m_da->ReadFromGhostsEnd<T>(arr);
-          }
+          int ReadFromGhostsEnd(T* arr);
 
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
          * @brief Send the ghost values to the processors that own them so that these
          values can be added.  
         **/ 
         template <typename T>
-          int WriteToGhostsBegin ( T* arr, unsigned int dof=1) {
-            return m_da->WriteToGhostsBegin<T>(arr, dof);
-          }
+          int WriteToGhostsBegin ( T* arr, unsigned int dof=1); 
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
          * @brief Waits for updates of the ghost values to finish.
         **/ 
         template <typename T>
-          int WriteToGhostsEnd(T* arr, unsigned int dof=1) {
-            return m_da->WriteToGhostsEnd<T>(arr, dof);
-          }
+          int WriteToGhostsEnd(T* arr, unsigned int dof=1);
 
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           Counterpart of ReadFromGhostsBegin for elemental arrays
           @see ReadFromGhostsBegin()
           */
@@ -402,7 +450,7 @@ namespace ot {
           }
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           Counterpart of ReadFromGhostsEnd() for elemental arrays
           @see ReadFromGhostsEnd()
           */
@@ -411,7 +459,7 @@ namespace ot {
             return m_da->ReadFromGhostElemsEnd<T>(arr);
           }
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           Counterpart of WriteToGhostsBegin() for elemental arrays
           @see WriteToGhostsBegin()
           */
@@ -421,7 +469,7 @@ namespace ot {
           }
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           Counterpart of WriteToGhostsEnd for elemental arrays
           @see WriteToGhostsEnd()
           */
@@ -447,12 +495,13 @@ namespace ot {
           @param dof       the degrees of freedom for the vector. The default is 1.
           @return PETSc error code.
           */
-        int createVector(Vec &local, bool isElemental, bool isGhosted, unsigned int dof=1) {
-          return m_da->createVector(local, isElemental, isGhosted, dof);
-        }
+        int createVector(Vec &local, bool isElemental, bool isGhosted, unsigned int dof=1);
+        /*{
+            return m_da->createVector(local, isElemental, isGhosted, dof);
+          } */
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @brief Similar to createVector(), except the vector is only distributed on the active processors.
           @see createVector()
           */
@@ -461,50 +510,50 @@ namespace ot {
         }
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @brief Returns a PETSc Matrix of appropriate size of the requested type.
           @param M the matrix
           @param mtype the type of matrix
           @param dof the number of degrees of freedom per node.
           */
-        int createMatrix(Mat &M, MatType mtype, unsigned int dof=1) {
+        int createMatrix(Mat &M, MatType mtype, unsigned int dof=1); // {
           // std::cout << "HARI: " << "m_uiPre&PostGhostNodeSize: " << m_da->getPreAndPostGhostNodeSize() << std::endl; 
           // std::cout << "HARI: " << "m_uiNodeSize: " << m_da->getNodeSize() << std::endl;
 
           // std::cout << "creating Matrix" << std::endl;
-		      int r = m_da->createMatrix(M, mtype, dof);
+		    //   int r = m_da->createMatrix(M, mtype, dof);
           
-          unsigned int indices[8];
-          std::vector<ot::MatRecord> records;
-          ot::MatRecord mr;
-		      // set non-dof diagonal entries to be 1
-        for ( m_da->init<ot::DA_FLAGS::ALL>(); 
-              m_da->curr() < m_da->end<ot::DA_FLAGS::ALL>(); 
-              m_da->next<ot::DA_FLAGS::ALL>() ) {
+        //   unsigned int indices[8];
+        //   std::vector<ot::MatRecord> records;
+        //   ot::MatRecord mr;
+		    //   // set non-dof diagonal entries to be 1
+        // for ( m_da->init<ot::DA_FLAGS::ALL>(); 
+        //       m_da->curr() < m_da->end<ot::DA_FLAGS::ALL>(); 
+        //       m_da->next<ot::DA_FLAGS::ALL>() ) {
             
-            m_da->getNodeIndices(indices);
-            for (unsigned int i=0; i<8; ++i) {
-              if ( m_ucpSkipNodeList[ indices[i] ] ) {
-                mr.rowIdx = indices[i];
-                mr.colIdx = indices[i];
-                for (unsigned int j=0; j<dof; ++j) {
-                  mr.rowDim = j;
-                  mr.colDim = j;
-                  mr.val = 1.0;
-                  records.push_back(mr);
-                } 
-              }
-            }
-          }
-          // std::cout << "setting values in Matrix" << std::endl;
-          m_da->setValuesInMatrix(M, records, dof, ADD_VALUES);
-          // std::cout << "done creating Matrix" << std::endl;
+        //     m_da->getNodeIndices(indices);
+        //     for (unsigned int i=0; i<8; ++i) {
+        //       if ( m_ucpSkipNodeList[ indices[i] ] ) {
+        //         mr.rowIdx = indices[i];
+        //         mr.colIdx = indices[i];
+        //         for (unsigned int j=0; j<dof; ++j) {
+        //           mr.rowDim = j;
+        //           mr.colDim = j;
+        //           mr.val = 1.0;
+        //           records.push_back(mr);
+        //         } 
+        //       }
+        //     }
+        //   }
+        //   // std::cout << "setting values in Matrix" << std::endl;
+        //   m_da->setValuesInMatrix(M, records, dof, ADD_VALUES);
+        //   // std::cout << "done creating Matrix" << std::endl;
           
-          return r;
-        }
+        //   return r;
+        // }
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @brief Similar to createMatrix, except the matrix is only distributed on the active processors.
           @see createMatrix()
           */
@@ -513,19 +562,17 @@ namespace ot {
         }
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @brief Computes mappings between the local and global numberings for nodal buffers.
           @see setValuesInMatrix()
           Call this function only if you need to create Matrices using this mesh. This function must be called
           once before calling setValuesInMatrix(). This function should not
           be called more than once for a given mesh.
           */
-        int computeLocalToGlobalMappings() {
-          m_da->computeLocalToGlobalMappings();
-        }
+        int computeLocalToGlobalMappings();
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @brief Computes mappings between the local and global numberings for elemental buffers.
           This function is probably required only for developers. Typical users will not need this.
           This function should not be called more than once for a given mesh.
@@ -535,25 +582,25 @@ namespace ot {
         }
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @return 'true' if the function computeLocalToGlobalMappings() was called for this mesh.
           @see computeLocalToGlobalMappings()
           */
         bool computedLocalToGlobal() {
-          m_da->computedLocalToGlobal();
+          return m_bComputedLocalToGlobal;
         }
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @return 'true' if the function computeLocalToGlobalElemMappings() was called for this mesh.
           @see computeLocalToGlobalElemMappings()
           */
         bool computedLocalToGlobalElems() {
-          return m_da->computedLocalToGlobalElems();
+          return m_bComputedLocalToGlobalElems;
         }
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @brief a wrapper for setting values into the Matrix.
           This internally calls PETSc's MatSetValues() function.
           @param mat The matrix
@@ -570,9 +617,7 @@ namespace ot {
           options cannot be mixed without intervening calls to PETSc's MatAssembly routines.
           */
         int setValuesInMatrix(Mat mat, std::vector<ot::MatRecord>& records,
-            unsigned int dof, InsertMode mode) {
-              return m_da->setValuesInMatrix(mat, records, dof, mode);
-            }
+            unsigned int dof, InsertMode mode); 
 
         /**
          * @author Hari Sundar
@@ -588,9 +633,7 @@ namespace ot {
          */
 
         int zeroRowsInMatrix(Mat mat, std::vector<unsigned int>& indices, unsigned int dof,
-                             double diag, Vec x, Vec b) {
-                               return m_da->zeroRowsInMatrix(mat, indices, dof, diag, x, b);
-                             }
+                             double diag, Vec x, Vec b) ;
 
         
         /**
@@ -649,9 +692,7 @@ namespace ot {
           will be copied. The ghosts will have 0 values in this case.
           */
         int vecGetBuffer(Vec in, PetscScalar* &out, bool isElemental,
-            bool isGhosted, bool isReadOnly, unsigned int dof=1) {
-              return m_da->vecGetBuffer(in, out, isElemental, isGhosted, isReadOnly, dof);
-            }
+            bool isGhosted, bool isReadOnly, unsigned int dof=1);
 
         /**
           @author Hari Sundar
@@ -675,9 +716,7 @@ namespace ot {
           */
         template < typename T >
           int vecGetBuffer(std::vector<T> &in, T* &out, bool isElemental,
-              bool isGhosted, bool isReadOnly, unsigned int dof=1) {
-                return m_da->vecGetBuffer(in, out, isElemental, isGhosted, isReadOnly, dof);
-              }
+              bool isGhosted, bool isReadOnly, unsigned int dof=1) ;
 
         /**
           @author Hari Sundar
@@ -696,9 +735,7 @@ namespace ot {
           Restores the C-array of type PetscScalar to a PETSc Vec after quick local access. 
           */
         int vecRestoreBuffer(Vec in, PetscScalar* out, bool isElemental, 
-            bool isGhosted, bool isReadOnly, unsigned int dof=1) {
-              return m_da->vecRestoreBuffer(in, out, isElemental, isGhosted, isReadOnly, dof);
-            }
+            bool isGhosted, bool isReadOnly, unsigned int dof=1) ;
 
         /**
           @author Hari Sundar
@@ -718,9 +755,7 @@ namespace ot {
           */
         template < typename T >
           int vecRestoreBuffer(std::vector<T> &in, T* out, bool isElemental,
-              bool isGhosted, bool isReadOnly, unsigned int dof=1) {
-                return m_da->vecRestoreBuffer(in, out, isElemental, isGhosted, isReadOnly, dof);
-              }
+              bool isGhosted, bool isReadOnly, unsigned int dof=1) ;
         //@}
 
         //----------------------------------
@@ -731,7 +766,7 @@ namespace ot {
         //@{
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @author Hari Sundar
           @brief Initializes the internal counters for a new loop. Remember that the DA
           currently only supports elemental loops.
@@ -756,7 +791,7 @@ namespace ot {
         /**
 
           @author Hari Sundar
-          @author Rahul Sampath
+          @author Hari Sundar
           @brief Returns an index to the begining of the current loop.
           The loop needs to be initialized using a call to
           init().
@@ -780,7 +815,7 @@ namespace ot {
 
         /**
 
-          @author Rahul Sampath
+          @author Hari Sundar
           @brief Returns an index to the begining of the current loop.
           The loop needs to be initialized using a call to
           init(). This also stores the current position within an
@@ -794,7 +829,7 @@ namespace ot {
         }
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @author Hari Sundar
           @brief Returns an index to the end of the current loop.
           The loop needs to be initialized using a call to
@@ -818,7 +853,7 @@ namespace ot {
           unsigned int end();
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @author Hari Sundar
           @brief Returns an index to the next element of the current 
           loop. The loop needs to be initialized using a call to
@@ -931,7 +966,7 @@ namespace ot {
 
         /**
           @author Hari Sundar
-          @author Rahul Sampath
+          @author Hari Sundar
           @brief Returns the indices to the nodes of the current 
           element.
           @param nodes   Indices into the nodes of the given element. Should be
@@ -944,7 +979,7 @@ namespace ot {
         //@}
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @return the total number of octants (local, ghosts and FOREIGN) stored on the calling processor.
           */
         unsigned int getLocalBufferSize() {
@@ -963,7 +998,7 @@ namespace ot {
         }
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @return true if the element-to-node mappings were compressed using Goloumb-Rice encoding
           */
         bool isLUTcompressed() {
@@ -971,7 +1006,7 @@ namespace ot {
         }
 
         /**
-          @author Rahul Sampath
+          @author Hari Sundar
           @return true if the calling processor is active
           */
         bool iAmActive() {
