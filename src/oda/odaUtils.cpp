@@ -35,7 +35,7 @@ namespace ot {
   extern double**** ShapeFnCoeffs; 
 
   void interpolateData(ot::DA* da, Vec in, Vec out, Vec* gradOut,
-      unsigned int dof, std::vector<double>& pts, double* problemSize) {
+      unsigned int dof, const std::vector<double>& pts, const double* problemSize) {
 
     assert(da != NULL);
 
@@ -57,6 +57,7 @@ namespace ot {
     par::Mpi_Bcast<int>(&npesActive, 1, 0, comm);
 
     unsigned int balOctMaxD = (maxDepth - 1);
+    const unsigned int octMaxCoord = (1u << balOctMaxD);
 
     if(rank) {
       minBlocks.resize(npesActive);
@@ -83,6 +84,22 @@ namespace ot {
       unsigned int xint = static_cast<unsigned int>(pts[(3*i)]*xFac);
       unsigned int yint = static_cast<unsigned int>(pts[(3*i) + 1]*yFac);
       unsigned int zint = static_cast<unsigned int>(pts[(3*i) + 2]*zFac);
+
+      // fix for positive boundaries...
+      /*
+       * Basically, if the point is on the boundary, then the interpolation needs to happen on the face that overlaps
+       * with the boundary. This face can be part of 2 elements, one that is inside the domain and one that is outside.
+       * By default we always go for the "right" element, but this is not correct for those on the positive boundaries,
+       * hence the error. You can fix it when you compute the TreeNode corresponding to the element.
+       *   Hari, May 7, 2018
+       */
+      if (xint == octMaxCoord)
+        xint = octMaxCoord - 1;
+      if (yint == octMaxCoord)
+        yint = octMaxCoord - 1;
+      if (zint == octMaxCoord)
+        zint = octMaxCoord - 1;
+
       tmpObj.node = ot::TreeNode(xint, yint, zint, maxDepth, 3, maxDepth);
       tmpObj.values[0] = pts[(3*i)];
       tmpObj.values[1] = pts[(3*i) + 1];
@@ -454,6 +471,7 @@ namespace ot {
     par::Mpi_Bcast<int>(&npesActive, 1, 0, comm);
 
     unsigned int balOctMaxD = (maxDepth - 1);
+    const unsigned int octMaxCoord = (1u << balOctMaxD);
 
     if(rank) {
       minBlocks.resize(npesActive);
@@ -470,6 +488,22 @@ namespace ot {
       unsigned int xint = static_cast<unsigned int>(pts[(3*i)]*xyzFac);
       unsigned int yint = static_cast<unsigned int>(pts[(3*i) + 1]*xyzFac);
       unsigned int zint = static_cast<unsigned int>(pts[(3*i) + 2]*xyzFac);
+
+      // fix for positive boundaries...
+      /*
+       * Basically, if the point is on the boundary, then the interpolation needs to happen on the face that overlaps
+       * with the boundary. This face can be part of 2 elements, one that is inside the domain and one that is outside.
+       * By default we always go for the "right" element, but this is not correct for those on the positive boundaries,
+       * hence the error. You can fix it when you compute the TreeNode corresponding to the element.
+       *   Hari, May 7, 2018
+       */
+      if (xint == octMaxCoord)
+        xint = octMaxCoord - 1;
+      if (yint == octMaxCoord)
+        yint = octMaxCoord - 1;
+      if (zint == octMaxCoord)
+        zint = octMaxCoord - 1;
+
       tmpObj.node = ot::TreeNode(xint, yint, zint, maxDepth, 3, maxDepth);
       tmpObj.values[0] = pts[(3*i)];
       tmpObj.values[1] = pts[(3*i) + 1];
@@ -790,7 +824,7 @@ namespace ot {
 
   }//end function
 
-  void getNodeCoordinates(ot::DA* da, std::vector<double> &pts, double* problemSize) {
+  void getNodeCoordinates(ot::DA* da, std::vector<double> &pts, const double* problemSize) {
     DendroIntL localNodeSize = da->getNodeSize();
 
     pts.clear();
@@ -2477,7 +2511,7 @@ namespace ot {
     std::array<bool, 8> dist;
     Point pt;
         
-    auto inside = [](double d){ return d < 0.0; };
+    auto inside = [](bool d){ return d; };
 
     double xFac = gSize[0]/((double)(1<<(maxDepth)));
     double yFac = gSize[1]/((double)(1<<(maxDepth)));
@@ -2692,20 +2726,21 @@ namespace ot {
     for(da->init<ot::DA_FLAGS::WRITABLE>(); da->curr() < da->end<ot::DA_FLAGS::WRITABLE>(); da->next<ot::DA_FLAGS::WRITABLE>()) {
       // get coords of current element
       Point pt = da->getCurrentOffset();
-      unsigned int currLev = da->getLevel(da->curr());
+      unsigned int currLev = da->getLevel(da->curr()) - 1;
       unsigned int newLev = levels[da->curr()];
 
       ot::TreeNode currOct(pt.xint(), pt.yint(), pt.zint(), currLev, 3, maxDepth-1);
-      // XXX might have an off-by-one issue with the levels ...
       if (currLev > newLev ) {
         ot::TreeNode newOct = currOct.getAncestor(newLev);
         tmpNodes.push_back(newOct);
-      } else {
+      } else if (currLev == newLev) {
+        tmpNodes.push_back(currOct);
+      } else  {
         currOct.addChildren(tmpNodes, newLev - currLev);
       }
     }
-    
-    par::removeDuplicates<ot::TreeNode>(tmpNodes,false,MPI_COMM_WORLD);	
+
+    par::removeDuplicates<ot::TreeNode>(tmpNodes,false,MPI_COMM_WORLD);
     std::swap(linOct, tmpNodes);
     tmpNodes.clear();
     par::partitionW<ot::TreeNode>(linOct, NULL,MPI_COMM_WORLD);
