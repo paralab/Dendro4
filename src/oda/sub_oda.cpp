@@ -36,9 +36,10 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   m_uip_DA2sub_ElemMap.resize(m_da->getGhostedElementSize(), 0);
 
   m_ucpSkipNodeList.clear();
-  m_ucpSkipNodeList.resize(m_da->getGhostedNodeSize(), 1);
-  
-  m_uip_DA2sub_NodeMap.resize(m_da->getGhostedNodeSize(), 0);
+  // m_ucpSkipNodeList.resize(m_da->getGhostedNodeSize(), 1);
+  m_ucpSkipNodeList.resize(m_da->getLocalBufferSize(), 1);
+
+  m_uip_DA2sub_NodeMap.resize(m_da->getLocalBufferSize(), 0);
 
   std::cout << "[subDA::DEBUG] buffer size: " << m_ucpSkipNodeList.size() << ", " << m_da->getLocalBufferSize() << std::endl;
 

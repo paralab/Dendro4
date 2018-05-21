@@ -79,10 +79,10 @@ int main(int argc, char ** argv ) {
   
   // function2Octree(fx, nodes, 8, false, MPI_COMM_WORLD);
 
-  ot::DA *main_da =  ot::function_to_DA(fx_refine, 4, 10, gsz, MPI_COMM_WORLD);
-  ot::subDA *da =  new ot::subDA(main_da, fx_retain, gsz);
-
+  ot::DA *main_da =  ot::function_to_DA(fx_refine, 4, 7, gsz, MPI_COMM_WORLD);
   std::cout << rank << ": finished building DA" << std::endl ;
+  ot::subDA *da =  new ot::subDA(main_da, fx_retain, gsz);
+  std::cout << rank << ": finished building subDA" << std::endl ;
   
   PetscScalar zero = 1.0, nrm;
   Vec v;
