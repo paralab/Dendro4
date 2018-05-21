@@ -538,8 +538,8 @@ int subDA::vecRestoreBuffer(Vec in, PetscScalar* out, bool isElemental, bool isG
       } else {
         // nodal non ghosted ...
         for (unsigned int i = m_da->getIdxElementBegin(); i < m_da->getIdxElementEnd(); i++) {
-          unsigned int di = m_uip_sub2DA_NodeMap[i];
-          if ( ! (m_da->getLevel(di) & ot::TreeNode::NODE ) || m_ucpSkipNodeList[i] ) {
+          // unsigned int di = m_uip_sub2DA_NodeMap[i];
+          if ( ! (m_da->getLevel(i) & ot::TreeNode::NODE ) || m_ucpSkipNodeList[i] ) {
             continue;
           }
           for (unsigned int j=0; j<dof; j++) {
@@ -549,9 +549,9 @@ int subDA::vecRestoreBuffer(Vec in, PetscScalar* out, bool isElemental, bool isG
         }//end for i
         for (unsigned int i = m_da->getIdxElementEnd(); i < m_da->getIdxPostGhostBegin(); i++) {
           // add the remaining boundary nodes ...
-          unsigned int di = m_uip_sub2DA_NodeMap[i];
-          if ( ! ( (m_da->getLevel(di) & ot::TreeNode::NODE ) &&
-              (m_da->getLevel(di) & ot::TreeNode::BOUNDARY ) ) || m_ucpSkipNodeList[i] ) {
+          // unsigned int di = m_uip_sub2DA_NodeMap[i];
+          if ( ! ( (m_da->getLevel(i) & ot::TreeNode::NODE ) &&
+              (m_da->getLevel(i) & ot::TreeNode::BOUNDARY ) ) || m_ucpSkipNodeList[i] ) {
             continue;
           } 
           for (unsigned int j=0; j<dof; j++) {
