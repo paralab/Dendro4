@@ -88,8 +88,16 @@ int main(int argc, char ** argv ) {
   Vec v;
   std::cout << rank << ": creating vector" << std::endl;
   da->createVector(v, false, false, DOF);
+  std::cout << rank << ": created vector" << std::endl;
+
 
   VecSet(v, zero);
+  std::cout << rank << ": set vector to 0" << std::endl;
+
+  // try and access the buffer
+  PetscScalar* buff;
+  da->vecGetBuffer(v, buff, false, false, false, DOF);
+  da->vecRestoreBuffer(v, buff, false, false, false, DOF);
   
   std::cout << rank << ": saving vtk" << std::endl;
   saveNodalVecAsVTK(da, v, gsz, "fnViz" );

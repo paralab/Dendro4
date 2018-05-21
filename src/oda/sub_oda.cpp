@@ -385,6 +385,8 @@ int subDA::vecGetBuffer(Vec in, PetscScalar* &out, bool isElemental,
     }
   }
 
+  std::cout << "subDA:: vecGetBuffer  local size: " << m_uiLocalBufferSize << std::endl;
+
   unsigned int vecCnt=0;
   // Now we can populate the out buffer ... and that needs a loop through the
   // elements ...
@@ -416,9 +418,10 @@ int subDA::vecGetBuffer(Vec in, PetscScalar* &out, bool isElemental,
         vecCnt++;
       }//end for i
     } else {
+      std::cout << "subDA:: vecGetBuffer  local size: " << m_uiLocalBufferSize << std::endl;
       for (unsigned int i = m_da->getIdxElementBegin(); i < m_da->getIdxElementEnd(); i++) {
-        unsigned int di = m_uip_sub2DA_NodeMap[i];
-        if ( ! (m_da->getLevel(di) & ot::TreeNode::NODE ) || m_ucpSkipNodeList[i] ) {
+        // unsigned int di = m_uip_sub2DA_NodeMap[i];
+        if ( ! (m_da->getLevel(i) & ot::TreeNode::NODE ) || m_ucpSkipNodeList[i] ) {
           continue;
         }
         for (unsigned int j=0; j<dof; j++) {
@@ -428,9 +431,9 @@ int subDA::vecGetBuffer(Vec in, PetscScalar* &out, bool isElemental,
       }//end for i
       for (unsigned int i = m_da->getIdxElementEnd(); i < m_da->getIdxPostGhostBegin(); i++) {
         // add the remaining boundary nodes ...
-        unsigned int di = m_uip_sub2DA_NodeMap[i];
-        if ( ! ( (m_da->getLevel(di) & ot::TreeNode::NODE ) &&
-              (m_da->getLevel(di) & ot::TreeNode::BOUNDARY ) ) || m_ucpSkipNodeList[i] ) {
+        // unsigned int di = m_uip_sub2DA_NodeMap[i];
+        if ( ! ( (m_da->getLevel(i) & ot::TreeNode::NODE ) &&
+              (m_da->getLevel(i) & ot::TreeNode::BOUNDARY ) ) || m_ucpSkipNodeList[i] ) {
           continue;
         }
         for (unsigned int j=0; j<dof; j++) {
