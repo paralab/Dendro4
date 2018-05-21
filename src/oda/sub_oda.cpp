@@ -30,10 +30,12 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
 
   unsigned int indices[8];
 
+  unsigned int localElemSize = m_da->getGhostedElementSize() + m_da->getBoundaryNodeSize();
+
   // now process the DA to skip interior elements
   m_ucpSkipList.clear();
-  m_ucpSkipList.resize(m_da->getGhostedElementSize(), 0);
-  m_uip_DA2sub_ElemMap.resize(m_da->getGhostedElementSize(), 0);
+  m_ucpSkipList.resize(localElemSize, 0);
+  m_uip_DA2sub_ElemMap.resize(localElemSize, 0);
 
   m_ucpSkipNodeList.clear();
   // m_ucpSkipNodeList.resize(m_da->getGhostedNodeSize(), 1);
@@ -119,7 +121,9 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
       m_uip_DA2sub_ElemMap[i] = j++;
     }
   }
+  // std::cout << "subDA::subDA " << m_ucpSkipList.size() << ", " << postG_beg << std::endl;
   for (unsigned int i=elem_beg; i<postG_beg; ++i) {
+    assert (i < m_ucpSkipList.size());
     if (m_ucpSkipList[i] == 0) {
       m_uiElementSize++;
       m_uip_DA2sub_ElemMap[i] = j++;
