@@ -1004,9 +1004,8 @@ namespace ot {
           allocated by the user prior to calling.
           @return Error code.
           */ 
-        int getNodeIndices(unsigned int* nodes) {
-          return m_da->getNodeIndices(nodes);
-        }
+        int getNodeIndices(unsigned int* nodes);
+        
         //@}
 
         /**

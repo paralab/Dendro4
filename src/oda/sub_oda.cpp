@@ -666,5 +666,16 @@ int subDA::vecRestoreBuffer(Vec in, PetscScalar* out, bool isElemental, bool isG
         return errCode;
     }  // end function
 
+  int subDA::getNodeIndices(unsigned int* nodes) {
+    int rval = m_da->getNodeIndices(nodes);
+
+    unsigned int idx;
+    for (unsigned int i=0; i<8; ++i) {
+      idx = nodes[i];
+      nodes[i] = m_uip_DA2sub_NodeMap[idx];
+    }
+
+    return rval;
+  }
 
 }; // namespace ot
