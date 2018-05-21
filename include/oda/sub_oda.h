@@ -240,7 +240,7 @@ namespace ot {
           @see computedLocalToGlobal
           */
         DendroIntL* getLocalToGlobalMap() {
-          return m_da->getLocalToGlobalMap();
+          return m_dilpLocalToGlobal;
         }
 
         /**
@@ -250,7 +250,7 @@ namespace ot {
           @see computedLocalToGlobalElems
           */
         DendroIntL* getLocalToGlobalElemsMap() {
-          return m_da->getLocalToGlobalElemsMap(); 
+          return m_dilpLocalToGlobalElems;
         }
 
         /**
