@@ -11,6 +11,9 @@ namespace ot {
 subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain, double* gSize) {
   std::cout << "subDA::Constructor - Starting " << std::endl;
   m_da = da;
+  m_dilpLocalToGlobal = NULL;
+  m_bComputedLocalToGlobal = false;
+
   unsigned int lev;
   
   unsigned maxDepth = m_da->getMaxDepth() - 1;

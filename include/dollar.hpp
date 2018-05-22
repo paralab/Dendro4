@@ -18,7 +18,7 @@ int main() { $ // <-- put a dollar after every curly brace to determinate cpu co
 #pragma once
 
 #define DOLLAR_VERSION "1.2.0" /* (2016/10/03) Add chrome://tracing profiler support; Project renamed;
-#define DOLLAR_VERSION "1.1.0" /* (2016/05/03) New tree view and CPU meters (ofxProfiler style); Smaller implementation;
+#define DOLLAR_VERSION "1.1.0" // (2016/05/03) New tree view and CPU meters (ofxProfiler style); Smaller implementation;
 #define DOLLAR_VERSION "1.0.1" // (2015/11/15) Fix win32 `max()` macro conflict
 #define DOLLAR_VERSION "1.0.0" // (2015/08/02) Macro renamed
 #define DOLLAR_VERSION "0.0.0" // (2015/03/13) Initial commit */
