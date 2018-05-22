@@ -484,6 +484,10 @@ namespace ot {
 
         //@}
 
+        std::vector<ot::TreeNode> getMinAllBlocks() {
+          return m_da->getMinAllBlocks();
+        }
+
         /**
           @name Array access functions 
           */

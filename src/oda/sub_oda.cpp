@@ -9,6 +9,7 @@ namespace ot {
 
 //***************Constructor*****************//
 subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain, double* gSize) {
+  std::cout << "subDA::Constructor - Starting " << std::endl;
   m_da = da;
   unsigned int lev;
   
@@ -153,11 +154,23 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   m_uiPreGhostNodeSize = 0;
   m_uiPostGhostNodeSize = 0;
 
+  m_uiPreGhostBoundaryNodeSize=0;
+  m_uiBoundaryNodeSize=0;
+
   for (unsigned int i=0; i<elem_beg; ++i) {
-    if (m_ucpSkipNodeList[i] == 0) m_uiPreGhostNodeSize++;
+    if (m_ucpSkipNodeList[i] == 0) {
+      m_uiPreGhostNodeSize++;
+      if ( (m_da->getLevel(i) & ot::TreeNode::NODE ) && (m_da->getLevel(i) & ot::TreeNode::BOUNDARY ) )
+        m_uiPreGhostBoundaryNodeSize++;
+    }
   }
   for (unsigned int i=elem_beg; i<postG_beg; ++i) {
-    if (m_ucpSkipNodeList[i] == 0) m_uiNodeSize++;
+    if (m_ucpSkipNodeList[i] == 0) {
+      m_uiNodeSize++;
+      if ( (m_da->getLevel(i) & ot::TreeNode::NODE ) && (m_da->getLevel(i) & ot::TreeNode::BOUNDARY ) )
+        m_uiBoundaryNodeSize++;
+    }
+
   }
   for (unsigned int i=postG_beg; i<m_ucpSkipNodeList.size(); ++i) {
     if (m_ucpSkipNodeList[i] == 0) m_uiPostGhostNodeSize++;
@@ -194,6 +207,8 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
     }
   }
 
+  std::cout << "subDA::Constructor - All done." << std::endl; 
+
   // old one
   // for (unsigned int i=0; i<m_da->getScatterMapSize(); ++i) {
   //   unsigned int idx = m_da->getScatterMapEntry(i);
@@ -204,6 +219,10 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   // } 
  
 } // subDA constructor.
+
+subDA::~subDA() {
+
+}
 
 int subDA::createVector(Vec &arr, bool isElemental, bool isGhosted, unsigned int dof) {
     // first determine the length of the vector ...
@@ -222,7 +241,8 @@ int subDA::createVector(Vec &arr, bool isElemental, bool isGhosted, unsigned int
     }
     // now for dof ...
     sz *= dof;
-    
+
+    std::cout << "subDA::createVector size: " << sz << std::endl;    
 
     MPI_Comm comm = m_da->getComm();
     int npes = m_da->getNpesAll();
