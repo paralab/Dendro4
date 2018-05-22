@@ -129,7 +129,9 @@ namespace par {
               MPI_Status statusWait;
               MPI_Wait(&request, &statusWait);
             }
-          }//end if nodes not empty	
+          }//end if nodes not empty
+
+          MPI_Comm_free(&new_comm);
 
           bool anyProcFailed;
           par::Mpi_Allreduce<bool>(&failedParCheck, &anyProcFailed, 1,
@@ -182,7 +184,9 @@ namespace par {
               MPI_Status statusWait;
               MPI_Wait(&request, &statusWait);
             }
-          }//end if nodes not empty	
+          }//end if nodes not empty
+
+          MPI_Comm_free(&new_comm);
 
           bool anyProcFailed;
           par::Mpi_Allreduce<bool>(&failedParCheck, &anyProcFailed, 1,
