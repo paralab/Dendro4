@@ -137,7 +137,7 @@ namespace ot {
           //nodal and non-ghosted
           for (unsigned int i = m_da->getIdxElementBegin(); i < m_da->getIdxElementEnd(); i++) {
             // unsigned int di = m_uip_sub2DA_NodeMap[i];
-            if ( ! (m_da->getLevel(i) & ot::TreeNode::NODE ) || m_ucpSkipNodeList[i] ) {
+            if ( ! (m_da->getFlag(i) & ot::TreeNode::NODE ) || m_ucpSkipNodeList[i] ) {
               continue;
             }
             for (unsigned int j=0; j<dof; j++) {
@@ -148,8 +148,8 @@ namespace ot {
           for (unsigned int i = m_da->getIdxElementEnd(); i < m_da->getIdxPostGhostBegin(); i++) {
             // add the remaining boundary nodes ...
             // unsigned int di = m_uip_sub2DA_NodeMap[i];
-            if ( ! ( (m_da->getLevel(i) & ot::TreeNode::NODE ) &&
-              (m_da->getLevel(i) & ot::TreeNode::BOUNDARY ) ) || m_ucpSkipNodeList[i] ) {
+            if ( ! ( (m_da->getFlag(i) & ot::TreeNode::NODE ) &&
+              (m_da->getFlag(i) & ot::TreeNode::BOUNDARY ) ) || m_ucpSkipNodeList[i] ) {
               continue;
             }
             for (unsigned int j=0; j<dof; j++) {
@@ -237,7 +237,7 @@ namespace ot {
           // nodal non ghosted ...
           for (unsigned int i = m_da->getIdxElementBegin(); i < m_da->getIdxElementEnd(); i++) {
             // unsigned int di = m_uip_sub2DA_NodeMap[i];
-            if ( ! (m_da->getLevel(i) & ot::TreeNode::NODE ) || m_ucpSkipNodeList[i] ) {
+            if ( ! (m_da->getFlag(i) & ot::TreeNode::NODE ) || m_ucpSkipNodeList[i] ) {
               continue;
             }
             for (unsigned int j=0; j<dof; j++) {
@@ -248,8 +248,8 @@ namespace ot {
           for (unsigned int i = m_da->getIdxElementEnd(); i < m_da->getIdxPostGhostBegin(); i++) {
             // add the remaining boundary nodes ...
             // unsigned int di = m_uip_sub2DA_NodeMap[i];
-            if ( ! ( (m_da->getLevel(i) & ot::TreeNode::NODE ) &&
-              (m_da->getLevel(i) & ot::TreeNode::BOUNDARY ) ) ||   m_ucpSkipNodeList[i] ) {
+            if ( ! ( (m_da->getFlag(i) & ot::TreeNode::NODE ) &&
+              (m_da->getFlag(i) & ot::TreeNode::BOUNDARY ) ) ||   m_ucpSkipNodeList[i] ) {
               continue;
             } 
             for (unsigned int j=0; j<dof; j++) {
