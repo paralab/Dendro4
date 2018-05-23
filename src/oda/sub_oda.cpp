@@ -159,16 +159,18 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
 
   for (unsigned int i=0; i<elem_beg; ++i) {
     if (m_ucpSkipNodeList[i] == 0) {
-      m_uiPreGhostNodeSize++;
       if ( (m_da->getLevel(i) & ot::TreeNode::NODE ) && (m_da->getLevel(i) & ot::TreeNode::BOUNDARY ) )
         m_uiPreGhostBoundaryNodeSize++;
+      else
+        m_uiPreGhostNodeSize++;
     }
   }
   for (unsigned int i=elem_beg; i<postG_beg; ++i) {
     if (m_ucpSkipNodeList[i] == 0) {
-      m_uiNodeSize++;
       if ( (m_da->getLevel(i) & ot::TreeNode::NODE ) && (m_da->getLevel(i) & ot::TreeNode::BOUNDARY ) )
         m_uiBoundaryNodeSize++;
+      else
+        m_uiNodeSize++;
     }
 
   }
