@@ -2312,7 +2312,7 @@ namespace ot {
           }
 
           hx = xFac * ( 1 << (maxDepth - elem.getLevel()));
-          hy = xFac * ( 1 << (maxDepth - elem.getLevel()));
+          hy = yFac * ( 1 << (maxDepth - elem.getLevel()));
           hz = zFac * ( 1 << (maxDepth - elem.getLevel()));
 
           // check and split
@@ -2327,7 +2327,7 @@ namespace ot {
           dist[4] = fx_refine(pt.x(), pt.y(), pt.z()+hz);
           dist[5] = fx_refine(pt.x()+hx, pt.y(), pt.z()+hz);
           dist[6] = fx_refine(pt.x(), pt.y()+hy, pt.z()+hz);
-          dist[7] = fx_refine(pt.x()+hy, pt.y()+hy, pt.z() +hz);
+          dist[7] = fx_refine(pt.x()+hx, pt.y()+hy, pt.z() +hz);
 
           if (std::none_of(dist.begin(), dist.end(), inside)) {
             // outside, retain but do not refine
@@ -2382,7 +2382,7 @@ namespace ot {
         }
 
         hx = xFac * ( 1 << (maxDepth - elem.getLevel()));
-        hy = xFac * ( 1 << (maxDepth - elem.getLevel()));
+        hy = yFac * ( 1 << (maxDepth - elem.getLevel()));
         hz = zFac * ( 1 << (maxDepth - elem.getLevel()));
         
         // check and split
@@ -2397,7 +2397,7 @@ namespace ot {
         dist[4] = fx_refine(pt.x(), pt.y(), pt.z()+hz);
         dist[5] = fx_refine(pt.x()+hx, pt.y(), pt.z()+hz);
         dist[6] = fx_refine(pt.x(), pt.y()+hy, pt.z()+hz);
-        dist[7] = fx_refine(pt.x()+hy, pt.y()+hy, pt.z() +hz);
+        dist[7] = fx_refine(pt.x()+hx, pt.y()+hy, pt.z() +hz);
         
         if ( std::none_of(dist.begin(), dist.end(), inside )) {
           // outside, retain but do not refine 
@@ -2539,7 +2539,7 @@ namespace ot {
           }
 
           hx = xFac * ( 1 << (maxDepth - elem.getLevel()));
-          hy = xFac * ( 1 << (maxDepth - elem.getLevel()));
+          hy = yFac * ( 1 << (maxDepth - elem.getLevel()));
           hz = zFac * ( 1 << (maxDepth - elem.getLevel()));
 
           // check and split
@@ -2554,7 +2554,7 @@ namespace ot {
           dist[4] = fx_refine(pt.x(), pt.y(), pt.z()+hz);
           dist[5] = fx_refine(pt.x()+hx, pt.y(), pt.z()+hz);
           dist[6] = fx_refine(pt.x(), pt.y()+hy, pt.z()+hz);
-          dist[7] = fx_refine(pt.x()+hy, pt.y()+hy, pt.z() +hz);
+          dist[7] = fx_refine(pt.x()+hx, pt.y()+hy, pt.z() +hz);
 
           if (std::none_of(dist.begin(), dist.end(), inside)) {
             // false, don't refine
@@ -2606,7 +2606,7 @@ namespace ot {
         }
 
         hx = xFac * ( 1 << (maxDepth - elem.getLevel()));
-        hy = xFac * ( 1 << (maxDepth - elem.getLevel()));
+        hy = yFac * ( 1 << (maxDepth - elem.getLevel()));
         hz = zFac * ( 1 << (maxDepth - elem.getLevel()));
         
         // check and split
@@ -2621,7 +2621,7 @@ namespace ot {
         dist[4] = fx_refine(pt.x(), pt.y(), pt.z()+hz);
         dist[5] = fx_refine(pt.x()+hx, pt.y(), pt.z()+hz);
         dist[6] = fx_refine(pt.x(), pt.y()+hy, pt.z()+hz);
-        dist[7] = fx_refine(pt.x()+hy, pt.y()+hy, pt.z() +hz);
+        dist[7] = fx_refine(pt.x()+hx, pt.y()+hy, pt.z() +hz);
         
         if ( std::none_of(dist.begin(), dist.end(), inside )) {
           // outside, retain but do not refine 

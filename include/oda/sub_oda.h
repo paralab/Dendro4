@@ -170,7 +170,7 @@ namespace ot {
           @see getCurrentOffset() 
           @see iAmActive()
           */
-        Point getGhostedOffset() { m_da->getGhostedOffset(); }
+        Point getGhostedOffset() { return m_da->getGhostedOffset(); }
 
         /**
           @author Hari Sundar
@@ -613,7 +613,7 @@ namespace ot {
           This function should not be called more than once for a given mesh.
           */
         int computeLocalToGlobalElemMappings() {
-          m_da->computeLocalToGlobalElemMappings();
+          return m_da->computeLocalToGlobalElemMappings();
         }
 
         /**
