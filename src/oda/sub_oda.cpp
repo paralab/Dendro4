@@ -204,8 +204,8 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
       unsigned int idx = m_da->getScatterMapEntry(k);
       if ( m_ucpSkipNodeList[idx] == 0 ) {
         m_uipScatterMap.push_back(m_uip_DA2sub_NodeMap[idx]);
+        cnt++;
       }
-      cnt++;
       k++;
     }
     if (cnt) {
@@ -218,7 +218,8 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
 
   std::cout << "subDA::constructor scatterMap: " << m_uipScatterMap.size() << std::endl;
   std::cout << "subDA::constructor  sendProcs, Cnts, offsets " << m_uipSendProcs.size() << ", " << m_uipSendCounts.size() << ", " << m_uipSendOffsets.size() << std::endl;
-  
+  std::cout << "subDA::constructor  sendProcs, Cnts, offsets " << m_uipSendProcs[0] << ", " << m_uipSendCounts[0] << ", " << m_uipSendOffsets[0] << std::endl;
+
   // compute recvProcs/recvCnts
   int* sbuff = new int[npes]; 
   int* rbuff = new int[npes]; 
