@@ -101,12 +101,18 @@ int main(int argc, char ** argv ) {
   
   std::cout << rank << ": saving vtk" << std::endl;
   saveNodalVecAsVTK(da, v, gsz, "fnViz" );
-  
+  std::cout << rank << ": done saving vtk ===" << std::endl;
+
   // clean up
   VecDestroy(&v);
   
+  std::cout << rank << " === destroyed Vec ===" << std::endl;
+
   // wrap up
   ot::DA_Finalize();
+
+  std::cout << rank << " === OT finalize ===" << std::endl;
+
   PetscFinalize();
 }//end main
 

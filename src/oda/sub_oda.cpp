@@ -14,6 +14,9 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   m_dilpLocalToGlobal = NULL;
   m_bComputedLocalToGlobal = false;
 
+  MPI_Comm comm = m_da->getComm();
+  int npes = m_da->getNpesAll();
+
   unsigned int lev;
   
   unsigned maxDepth = m_da->getMaxDepth() - 1;
@@ -195,7 +198,7 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   // new
   unsigned int k=0; 
   unsigned int offset=0;
-  for (unsigned int p=0; m_da->getSendProcSize(); ++p) {
+  for (unsigned int p=0; p<m_da->getSendProcSize(); ++p) {
     unsigned int cnt=0;
     for (unsigned int i=0; i<m_da->getSendCountsEntry(p); ++i) {
       unsigned int idx = m_da->getScatterMapEntry(k);
@@ -212,6 +215,36 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
       offset += cnt;
     }
   }
+
+  std::cout << "subDA::constructor scatterMap: " << m_uipScatterMap.size() << std::endl;
+  std::cout << "subDA::constructor  sendProcs, Cnts, offsets " << m_uipSendProcs.size() << ", " << m_uipSendCounts.size() << ", " << m_uipSendOffsets.size() << std::endl;
+  
+  // compute recvProcs/recvCnts
+  int* sbuff = new int[npes]; 
+  int* rbuff = new int[npes]; 
+  for (unsigned int i=0; i<npes; ++i) {
+    sbuff[i] = 0;
+  }
+
+  for (unsigned int i=0; i<m_uipSendProcs.size(); ++i) {
+    sbuff[m_uipSendProcs[i]] = m_uipSendCounts[i];
+  }
+
+  par::Mpi_Alltoall(sbuff, rbuff, 1, comm);
+
+  offset=0;
+  for (unsigned int i=0; i<npes; ++i) {
+    if (rbuff[i]) {
+      m_uipRecvProcs.push_back(i);
+      m_uipRecvCounts.push_back(rbuff[i]);
+      m_uipRecvOffsets.push_back(offset);
+      offset += rbuff[i];
+    }  
+  }
+
+  delete [] sbuff;
+  delete [] rbuff;
+  // compute offsets 
 
   std::cout << "subDA::Constructor - All done." << std::endl; 
 
@@ -415,7 +448,7 @@ int subDA::vecGetBuffer(Vec in, PetscScalar* &out, bool isElemental,
     }
   }
 
-  std::cout << "subDA:: vecGetBuffer  local size: " << m_uiLocalBufferSize << std::endl;
+  std::cout << rank << ": subDA:: vecGetBuffer  local size: " << m_uiLocalBufferSize << std::endl;
 
   unsigned int vecCnt=0;
   // Now we can populate the out buffer ... and that needs a loop through the
@@ -448,7 +481,6 @@ int subDA::vecGetBuffer(Vec in, PetscScalar* &out, bool isElemental,
         vecCnt++;
       }//end for i
     } else {
-      std::cout << "subDA:: vecGetBuffer  local size: " << m_uiLocalBufferSize << std::endl;
       for (unsigned int i = m_da->getIdxElementBegin(); i < m_da->getIdxElementEnd(); i++) {
         // unsigned int di = m_uip_sub2DA_NodeMap[i];
         if ( ! (m_da->getFlag(i) & ot::TreeNode::NODE ) || m_ucpSkipNodeList[i] ) {
@@ -481,7 +513,8 @@ int subDA::vecGetBuffer(Vec in, PetscScalar* &out, bool isElemental,
       VecRestoreArray(in, &array);
     }
   }
-    
+
+  std::cout << rank << ": subDA:: vecGetBuffer  done " << std::endl;  
   return 0;
 } // vecGetBuffer
 
@@ -490,6 +523,13 @@ int subDA::vecRestoreBuffer(Vec in, PetscScalar* out, bool isElemental, bool isG
     // by the other params ...
     unsigned int sz = 0;
     
+    int rank, npes;
+    MPI_Comm comm = m_da->getComm();
+    rank = m_da->getRankAll();
+    npes = m_da->getNpesAll();
+
+    std::cout << rank << ": subDA:: vecRestoreBuffer  enter " << std::endl;  
+
     if (isElemental) {
       sz = m_uiElementSize;
       if (isGhosted) {
@@ -603,6 +643,8 @@ int subDA::vecRestoreBuffer(Vec in, PetscScalar* out, bool isElemental, bool isG
         out = NULL;
       }
     }
+
+    std::cout << rank << ": subDA:: vecRestoreBuffer  done " << std::endl;  
     return 0;
   } // vecRestoreBuffer
 

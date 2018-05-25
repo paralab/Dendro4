@@ -13,7 +13,7 @@ namespace ot {
   template<ot::DA_FLAGS::loopType type>
     inline unsigned int subDA::next() {
       unsigned int current = m_da->next<type>();
-      while ( m_ucpSkipList[current] ) {
+      while ( ( current < m_ucpSkipList.size() ) && m_ucpSkipList[current] ) {
         // std::cout << "Skipping" << std::endl;
         current = m_da->next<type>();
       } 
