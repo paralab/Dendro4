@@ -9,13 +9,14 @@ namespace ot {
 
 //***************Constructor*****************//
 subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain, double* gSize) {
-  std::cout << "subDA::Constructor - Starting " << std::endl;
+  // std::cout << "subDA::Constructor - Starting " << std::endl;
   m_da = da;
   m_dilpLocalToGlobal = NULL;
   m_bComputedLocalToGlobal = false;
 
   MPI_Comm comm = m_da->getComm();
   int npes = m_da->getNpesAll();
+  int rank = m_da->getRankAll();
 
   unsigned int lev;
   
@@ -45,16 +46,8 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   m_uip_DA2sub_ElemMap.resize(localElemSize, 0);
 
   m_ucpSkipNodeList.clear();
-  // m_ucpSkipNodeList.resize(m_da->getGhostedNodeSize(), 1);
   m_ucpSkipNodeList.resize(m_da->getLocalBufferSize(), 1);
-
   m_uip_DA2sub_NodeMap.resize(m_da->getLocalBufferSize(), 0);
-
-  std::cout << "[subDA::DEBUG] buffer size: " << m_ucpSkipNodeList.size() << ", " << m_da->getLocalBufferSize() << std::endl;
-
-  // m_uiNodeSize + m_uiBoundaryNodeSize + m_uiPreGhostNodeSize + m_uiPreGhostBoundaryNodeSize + m_uiPostGhostNodeSize
-
-  // std::cout << "ghosted node Size: " << m_ucpSkipNodeList.size() << std::endl;
       
   for ( m_da->init<ot::DA_FLAGS::ALL>(); 
         m_da->curr() < m_da->end<ot::DA_FLAGS::ALL>(); 
@@ -86,6 +79,10 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
           std::cout << std::endl;
           */
 
+          if (da->curr() > localElemSize) {
+            std::cout << rank << ": Curr > elemSize " << da->curr() << " > " <<  localElemSize << std::endl;
+          }
+
           if ( std::all_of( dist.begin(), dist.end(), inside ) ) {
             // element to skip.
             // std::cout << "subDA: skip element" << std::endl;
@@ -97,13 +94,14 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
             for(int k = 0; k < 8; k++) {
               if ( indices[k] < m_ucpSkipNodeList.size() )
                 m_ucpSkipNodeList[indices[k]] = 0;
-              // else
-              //  std::cout << "skipList node index out of bound: " << indices[k] << std::endl;
+              else
+                std::cout << "skipList node index out of bound: " << indices[k] << " > " << m_ucpSkipNodeList.size() <<  std::endl;
             }
           }
 
         } // for 
    // std::cout << std::endl;
+  
   
   // compute the mapping ...
   unsigned int postG_beg = da->getIdxPostGhostBegin();
@@ -121,6 +119,9 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   m_uiPreGhostElementSize = 0;
   m_uiLocalBufferSize = 0;
 
+
+  // std::cout << rank << ": elem Sizes " << elem_beg << ", " << postG_beg << ", " << m_ucpSkipList.size() << std::endl;
+
   unsigned int j=0;
   for (unsigned int i=0; i<elem_beg; ++i) {
     if (m_ucpSkipList[i] == 0) {
@@ -128,17 +129,25 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
       m_uip_DA2sub_ElemMap[i] = j++;
     }
   }
-  // std::cout << "subDA::subDA " << m_ucpSkipList.size() << ", " << postG_beg << std::endl;
-  for (unsigned int i=elem_beg; i<postG_beg; ++i) {
-    assert (i < m_ucpSkipList.size());
-    if (m_ucpSkipList[i] == 0) {
-      m_uiElementSize++;
-      m_uip_DA2sub_ElemMap[i] = j++;
+  
+  if ( postG_beg < m_ucpSkipList.size()) {
+    for (unsigned int i=elem_beg; i<postG_beg; ++i) {
+      if (m_ucpSkipList[i] == 0) {
+        m_uiElementSize++;
+        m_uip_DA2sub_ElemMap[i] = j++;
+      }
     }
-  }
-  for (unsigned int i=postG_beg; i<m_ucpSkipList.size(); ++i) {
-    if (m_ucpSkipList[i] == 0) {
-      m_uip_DA2sub_ElemMap[i] = j++;
+    for (unsigned int i=postG_beg; i<m_ucpSkipList.size(); ++i) {
+      if (m_ucpSkipList[i] == 0) {
+        m_uip_DA2sub_ElemMap[i] = j++;
+      }
+    }
+  } else {
+    for (unsigned int i=elem_beg; i<m_ucpSkipList.size(); ++i) {
+      if (m_ucpSkipList[i] == 0) {
+        m_uiElementSize++;
+        m_uip_DA2sub_ElemMap[i] = j++;
+      }
     }
   }
 
@@ -153,7 +162,7 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
     }
   }
 
-  std::cout << "[subDA::DEBUG] " << da->getRankAll() << ": ElementSize=" << m_uiElementSize << " , PreGhostElemSize=" << m_uiPreGhostElementSize << std::endl;
+  // std::cout << "[subDA::DEBUG] " << da->getRankAll() << ": ElementSize=" << m_uiElementSize << " , PreGhostElemSize=" << m_uiPreGhostElementSize << std::endl;
   
   // Nodal
   m_uiNodeSize = 0;
@@ -185,10 +194,10 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
     if (m_ucpSkipNodeList[i] == 0) m_uiPostGhostNodeSize++;
   }
 
-  std::cout << "[subDA::DEBUG] " << da->getRankAll() << ": NodeSizes  (" << m_uiPreGhostNodeSize << ") " << m_uiNodeSize << " (" << m_uiPostGhostNodeSize << ")" << std::endl;
+  // std::cout << "[subDA::DEBUG] " << rank << ": NodeSizes  (" << m_uiPreGhostNodeSize << ") " << m_uiNodeSize << " (" << m_uiPostGhostNodeSize << ")" << std::endl;
 
-  std::cout << "[subDA::DEBUG] " << da->getRankAll() << ": BoundaryNodeSizes  (" << m_uiPreGhostBoundaryNodeSize << ") " << m_uiBoundaryNodeSize << std::endl;
-
+  // std::cout << "[subDA::DEBUG] " << rank << ": BoundaryNodeSizes  (" << m_uiPreGhostBoundaryNodeSize << ") " << m_uiBoundaryNodeSize << std::endl;
+  
   // scatter map 
 
   m_uipScatterMap.clear();
@@ -216,11 +225,12 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
     }
   }
 
-  std::cout << "subDA::constructor scatterMap: " << m_uipScatterMap.size() << std::endl;
-  std::cout << "subDA::constructor  sendProcs, Cnts, offsets " << m_uipSendProcs.size() << ", " << m_uipSendCounts.size() << ", " << m_uipSendOffsets.size() << std::endl;
-  std::cout << "subDA::constructor  sendProcs, Cnts, offsets " << m_uipSendProcs[0] << ", " << m_uipSendCounts[0] << ", " << m_uipSendOffsets[0] << std::endl;
+  // std::cout << "subDA::constructor scatterMap: " << m_uipScatterMap.size() << std::endl;
+  // std::cout << "subDA::constructor  sendProcs, Cnts, offsets " << m_uipSendProcs.size() << ", " << m_uipSendCounts.size() << ", " << m_uipSendOffsets.size() << std::endl;
+  // std::cout << "subDA::constructor  sendProcs, Cnts, offsets " << m_uipSendProcs[0] << ", " << m_uipSendCounts[0] << ", " << m_uipSendOffsets[0] << std::endl;
 
   // compute recvProcs/recvCnts
+  
   int* sbuff = new int[npes]; 
   int* rbuff = new int[npes]; 
   for (unsigned int i=0; i<npes; ++i) {
@@ -245,9 +255,14 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
 
   delete [] sbuff;
   delete [] rbuff;
+
+  /*  ===
+
+  === */
+
   // compute offsets 
 
-  std::cout << "subDA::Constructor - All done." << std::endl; 
+  // std::cout << "subDA::Constructor - All done." << std::endl; 
 
   // old one
   // for (unsigned int i=0; i<m_da->getScatterMapSize(); ++i) {
@@ -282,7 +297,7 @@ int subDA::createVector(Vec &arr, bool isElemental, bool isGhosted, unsigned int
     // now for dof ...
     sz *= dof;
 
-    std::cout << "subDA::createVector size: " << sz << std::endl;    
+    // std::cout << "subDA::createVector size: " << sz << std::endl;    
 
     MPI_Comm comm = m_da->getComm();
     int npes = m_da->getNpesAll();
@@ -449,7 +464,7 @@ int subDA::vecGetBuffer(Vec in, PetscScalar* &out, bool isElemental,
     }
   }
 
-  std::cout << rank << ": subDA:: vecGetBuffer  local size: " << m_uiLocalBufferSize << std::endl;
+  // std::cout << rank << ": subDA:: vecGetBuffer  local size: " << m_uiLocalBufferSize << std::endl;
 
   unsigned int vecCnt=0;
   // Now we can populate the out buffer ... and that needs a loop through the
@@ -515,7 +530,7 @@ int subDA::vecGetBuffer(Vec in, PetscScalar* &out, bool isElemental,
     }
   }
 
-  std::cout << rank << ": subDA:: vecGetBuffer  done " << std::endl;  
+  // std::cout << rank << ": subDA:: vecGetBuffer  done " << std::endl;  
   return 0;
 } // vecGetBuffer
 
@@ -529,7 +544,7 @@ int subDA::vecRestoreBuffer(Vec in, PetscScalar* out, bool isElemental, bool isG
     rank = m_da->getRankAll();
     npes = m_da->getNpesAll();
 
-    std::cout << rank << ": subDA:: vecRestoreBuffer  enter " << std::endl;  
+    // std::cout << rank << ": subDA:: vecRestoreBuffer  enter " << std::endl;  
 
     if (isElemental) {
       sz = m_uiElementSize;
@@ -645,7 +660,7 @@ int subDA::vecRestoreBuffer(Vec in, PetscScalar* out, bool isElemental, bool isG
       }
     }
 
-    std::cout << rank << ": subDA:: vecRestoreBuffer  done " << std::endl;  
+    // std::cout << rank << ": subDA:: vecRestoreBuffer  done " << std::endl;  
     return 0;
   } // vecRestoreBuffer
 

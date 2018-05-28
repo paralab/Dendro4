@@ -62,8 +62,6 @@ int main(int argc, char ** argv ) {
   double r_s = 0.02;
   double ctr_s[3] = {0.5, 0.5, 0.2};
 
-
-  
   auto fx_refine = [ctr, r, yr, ctr_s, r_s](double x, double y, double z) -> double { 
     if ( (y < yr[0]) || (y > yr[1]) || (x < yr[0]) || (x > yr[1])  ) return -1.0;
     double d1 = sqrt((x-ctr[0])*(x-ctr[0]) + (z-ctr[2])*(z-ctr[2])) - r;
@@ -80,40 +78,43 @@ int main(int argc, char ** argv ) {
   // function2Octree(fx, nodes, 8, false, MPI_COMM_WORLD);
 
   ot::DA *main_da =  ot::function_to_DA(fx_refine, 4, 7, gsz, MPI_COMM_WORLD);
-  std::cout << rank << ": finished building DA" << std::endl ;
-  ot::subDA *da =  new ot::subDA(main_da, fx_retain, gsz);
-  std::cout << rank << ": finished building subDA" << std::endl ;
+  // std::cout << rank << ": finished building DA" << std::endl ;
   
+  ot::subDA *da =  new ot::subDA(main_da, fx_retain, gsz);
+  // std::cout << rank << ": finished building subDA" << std::endl ;
+
   PetscScalar zero = 1.0, nrm;
   Vec v;
-  std::cout << rank << ": creating vector" << std::endl;
+  // std::cout << rank << ": creating vector" << std::endl;
   da->createVector(v, false, false, DOF);
-  std::cout << rank << ": created vector" << std::endl;
+  // std::cout << rank << ": created vector" << std::endl;
 
 
   VecSet(v, zero);
-  std::cout << rank << ": set vector to 0" << std::endl;
+  // std::cout << rank << ": set vector to 0" << std::endl;
 
   // try and access the buffer
   PetscScalar* buff;
   da->vecGetBuffer(v, buff, false, false, false, DOF);
   da->vecRestoreBuffer(v, buff, false, false, false, DOF);
   
-  std::cout << rank << ": saving vtk" << std::endl;
+  // std::cout << rank << ": saving vtk" << std::endl;
   saveNodalVecAsVTK(da, v, gsz, "fnViz" );
-  std::cout << rank << ": done saving vtk ===" << std::endl;
+  // std::cout << rank << ": done saving vtk ===" << std::endl;
 
   // clean up
   VecDestroy(&v);
   
-  std::cout << rank << " === destroyed Vec ===" << std::endl;
+  // std::cout << rank << " === destroyed Vec ===" << std::endl;
 
   // wrap up
   ot::DA_Finalize();
 
-  std::cout << rank << " === OT finalize ===" << std::endl;
+  // std::cout << rank << " === OT finalize ===" << std::endl;
 
   PetscFinalize();
+
+  // std::cout << "<== All done ==>" << std::endl;
 }//end main
 
 void saveNodalVecAsVTK(ot::DA* da, Vec vec, double* gSize, const char *file_prefix) {
@@ -180,6 +181,14 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, double* gSize, const char *file_pref
     double zFac = gSize[2]/((double)(1<<(maxD-1)));
     double xx, yy, zz;
     unsigned int idx[8];
+
+    std::cout << "Printing initials." << std::endl;
+    da->init<ot::DA_FLAGS::ALL>();
+    std::cout << rank << ": init<All> " << da->curr() << std::endl;
+    da->init<ot::DA_FLAGS::INDEPENDENT>();
+    std::cout << rank << ": init<Indep> " << da->curr() << std::endl;
+    da->init<ot::DA_FLAGS::W_DEPENDENT>();
+    std::cout << rank << ": init<W_Dep> " << da->curr() << std::endl;
 
     for ( da->init<ot::DA_FLAGS::INDEPENDENT>(); 
          da->curr() < da->end<ot::DA_FLAGS::INDEPENDENT>(); 
@@ -351,6 +360,20 @@ void saveNodalVecAsVTK(ot::subDA* da, Vec vec, double* gSize, const char *file_p
     double zFac = gSize[2]/((double)(1<<(maxD-1)));
     double xx, yy, zz;
     unsigned int idx[8];
+
+    DendroIntL* l2g = da->getLocalToGlobalMap();
+         
+         /*
+    std::cout << "=== Printing initials ===" << std::endl;
+    da->init<ot::DA_FLAGS::ALL>();
+    std::cout << rank << ": init<All> " << da->curr() << std::endl; // ", " << l2g[da->curr()] << 
+    da->init<ot::DA_FLAGS::INDEPENDENT>();
+    std::cout << rank << ": init<Indep> " << da->curr() << std::endl;
+    da->init<ot::DA_FLAGS::W_DEPENDENT>();
+    std::cout << rank << ": init<W_Dep> " << da->curr() << std::endl;
+    da->init<ot::DA_FLAGS::WRITABLE>();
+    std::cout << rank << ": init<Writ> " << da->curr() << std::endl;
+    */
 
     for ( da->init<ot::DA_FLAGS::INDEPENDENT>(); 
          da->curr() < da->end<ot::DA_FLAGS::INDEPENDENT>(); 
