@@ -1454,6 +1454,13 @@ namespace ot {
         return m_uipSendCounts[i];
       }
 
+      unsigned int getPreGhostNodeSize() {
+        return m_uiPreGhostNodeSize;
+      }
+
+      unsigned int getPostGhostNodeSize() {
+        return m_uiPostGhostNodeSize;
+      }
 
       protected:
 

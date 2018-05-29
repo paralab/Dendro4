@@ -95,11 +95,11 @@ namespace ot {
         }
 
         //Zero Entries first if you plan to modify the buffer 
-        if(!isReadOnly) {
+        // if(!isReadOnly) {
           for(unsigned int i = 0; i < sz; i++) {
-            out[i] = 0.0;
+            out[i] = 171396;
           }
-        }
+        // }
       }
 
       unsigned int vecCnt=0;

@@ -10,6 +10,8 @@
 #include "dendro.h"
 #include <TreeNode.h>
 
+#include <iomanip>
+
 #include <sub_oda.h>
 
 #ifdef MPI_WTIME_IS_GLOBAL
@@ -79,10 +81,13 @@ int main(int argc, char ** argv ) {
 
   ot::DA *main_da =  ot::function_to_DA(fx_refine, 4, 7, gsz, MPI_COMM_WORLD);
   // std::cout << rank << ": finished building DA" << std::endl ;
-  
+  main_da->computeLocalToGlobalMappings();
+
   ot::subDA *da =  new ot::subDA(main_da, fx_retain, gsz);
   // std::cout << rank << ": finished building subDA" << std::endl ;
 
+  da->computeLocalToGlobalMappings();
+  
   PetscScalar zero = 1.0, nrm;
   Vec v;
   // std::cout << rank << ": creating vector" << std::endl;
@@ -93,11 +98,74 @@ int main(int argc, char ** argv ) {
   VecSet(v, zero);
   // std::cout << rank << ": set vector to 0" << std::endl;
 
-  // try and access the buffer
-  PetscScalar* buff;
-  da->vecGetBuffer(v, buff, false, false, false, DOF);
-  da->vecRestoreBuffer(v, buff, false, false, false, DOF);
+  /* {{{ DEBUG 
+
+    DendroIntL* l2g = da->getLocalToGlobalMap();
+    unsigned int lsz = da->getLocalBufferSize();
+    unsigned int idx[8];
+
+    // std::cout << rank << ": localSz: " << lsz << std::endl;
+    
+    
+    // da->init<ot::DA_FLAGS::INDEPENDENT>();
+    // std::cout << rank << ": indep " << da->curr() << ", " << l2g[da->curr()] << std::endl;
+    // da->init<ot::DA_FLAGS::W_DEPENDENT>();
+    // std::cout << rank << ": w_dep " << da->curr() << ", " << l2g[da->curr()] << std::endl;
+    
+    
+    unsigned long _min = 100000, _max=0, _mxi=0, _mni=100000;
+
+    unsigned int indep=0, dep=0;
+    for ( da->init<ot::DA_FLAGS::INDEPENDENT>(); 
+         da->curr() < da->end<ot::DA_FLAGS::INDEPENDENT>(); 
+        da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
+            da->getNodeIndices(idx);
+            indep++;
+            for (unsigned int q=0; q<8; ++q) {
+              if (idx[q] >= lsz ) {
+                std::cout << rank << ": idx " << da->curr() << " too large: " << idx[q] << " >= " << lsz << std::endl;
+              }
+            //   std::cout << std::setfill('0') << std::setw(5) << l2g[idx[q]] << std::endl;
+              if ( l2g[idx[q]] > _max) _max = l2g[idx[q]];
+              if (l2g[idx[q]] < _min) _min = l2g[idx[q]];
+              if ( idx[q] > _mxi) _mxi = idx[q];
+              if ( idx[q] < _mni) _mni = idx[q];
+            }
+
+        }
+
+    for ( da->init<ot::DA_FLAGS::W_DEPENDENT>(); 
+         da->curr() < da->end<ot::DA_FLAGS::W_DEPENDENT>(); 
+        da->next<ot::DA_FLAGS::W_DEPENDENT>() ) {
+            da->getNodeIndices(idx);
+            dep++;
+            for (unsigned int q=0; q<8; ++q) {
+              if (idx[q] >= lsz ) {
+                std::cout << rank << ": idx " << da->curr() << " too large: " << idx[q] << " >= " << lsz << std::endl;
+              }
+            //   std::cout << std::setfill('0') << std::setw(5) << l2g[idx[q]] << std::endl;
+              if ( l2g[idx[q]] > _max) _max = l2g[idx[q]];
+              if (l2g[idx[q]] < _min) _min = l2g[idx[q]];
+              if ( idx[q] > _mxi) _mxi = idx[q];
+              if ( idx[q] < _mni) _mni = idx[q];
+            }
+
+        }
+
+    std::cout << rank << ": min,max l2g " << _min << ", " << _max << std::endl;
+    std::cout << rank << ": min,max idx " << _mni << ", " << _mxi << std::endl;
+    // std::cout << rank << ": indep: " << indep << ", dep: " << dep << std::endl;
+  // }}} */
+
+
+
+  // // try and access the buffer
+  // PetscScalar* buff;
+  // da->vecGetBuffer(v, buff, false, false, false, DOF);
+  // da->vecRestoreBuffer(v, buff, false, false, false, DOF);
   
+  MPI_Barrier(MPI_COMM_WORLD);
+
   // std::cout << rank << ": saving vtk" << std::endl;
   saveNodalVecAsVTK(da, v, gsz, "fnViz" );
   // std::cout << rank << ": done saving vtk ===" << std::endl;
@@ -106,6 +174,11 @@ int main(int argc, char ** argv ) {
   VecDestroy(&v);
   
   // std::cout << rank << " === destroyed Vec ===" << std::endl;
+ 
+ // clean up
+ delete main_da;
+ delete da;
+
 
   // wrap up
   ot::DA_Finalize();
@@ -246,6 +319,7 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, double* gSize, const char *file_pref
          da->curr() < da->end<ot::DA_FLAGS::INDEPENDENT>(); 
         da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
       da->getNodeIndices(idx);
+      
       interp_global_to_local(_vec, local, da);
 
 
@@ -290,6 +364,8 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, double* gSize, const char *file_pref
 
     out << std::endl;
 */
+    delete [] local;
+
     da->vecRestoreBuffer(vec,  _vec, false, false, true,  dof);
   }
 
@@ -434,8 +510,11 @@ void saveNodalVecAsVTK(ot::subDA* da, Vec vec, double* gSize, const char *file_p
           // std::cout << da->curr() << ", "; // std::endl;
 
       da->getNodeIndices(idx);
-      interp_global_to_local(_vec, local, da->global_domain());
-
+  
+      // @hari - fix this. temporarily bug in 
+      // interp_global_to_local(_vec, local, da->global_domain());
+      for (int q=0; q<8; ++q)
+        local[q] = _vec[idx[q]];
 
         out << local[0] << " ";
         out << local[1] << " ";
@@ -459,6 +538,7 @@ void saveNodalVecAsVTK(ot::subDA* da, Vec vec, double* gSize, const char *file_p
 
     out << std::endl;
 
+    delete [] local;
 
     da->vecRestoreBuffer(vec,  _vec, false, false, true,  dof);
   }
@@ -519,7 +599,6 @@ void interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::D
     case 1:
       // 1,6 are not hanging
 		  for (size_t i = 0; i < m_uiDof; i++) {
-
         if ( hangingMask & NODE_0 )
           loc[i] = 0.5 * ( glo[m_uiDof*idx[0]+i] + glo[m_uiDof*idx[1]+i] );
         else

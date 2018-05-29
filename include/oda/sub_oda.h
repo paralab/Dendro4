@@ -45,6 +45,8 @@ namespace ot {
         unsigned int                    m_uiBoundaryNodeSize;
         unsigned int                    m_uiPreGhostBoundaryNodeSize;
 
+        unsigned int                    m_uiPostGhostBegin;
+
         bool                            m_bComputedLocalToGlobal;
         bool                            m_bComputedLocalToGlobalElems;
 
@@ -1017,7 +1019,7 @@ namespace ot {
           @return the total number of octants (local, ghosts and FOREIGN) stored on the calling processor.
           */
         unsigned int getLocalBufferSize() {
-          return m_da->getLocalBufferSize();
+          return m_uiLocalBufferSize;
         }
 
 
