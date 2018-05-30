@@ -90,15 +90,17 @@ int main(int argc, char ** argv ) {
   
   PetscScalar zero = 1.0, nrm;
 
-  Vec v, w;
+  Vec v, w, y;
   // std::cout << rank << ": creating vector" << std::endl;
   da->createVector(v, false, false, DOF);
+  da->createVector(y, false, false, DOF);
   main_da->createVector(w, false, false, DOF);
   // std::cout << rank << ": created vector" << std::endl;
 
 
   VecSet(v, zero);
   VecSet(w, zero);
+  VecSet(y, zero);
   // std::cout << rank << ": set vector to 0" << std::endl;
 
   // {{{ DEBUG 
@@ -107,9 +109,10 @@ int main(int argc, char ** argv ) {
     // unsigned int lsz = da->getLocalBufferSize();
     unsigned int idx[8];
 
-    PetscScalar *_vec=NULL, *_w=NULL;
+    PetscScalar *_vec=NULL, *_w=NULL, *_y=NULL;
 
     da->vecGetBuffer(v,   _vec, false, false, false,  DOF);
+    da->vecGetBuffer(y,   _y, false, false, false,  DOF);
     main_da->vecGetBuffer(w,   _w, false, false, false,  DOF);
 
     // da->ReadFromGhostsBegin<PetscScalar>(_vec, DOF);
@@ -145,6 +148,7 @@ int main(int argc, char ** argv ) {
             // }
             for (unsigned int q=0; q<8; ++q) {
               _vec[idx[q]] = 1; // l2g[idx[q]];
+              _y[idx[q]] = l2g[idx[q]];
             }
         }
 
@@ -165,6 +169,7 @@ int main(int argc, char ** argv ) {
             // }
             for (unsigned int q=0; q<8; ++q) {
               _vec[idx[q]] = 1; // l2g[idx[q]];
+              _y[idx[q]] = l2g[idx[q]];
             }
         }
 
@@ -191,12 +196,25 @@ int main(int argc, char ** argv ) {
 
 
     da->vecRestoreBuffer(v,  _vec, false, false, false, DOF);
+    da->vecRestoreBuffer(y,  _y, false, false, false, DOF);
     main_da->vecRestoreBuffer(w,  _w, false, false, false, DOF);
     // std::cout << rank << ": min,max l2g " << _min << ", " << _max << std::endl;
     // std::cout << rank << ": min,max idx " << _mni << ", " << _mxi << std::endl;
     // std::cout << rank << ": indep: " << indep << ", dep: " << dep << std::endl;
   // }}} 
 
+  PetscViewer    viewer;
+   // PetscPrintf(PETSC_COMM_WORLD,"writing vector in ascii to indices.txt ...\n");
+   PetscViewerASCIIOpen(PETSC_COMM_WORLD, "indices.txt", &viewer);
+   VecView(y,viewer);
+   PetscViewerDestroy(&viewer);
+
+  PetscScalar cnt, sum;
+  VecSum(v, &cnt);
+  VecSum(y, &sum);
+  // if (rank) {
+  //   std::cout << "Testing: #dof " << cnt << ", sum_indices " << (long)sum << ", n(n+1)/2 = " << (long)(cnt*(cnt-1)/2) << std::endl;
+  // }
 
 
 
