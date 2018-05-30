@@ -89,20 +89,32 @@ int main(int argc, char ** argv ) {
   da->computeLocalToGlobalMappings();
   
   PetscScalar zero = 1.0, nrm;
-  Vec v;
+
+  Vec v, w;
   // std::cout << rank << ": creating vector" << std::endl;
   da->createVector(v, false, false, DOF);
+  main_da->createVector(w, false, false, DOF);
   // std::cout << rank << ": created vector" << std::endl;
 
 
   VecSet(v, zero);
+  VecSet(w, zero);
   // std::cout << rank << ": set vector to 0" << std::endl;
 
-  /* {{{ DEBUG 
+  // {{{ DEBUG 
 
     DendroIntL* l2g = da->getLocalToGlobalMap();
-    unsigned int lsz = da->getLocalBufferSize();
+    // unsigned int lsz = da->getLocalBufferSize();
     unsigned int idx[8];
+
+    PetscScalar *_vec=NULL, *_w=NULL;
+
+    da->vecGetBuffer(v,   _vec, false, false, false,  DOF);
+    main_da->vecGetBuffer(w,   _w, false, false, false,  DOF);
+
+    // da->ReadFromGhostsBegin<PetscScalar>(_vec, DOF);
+    // da->ReadFromGhostsEnd<PetscScalar>(_vec);
+
 
     // std::cout << rank << ": localSz: " << lsz << std::endl;
     
@@ -113,49 +125,78 @@ int main(int argc, char ** argv ) {
     // std::cout << rank << ": w_dep " << da->curr() << ", " << l2g[da->curr()] << std::endl;
     
     
-    unsigned long _min = 100000, _max=0, _mxi=0, _mni=100000;
+   //  unsigned long _min = 100000, _max=0, _mxi=0, _mni=100000;
 
     unsigned int indep=0, dep=0;
     for ( da->init<ot::DA_FLAGS::INDEPENDENT>(); 
          da->curr() < da->end<ot::DA_FLAGS::INDEPENDENT>(); 
         da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
             da->getNodeIndices(idx);
-            indep++;
+            // indep++;
+            // for (unsigned int q=0; q<8; ++q) {
+            //   if (idx[q] >= lsz ) {
+            //     std::cout << rank << ": idx " << da->curr() << " too large: " << idx[q] << " >= " << lsz << std::endl;
+            //   }
+            // //   std::cout << std::setfill('0') << std::setw(5) << l2g[idx[q]] << std::endl;
+            //   if ( l2g[idx[q]] > _max) _max = l2g[idx[q]];
+            //   if (l2g[idx[q]] < _min) _min = l2g[idx[q]];
+            //   if ( idx[q] > _mxi) _mxi = idx[q];
+            //   if ( idx[q] < _mni) _mni = idx[q];
+            // }
             for (unsigned int q=0; q<8; ++q) {
-              if (idx[q] >= lsz ) {
-                std::cout << rank << ": idx " << da->curr() << " too large: " << idx[q] << " >= " << lsz << std::endl;
-              }
-            //   std::cout << std::setfill('0') << std::setw(5) << l2g[idx[q]] << std::endl;
-              if ( l2g[idx[q]] > _max) _max = l2g[idx[q]];
-              if (l2g[idx[q]] < _min) _min = l2g[idx[q]];
-              if ( idx[q] > _mxi) _mxi = idx[q];
-              if ( idx[q] < _mni) _mni = idx[q];
+              _vec[idx[q]] = 1; // l2g[idx[q]];
             }
-
         }
 
     for ( da->init<ot::DA_FLAGS::W_DEPENDENT>(); 
          da->curr() < da->end<ot::DA_FLAGS::W_DEPENDENT>(); 
         da->next<ot::DA_FLAGS::W_DEPENDENT>() ) {
             da->getNodeIndices(idx);
-            dep++;
+            // dep++;
+            // for (unsigned int q=0; q<8; ++q) {
+            //   if (idx[q] >= lsz ) {
+            //     std::cout << rank << ": idx " << da->curr() << " too large: " << idx[q] << " >= " << lsz << std::endl;
+            //   }
+            // //   std::cout << std::setfill('0') << std::setw(5) << l2g[idx[q]] << std::endl;
+            //   if ( l2g[idx[q]] > _max) _max = l2g[idx[q]];
+            //   if (l2g[idx[q]] < _min) _min = l2g[idx[q]];
+            //   if ( idx[q] > _mxi) _mxi = idx[q];
+            //   if ( idx[q] < _mni) _mni = idx[q];
+            // }
             for (unsigned int q=0; q<8; ++q) {
-              if (idx[q] >= lsz ) {
-                std::cout << rank << ": idx " << da->curr() << " too large: " << idx[q] << " >= " << lsz << std::endl;
-              }
-            //   std::cout << std::setfill('0') << std::setw(5) << l2g[idx[q]] << std::endl;
-              if ( l2g[idx[q]] > _max) _max = l2g[idx[q]];
-              if (l2g[idx[q]] < _min) _min = l2g[idx[q]];
-              if ( idx[q] > _mxi) _mxi = idx[q];
-              if ( idx[q] < _mni) _mni = idx[q];
+              _vec[idx[q]] = 1; // l2g[idx[q]];
             }
-
         }
 
-    std::cout << rank << ": min,max l2g " << _min << ", " << _max << std::endl;
-    std::cout << rank << ": min,max idx " << _mni << ", " << _mxi << std::endl;
+
+    for ( main_da->init<ot::DA_FLAGS::INDEPENDENT>(); 
+         main_da->curr() < main_da->end<ot::DA_FLAGS::INDEPENDENT>(); 
+        main_da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
+            main_da->getNodeIndices(idx);
+            
+            for (unsigned int q=0; q<8; ++q) {
+              _w[idx[q]] = rank; // l2g[idx[q]];
+            }
+        }
+    for ( main_da->init<ot::DA_FLAGS::W_DEPENDENT>(); 
+         main_da->curr() < main_da->end<ot::DA_FLAGS::W_DEPENDENT>(); 
+        main_da->next<ot::DA_FLAGS::W_DEPENDENT>() ) {
+            main_da->getNodeIndices(idx);
+            
+            for (unsigned int q=0; q<8; ++q) {
+              _w[idx[q]] = rank; // l2g[idx[q]];
+            }
+        }      
+
+
+
+    da->vecRestoreBuffer(v,  _vec, false, false, false, DOF);
+    main_da->vecRestoreBuffer(w,  _w, false, false, false, DOF);
+    // std::cout << rank << ": min,max l2g " << _min << ", " << _max << std::endl;
+    // std::cout << rank << ": min,max idx " << _mni << ", " << _mxi << std::endl;
     // std::cout << rank << ": indep: " << indep << ", dep: " << dep << std::endl;
-  // }}} */
+  // }}} 
+
 
 
 
@@ -167,11 +208,13 @@ int main(int argc, char ** argv ) {
   MPI_Barrier(MPI_COMM_WORLD);
 
   // std::cout << rank << ": saving vtk" << std::endl;
-  saveNodalVecAsVTK(da, v, gsz, "fnViz" );
+  saveNodalVecAsVTK(da, v, gsz, "sub_domain" );
+  saveNodalVecAsVTK(main_da, w, gsz, "full_domain" );
   // std::cout << rank << ": done saving vtk ===" << std::endl;
 
   // clean up
   VecDestroy(&v);
+  VecDestroy(&w);
   
   // std::cout << rank << " === destroyed Vec ===" << std::endl;
  
@@ -216,9 +259,9 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, double* gSize, const char *file_pref
   int unit_points = 1 << dim;
   int num_cells = 0; // da->getElementSize();
     
-  for ( da->init<ot::DA_FLAGS::INDEPENDENT>(); 
-         da->curr() < da->end<ot::DA_FLAGS::INDEPENDENT>(); 
-        da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
+  for ( da->init<ot::DA_FLAGS::WRITABLE>(); 
+         da->curr() < da->end<ot::DA_FLAGS::WRITABLE>(); 
+        da->next<ot::DA_FLAGS::WRITABLE>() ) {
 
     num_cells++;
   }
@@ -255,17 +298,17 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, double* gSize, const char *file_pref
     double xx, yy, zz;
     unsigned int idx[8];
 
-    std::cout << "Printing initials." << std::endl;
-    da->init<ot::DA_FLAGS::ALL>();
-    std::cout << rank << ": init<All> " << da->curr() << std::endl;
-    da->init<ot::DA_FLAGS::INDEPENDENT>();
-    std::cout << rank << ": init<Indep> " << da->curr() << std::endl;
-    da->init<ot::DA_FLAGS::W_DEPENDENT>();
-    std::cout << rank << ": init<W_Dep> " << da->curr() << std::endl;
+    // std::cout << "Printing initials." << std::endl;
+    // da->init<ot::DA_FLAGS::ALL>();
+    // std::cout << rank << ": init<All> " << da->curr() << std::endl;
+    // da->init<ot::DA_FLAGS::INDEPENDENT>();
+    // std::cout << rank << ": init<Indep> " << da->curr() << std::endl;
+    // da->init<ot::DA_FLAGS::W_DEPENDENT>();
+    // std::cout << rank << ": init<W_Dep> " << da->curr() << std::endl;
 
-    for ( da->init<ot::DA_FLAGS::INDEPENDENT>(); 
-         da->curr() < da->end<ot::DA_FLAGS::INDEPENDENT>(); 
-        da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
+    for ( da->init<ot::DA_FLAGS::WRITABLE>(); 
+         da->curr() < da->end<ot::DA_FLAGS::WRITABLE>(); 
+        da->next<ot::DA_FLAGS::WRITABLE>() ) {
       // set the value
       lev = da->getLevel(da->curr());
       hx = xFac*(1<<(maxD - lev));
@@ -315,9 +358,9 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, double* gSize, const char *file_pref
 
     PetscScalar* local = new PetscScalar[8];
 
-    for ( da->init<ot::DA_FLAGS::INDEPENDENT>(); 
-         da->curr() < da->end<ot::DA_FLAGS::INDEPENDENT>(); 
-        da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
+    for ( da->init<ot::DA_FLAGS::WRITABLE>(); 
+         da->curr() < da->end<ot::DA_FLAGS::WRITABLE>(); 
+        da->next<ot::DA_FLAGS::WRITABLE>() ) {
       da->getNodeIndices(idx);
       
       interp_global_to_local(_vec, local, da);
@@ -398,9 +441,9 @@ void saveNodalVecAsVTK(ot::subDA* da, Vec vec, double* gSize, const char *file_p
   int unit_points = 1 << dim;
   int num_cells = 0; // da->getElementSize();
     
-  for ( da->init<ot::DA_FLAGS::INDEPENDENT>(); 
-         da->curr() < da->end<ot::DA_FLAGS::INDEPENDENT>(); 
-        da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
+  for ( da->init<ot::DA_FLAGS::WRITABLE>(); 
+         da->curr() < da->end<ot::DA_FLAGS::WRITABLE>(); 
+        da->next<ot::DA_FLAGS::WRITABLE>() ) {
 
     num_cells++;
   }
@@ -451,9 +494,9 @@ void saveNodalVecAsVTK(ot::subDA* da, Vec vec, double* gSize, const char *file_p
     std::cout << rank << ": init<Writ> " << da->curr() << std::endl;
     */
 
-    for ( da->init<ot::DA_FLAGS::INDEPENDENT>(); 
-         da->curr() < da->end<ot::DA_FLAGS::INDEPENDENT>(); 
-        da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
+    for ( da->init<ot::DA_FLAGS::WRITABLE>(); 
+         da->curr() < da->end<ot::DA_FLAGS::WRITABLE>(); 
+        da->next<ot::DA_FLAGS::WRITABLE>() ) {
       // set the value
       lev = da->getLevel(da->curr());
       hx = xFac*(1<<(maxD - lev));
@@ -503,9 +546,9 @@ void saveNodalVecAsVTK(ot::subDA* da, Vec vec, double* gSize, const char *file_p
 
     PetscScalar* local = new PetscScalar[8];
 
-    for ( da->init<ot::DA_FLAGS::INDEPENDENT>(); 
-         da->curr() < da->end<ot::DA_FLAGS::INDEPENDENT>(); 
-        da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
+    for ( da->init<ot::DA_FLAGS::WRITABLE>(); 
+         da->curr() < da->end<ot::DA_FLAGS::WRITABLE>(); 
+        da->next<ot::DA_FLAGS::WRITABLE>() ) {
 
           // std::cout << da->curr() << ", "; // std::endl;
 
