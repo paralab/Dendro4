@@ -212,9 +212,9 @@ int main(int argc, char ** argv ) {
   PetscScalar cnt, sum;
   VecSum(v, &cnt);
   VecSum(y, &sum);
-  // if (rank) {
-  //   std::cout << "Testing: #dof " << cnt << ", sum_indices " << (long)sum << ", n(n+1)/2 = " << (long)(cnt*(cnt-1)/2) << std::endl;
-  // }
+  if (rank) {
+    std::cout << "Testing: #dof " << cnt << ", sum_indices " << (long)sum << ", n(n+1)/2 = " << (long)((cnt-1)*(cnt)/2) << std::endl;
+  }
 
 
 

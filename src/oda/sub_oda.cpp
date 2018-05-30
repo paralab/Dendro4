@@ -394,6 +394,8 @@ int subDA::computeLocalToGlobalMappings() {
   MPI_Request sendRequest;
   MPI_Status status;
   
+  std::cout << rank << ": compute_l2g:  localSize " << localNodeSize << std::endl; 
+
   par::Mpi_Scan<DendroIntL>(&localNodeSize, &off1, 1, MPI_SUM, comm); 
   if(rank < (npes-1)) {
     par::Mpi_Issend<DendroIntL>(&off1, 1, rank+1, 0, comm, &sendRequest);
@@ -405,6 +407,8 @@ int subDA::computeLocalToGlobalMappings() {
     globalOffset = 0;
   }
   
+  std::cout << rank << ": compute_l2g:  globalOffset " << globalOffset << std::endl;
+
   std::vector<DendroIntL> gNumNonGhostNodes(localNodeSize); 
   for(DendroIntL i = 0; i < localNodeSize; i++) {
     gNumNonGhostNodes[i] = (i+globalOffset);   
@@ -417,8 +421,8 @@ int subDA::computeLocalToGlobalMappings() {
     MPI_Wait(&sendRequest, &statusWait);
   }
 
-  ReadFromGhostsBegin<DendroIntL>(m_dilpLocalToGlobal,1);
-  ReadFromGhostsEnd<DendroIntL>(m_dilpLocalToGlobal);
+  // ReadFromGhostsBegin<DendroIntL>(m_dilpLocalToGlobal,1);
+  // ReadFromGhostsEnd<DendroIntL>(m_dilpLocalToGlobal);
 
   /*
   for (unsigned int i=0; i<m_uiLocalBufferSize; ++i) {
