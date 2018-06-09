@@ -30,7 +30,8 @@ namespace ot {
 
         // will contain extra mapping information as compared to the DA
         std::vector<unsigned char>      m_ucpSkipList;
-        std::vector<unsigned char>      m_ucpSkipNodeList;
+        // std::vector<unsigned char>      m_ucpSkipNodeList;
+        unsigned char                  *m_ucpSkipNodeList;
         
         unsigned int                    m_uiElementSize;
         unsigned int                    m_uiPreGhostElementSize;
