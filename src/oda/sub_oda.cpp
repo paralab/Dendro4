@@ -46,8 +46,18 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   m_ucpSkipList.resize(localElemSize, 0);
   m_uip_DA2sub_ElemMap.resize(localElemSize, 0);
 
-  m_ucpSkipNodeList.clear();
-  m_ucpSkipNodeList.resize(m_da->getLocalBufferSize(), 1);
+  // Hari - correcting mismatch of preGhost Nodes
+  // use vecCreate and ghost exchange to create SkipNodeList.
+  
+  std::vector<DendroIntL> gNumNonGhostNodes(localNodeSize); 
+  for(DendroIntL i = 0; i < localNodeSize; i++) {
+    gNumNonGhostNodes[i] = 0;   
+  }
+
+  vecGetBuffer<DendroIntL>(gNumNonGhostNodes, m_ucpSkipNodeList, false, false, true, 1);  
+  
+  // m_ucpSkipNodeList.clear();
+  // m_ucpSkipNodeList.resize(m_da->getLocalBufferSize(), 1);
   m_uip_DA2sub_NodeMap.resize(m_da->getLocalBufferSize(), 0);
       
   for ( m_da->init<ot::DA_FLAGS::ALL>(); 
@@ -93,23 +103,26 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
           else {
             // touch nodes ....
             for(int k = 0; k < 8; k++) {
-              if ( indices[k] < m_ucpSkipNodeList.size() )
+              if ( indices[k] < m_uip_DA2sub_NodeMap.size() )
                 m_ucpSkipNodeList[indices[k]] = 0;
               else
-                std::cout << "skipList node index out of bound: " << indices[k] << " > " << m_ucpSkipNodeList.size() <<  std::endl;
+                std::cout << "skipList node index out of bound: " << indices[k] << " > " << m_uip_DA2sub_NodeMap.size() <<  std::endl;
             }
           }
 
         } // for 
    // std::cout << std::endl;
   
+  ReadFromGhostsBegin<unsigned char>(m_ucpSkipNodeList,1);
+  ReadFromGhostsEnd<unsigned char>(m_ucpSkipNodeList);
+
   
   // compute the mapping ...
   unsigned int postG_beg = da->getIdxPostGhostBegin();
   unsigned int elem_beg = da->getIdxElementBegin();
   
   unsigned int sum = 0;
-  for (unsigned int i=0; i<m_ucpSkipNodeList.size(); ++i) {
+  for (unsigned int i=0; i<m_uip_DA2sub_NodeMap.size(); ++i) {
     m_uip_DA2sub_NodeMap[i] = sum;
     if (m_ucpSkipNodeList[i] == 0) sum++;
   }
@@ -164,12 +177,12 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
     }
   }
 
-  for (unsigned int i=0; i<m_ucpSkipNodeList.size(); ++i)  {
+  for (unsigned int i=0; i<m_uip_DA2sub_NodeMap.size(); ++i)  {
     if (m_ucpSkipNodeList[i] == 0) m_uiLocalBufferSize++;
   }
 
   m_uip_sub2DA_NodeMap.resize(m_uiLocalBufferSize, 0);
-  for (unsigned int i=0; i<m_ucpSkipNodeList.size(); ++i)  {
+  for (unsigned int i=0; i<m_uip_DA2sub_NodeMap.size(); ++i)  {
     if (m_ucpSkipNodeList[i] == 0) {
       m_uip_sub2DA_NodeMap[m_uip_DA2sub_NodeMap[i]] = i;
     }
@@ -204,9 +217,7 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
     }
   }
 
-  std::cout << "HARI: " << rank << ": e: " << m_uiPreGhostElementSize << ",  n: " << m_uiPreGhostNodeSize << ", inter: " << pre_g << ", tmp: " << tmp1 << std::endl;
-
-  for (unsigned int i=postG_beg; i<m_ucpSkipNodeList.size(); ++i) {
+  for (unsigned int i=postG_beg; i<m_uip_DA2sub_NodeMap.size(); ++i) {
     if ( (m_ucpSkipNodeList[i] == 0) &&  (m_da->getFlag(i) & ot::TreeNode::NODE ) ) m_uiPostGhostNodeSize++;
   }
 
@@ -436,26 +447,8 @@ int subDA::computeLocalToGlobalMappings() {
     MPI_Wait(&sendRequest, &statusWait);
   }
 
-  // unsigned int start_idx=0, last_idx=0;
-  // for (unsigned int i=0; i<m_uiLocalBufferSize; ++i) {
-  //   if (!start_idx && m_dilpLocalToGlobal[i]) start_idx = i;
-  //   if (start_idx && !last_idx && !(m_dilpLocalToGlobal[i]) ) last_idx = i;
-  // }
-
-  // for (unsigned int i=0; i<300; ++i) {
-  //   std::cout << rank << " l2g " << i << " = " << m_dilpLocalToGlobal[i] << std::endl;
-  // }
-
-  // std::cout << "=== === === === === ===" << std::endl;
-
-  // std::cout << rank << ": compute_l2g : start_last " << start_idx << " <-> " << last_idx << std::endl;
-
   ReadFromGhostsBegin<DendroIntL>(m_dilpLocalToGlobal,1);
   ReadFromGhostsEnd<DendroIntL>(m_dilpLocalToGlobal);
-
-  // for (unsigned int i=0; i<300; ++i) {
-  //   std::cout << rank << " l2g " << i << " = " << m_dilpLocalToGlobal[i] << std::endl;
-  // }
 
   /*
   for (unsigned int i=0; i<m_uiLocalBufferSize; ++i) {
