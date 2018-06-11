@@ -122,7 +122,12 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
 
   m_uiPostGhostBegin = 0;
 
-  // std::cout << rank << ": elem Sizes " << elem_beg << ", " << postG_beg << ", " << m_ucpSkipList.size() << std::endl;
+  std::cout << rank << ": elem Sizes " << elem_beg << ", " << postG_beg << ", " << m_ucpSkipList.size() << std::endl;
+
+  std::cout <<rank << ": DA === preGhostBdy :" << m_da->getPreBoundaryNodeSize() << std::endl;
+
+
+  unsigned int pre_g=0, tmp1=0;
 
   unsigned int j=0;
   for (unsigned int i=0; i<elem_beg; ++i) {
@@ -130,8 +135,14 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
       m_uiPreGhostElementSize++;
       m_uip_DA2sub_ElemMap[i] = j++;
     }
+    if ( (m_ucpSkipList[i] == 0) && ! (m_ucpSkipNodeList[i] == 0) ) {
+      pre_g++;
+    }
+    if  (m_ucpSkipNodeList[i] == 0) tmp1++;
   }
   
+  
+
   if ( postG_beg < m_ucpSkipList.size()) {
     for (unsigned int i=elem_beg; i<postG_beg; ++i) {
       if (m_ucpSkipList[i] == 0) {
@@ -193,13 +204,15 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
     }
   }
 
+  std::cout << "HARI: " << rank << ": e: " << m_uiPreGhostElementSize << ",  n: " << m_uiPreGhostNodeSize << ", inter: " << pre_g << ", tmp: " << tmp1 << std::endl;
+
   for (unsigned int i=postG_beg; i<m_ucpSkipNodeList.size(); ++i) {
     if ( (m_ucpSkipNodeList[i] == 0) &&  (m_da->getFlag(i) & ot::TreeNode::NODE ) ) m_uiPostGhostNodeSize++;
   }
 
-  // std::cout << "[subDA::DEBUG] " << rank << ": NodeSizes  (" << m_uiPreGhostNodeSize << ") " << m_uiNodeSize << " (" << m_uiPostGhostNodeSize << ")" << std::endl;
-  // std::cout << "[subDA::DEBUG] " << rank << ": BoundaryNodeSizes  (" << m_uiPreGhostBoundaryNodeSize << ") " << m_uiBoundaryNodeSize << std::endl;
-  // std::cout << "DA " << rank << " nodes (" << m_da->getPreGhostNodeSize() << ") " << m_da->getNodeSize() << " (" << m_da->getPostGhostNodeSize() << ")" << std::endl;
+  std::cout << "[subDA::DEBUG] " << rank << ": NodeSizes  (" << m_uiPreGhostNodeSize << ") " << m_uiNodeSize << " (" << m_uiPostGhostNodeSize << ")" << std::endl;
+  std::cout << "[subDA::DEBUG] " << rank << ": BoundaryNodeSizes  (" << m_uiPreGhostBoundaryNodeSize << ") " << m_uiBoundaryNodeSize << std::endl;
+  std::cout << "DA " << rank << " nodes (" << m_da->getPreGhostNodeSize() << ") " << m_da->getNodeSize() << " (" << m_da->getPostGhostNodeSize() << ")" << std::endl;
 
   // scatter map 
 
@@ -220,7 +233,9 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
       }
       k++;
     }
-    // std::cout << rank << " ~~> "  << m_da->getSendProcEntry(p) << " >>= " << m_da->getSendCountsEntry(p) << " === " << cnt << std::endl;
+    std::cout << rank << " ~~> "  << m_da->getSendProcEntry(p) << " >>= " << m_da->getSendCountsEntry(p) << ", " << m_da->getSendCountsOffset(p) << std::endl;
+    std::cout << rank << " <~~ "  << m_da->getRecvProcEntry(p) << " >>= " << m_da->getRecvCountsEntry(p) << ", " << m_da->getRecvCountsOffset(p) << std::endl;
+    
     if (cnt) {
       m_uipSendProcs.push_back(m_da->getSendProcEntry(p));
       m_uipSendCounts.push_back(cnt);
@@ -233,9 +248,9 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   // std::cout << "subDA::constructor  sendProcs, Cnts, offsets " << m_uipSendProcs.size() << ", " << m_uipSendCounts.size() << ", " << m_uipSendOffsets.size() << std::endl;
   // std::cout << rank << ": sendProcs, Cnts, offsets " << m_uipSendProcs[0] << ", " << m_uipSendCounts[0] << ", " << m_uipSendOffsets[0] << std::endl;
   
-  // for (unsigned int p=0; p<m_uipSendProcs.size(); ++p) {
-  //   std::cout << rank << " --> " << m_uipSendProcs[p] << " : " << m_uipSendCounts[p] << std::endl;
-  // }
+   for (unsigned int p=0; p<m_uipSendProcs.size(); ++p) {
+      std::cout << rank << " --> " << m_uipSendProcs[p] << " : " << m_uipSendCounts[p] << std::endl;
+   }
 
 
   // compute recvProcs/recvCnts
@@ -394,7 +409,7 @@ int subDA::computeLocalToGlobalMappings() {
   MPI_Request sendRequest;
   MPI_Status status;
   
-  std::cout << rank << ": compute_l2g:  localSize " << localNodeSize << std::endl; 
+  // std::cout << rank << ": compute_l2g:  localSize " << localNodeSize << std::endl; 
 
   par::Mpi_Scan<DendroIntL>(&localNodeSize, &off1, 1, MPI_SUM, comm); 
   if(rank < (npes-1)) {
@@ -407,7 +422,7 @@ int subDA::computeLocalToGlobalMappings() {
     globalOffset = 0;
   }
   
-  std::cout << rank << ": compute_l2g:  globalOffset " << globalOffset << std::endl;
+  // std::cout << rank << ": compute_l2g:  globalOffset " << globalOffset << std::endl;
 
   std::vector<DendroIntL> gNumNonGhostNodes(localNodeSize); 
   for(DendroIntL i = 0; i < localNodeSize; i++) {
@@ -421,8 +436,26 @@ int subDA::computeLocalToGlobalMappings() {
     MPI_Wait(&sendRequest, &statusWait);
   }
 
-  // ReadFromGhostsBegin<DendroIntL>(m_dilpLocalToGlobal,1);
-  // ReadFromGhostsEnd<DendroIntL>(m_dilpLocalToGlobal);
+  // unsigned int start_idx=0, last_idx=0;
+  // for (unsigned int i=0; i<m_uiLocalBufferSize; ++i) {
+  //   if (!start_idx && m_dilpLocalToGlobal[i]) start_idx = i;
+  //   if (start_idx && !last_idx && !(m_dilpLocalToGlobal[i]) ) last_idx = i;
+  // }
+
+  // for (unsigned int i=0; i<300; ++i) {
+  //   std::cout << rank << " l2g " << i << " = " << m_dilpLocalToGlobal[i] << std::endl;
+  // }
+
+  // std::cout << "=== === === === === ===" << std::endl;
+
+  // std::cout << rank << ": compute_l2g : start_last " << start_idx << " <-> " << last_idx << std::endl;
+
+  ReadFromGhostsBegin<DendroIntL>(m_dilpLocalToGlobal,1);
+  ReadFromGhostsEnd<DendroIntL>(m_dilpLocalToGlobal);
+
+  // for (unsigned int i=0; i<300; ++i) {
+  //   std::cout << rank << " l2g " << i << " = " << m_dilpLocalToGlobal[i] << std::endl;
+  // }
 
   /*
   for (unsigned int i=0; i<m_uiLocalBufferSize; ++i) {

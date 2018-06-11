@@ -260,7 +260,7 @@ namespace ot {
       int rank;
       MPI_Comm_rank(comm,&rank);
 
-      m_bSkipOctants = false;
+      // m_bSkipOctants = false;
 
       m_uiTreeSortTol=tol;
       //if(!rank) std::cout <<"oda tolerance "<<tol<<std::endl;

@@ -468,8 +468,8 @@ namespace ot {
         Point                           m_ptCurrentOffset;
 
         // @hari April 2017. Support for holes on mesh
-        std::vector<unsigned char>      m_ucpSkipList;
-        bool                            m_bSkipOctants;
+        // std::vector<unsigned char>      m_ucpSkipList;
+        // bool                            m_bSkipOctants;
         //------------------------------------------------------------------------
 
         // The number of nodes owned by the current processor.
@@ -1433,9 +1433,9 @@ namespace ot {
        * Support for holes on mesh
        **/
       
-      void initialize_skiplist();
-      void skip_current();
-      void finalize_skiplist();
+      // void initialize_skiplist();
+      // void skip_current();
+      // void finalize_skiplist();
 
       // hari - for subDA. clean up later   
       unsigned int getScatterMapSize() {
@@ -1453,6 +1453,22 @@ namespace ot {
       unsigned int getSendCountsEntry(unsigned int i) {
         return m_uipSendCounts[i];
       }
+      unsigned int getSendCountsOffset(unsigned int i) {
+        return m_uipSendOffsets[i];
+      }
+
+      unsigned int getRecvProcSize() {
+        return m_uipRecvProcs.size();
+      }
+      unsigned int getRecvProcEntry(unsigned int i) {
+        return m_uipRecvProcs[i];
+      }
+      unsigned int getRecvCountsEntry(unsigned int i) {
+        return m_uipRecvCounts[i];
+      }
+      unsigned int getRecvCountsOffset(unsigned int i) {
+        return m_uipRecvOffsets[i];
+      }
 
       unsigned int getPreGhostNodeSize() {
         return m_uiPreGhostNodeSize;
@@ -1460,6 +1476,10 @@ namespace ot {
 
       unsigned int getPostGhostNodeSize() {
         return m_uiPostGhostNodeSize;
+      }
+
+      unsigned int getPreBoundaryNodeSize() {
+        return m_uiPreGhostBoundaryNodeSize;
       }
 
       protected:
