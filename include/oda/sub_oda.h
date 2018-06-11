@@ -128,7 +128,7 @@ namespace ot {
           */
         int getNpesAll() { return m_da->getNpesAll(); }
 
-        const std::vector<unsigned char>& getSkipList() { return m_ucpSkipNodeList; }
+        const unsigned char* getSkipList() { return m_ucpSkipNodeList; }
 
         const std::vector<unsigned char>& getSkipElemList() { return m_ucpSkipList; }
 

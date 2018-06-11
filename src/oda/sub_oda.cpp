@@ -9,7 +9,7 @@ namespace ot {
 
 //***************Constructor*****************//
 subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain, double* gSize) {
-  // std::cout << "subDA::Constructor - Starting " << std::endl;
+  std::cout << "subDA::Constructor - Starting " << std::endl;
   m_da = da;
   m_dilpLocalToGlobal = NULL;
   m_bComputedLocalToGlobal = false;
@@ -26,7 +26,7 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   m_uiCommTag = 0;
   m_mpiContexts.clear();
 
-  // std::cout << "subDA: mD= " << maxDepth << std::endl;
+  std::cout << "subDA: mD= " << maxDepth << std::endl;
   auto inside = [](double d){ return d < 0.0; };
 
   double hx, hy, hz;
@@ -48,18 +48,29 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
 
   // Hari - correcting mismatch of preGhost Nodes
   // use vecCreate and ghost exchange to create SkipNodeList.
+  DendroIntL localNodeSize = m_da->getNodeSize();
   
-  std::vector<DendroIntL> gNumNonGhostNodes(localNodeSize); 
+  std::vector<unsigned char> gNumNonGhostNodes(localNodeSize); 
   for(DendroIntL i = 0; i < localNodeSize; i++) {
     gNumNonGhostNodes[i] = 0;   
   }
 
-  vecGetBuffer<DendroIntL>(gNumNonGhostNodes, m_ucpSkipNodeList, false, false, true, 1);  
+  // std::cout << "vecGetBuffer" << std::endl;
+  m_da->vecGetBuffer<unsigned char>(gNumNonGhostNodes, m_ucpSkipNodeList, false, false, false, 1);  
+  // std::cout << "vecGetBuffer done" << std::endl;
   
   // m_ucpSkipNodeList.clear();
   // m_ucpSkipNodeList.resize(m_da->getLocalBufferSize(), 1);
   m_uip_DA2sub_NodeMap.resize(m_da->getLocalBufferSize(), 0);
-      
+
+  /*
+  std::cout << "starting sweep" << std::endl;
+  for (unsigned int i=0; i<m_uip_DA2sub_NodeMap.size(); ++i) {
+	  std::cout << i << ": " << m_ucpSkipNodeList[i] << std::endl;
+  }
+  std::cout << "basic sweep done" << std::endl;
+  */    
+
   for ( m_da->init<ot::DA_FLAGS::ALL>(); 
         m_da->curr() < m_da->end<ot::DA_FLAGS::ALL>(); 
         m_da->next<ot::DA_FLAGS::ALL>() ) {
@@ -113,8 +124,10 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
         } // for 
    // std::cout << std::endl;
   
-  ReadFromGhostsBegin<unsigned char>(m_ucpSkipNodeList,1);
-  ReadFromGhostsEnd<unsigned char>(m_ucpSkipNodeList);
+  // std::cout << "read from ghosts" << std::endl;
+  m_da->ReadFromGhostsBegin<unsigned char>(m_ucpSkipNodeList,1);
+  m_da->ReadFromGhostsEnd<unsigned char>(m_ucpSkipNodeList);
+  // std::cout << "read from ghosts done " << std::endl;
 
   
   // compute the mapping ...

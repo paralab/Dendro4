@@ -80,22 +80,24 @@ int main(int argc, char ** argv ) {
   // function2Octree(fx, nodes, 8, false, MPI_COMM_WORLD);
 
   ot::DA *main_da =  ot::function_to_DA(fx_refine, 4, 7, gsz, MPI_COMM_WORLD);
-  // std::cout << rank << ": finished building DA" << std::endl ;
+  std::cout << rank << ": finished building DA" << std::endl ;
+  
   main_da->computeLocalToGlobalMappings();
 
   ot::subDA *da =  new ot::subDA(main_da, fx_retain, gsz);
-  // std::cout << rank << ": finished building subDA" << std::endl ;
+  std::cout << rank << ": finished building subDA" << std::endl ;
 
   da->computeLocalToGlobalMappings();
   
   PetscScalar zero = 1.0, nrm;
 
   Vec v, w, y;
-  // std::cout << rank << ": creating vector" << std::endl;
+  std::cout << rank << ": creating vector" << std::endl;
+  
   da->createVector(v, false, false, DOF);
   da->createVector(y, false, false, DOF);
   main_da->createVector(w, false, false, DOF);
-  // std::cout << rank << ": created vector" << std::endl;
+  std::cout << rank << ": created vector" << std::endl;
 
 
   VecSet(v, zero);
