@@ -46,6 +46,7 @@ namespace ot {
         unsigned int                    m_uiBoundaryNodeSize;
         unsigned int                    m_uiPreGhostBoundaryNodeSize;
 
+        unsigned int                    m_uiElementBegin;
         unsigned int                    m_uiPostGhostBegin;
 
         bool                            m_bComputedLocalToGlobal;
@@ -352,7 +353,7 @@ namespace ot {
           @return the index of the first local element
           */
         unsigned int getIdxElementBegin() {
-          return m_da->getIdxElementBegin();
+          return m_uiElementBegin;
         }
 
         /**
@@ -368,7 +369,7 @@ namespace ot {
           @return the index of the first post ghost element
           */
         unsigned int getIdxPostGhostBegin() {
-          return m_da->getIdxPostGhostBegin();
+          return m_uiPostGhostBegin;
         }
 
         /**

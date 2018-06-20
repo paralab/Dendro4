@@ -77,7 +77,7 @@ int main(int argc, char ** argv ) {
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  std::cout << "Usage: <exe> local_num_pts[5000] dim[3] maxDepth[30] maxNumPtsPerOctant[1]  incCorner[1] compressLut[0] " << std::endl;
+  // std::cout << "Usage: <exe> local_num_pts[5000] dim[3] maxDepth[30] maxNumPtsPerOctant[1]  incCorner[1] compressLut[0] " << std::endl;
 
   if(argc > 1) {
     local_num_pts = atoi(argv[1]);
@@ -99,9 +99,9 @@ int main(int argc, char ** argv ) {
   }
 
   MPI_Barrier(MPI_COMM_WORLD);
-  if(!rank){
-    std::cout << "Creating points on the fly... "<<std::endl;
-  }
+  // if(!rank){
+  //   std::cout << "Creating points on the fly... "<<std::endl;
+  // }
 
   startTime = MPI_Wtime();
 
@@ -113,14 +113,14 @@ int main(int argc, char ** argv ) {
   }
 
   MPI_Barrier(MPI_COMM_WORLD);
-  if(!rank){
-    std::cout << " finished creating points  "<<std::endl; // Point size
-  }
+  // if(!rank){
+  //   std::cout << " finished creating points  "<<std::endl; // Point size
+  // }
   endTime = MPI_Wtime();
   localTime = endTime - startTime;
-  if(!rank){
-    std::cout <<"point generation time: "<<localTime << std::endl;
-  }
+  // if(!rank){
+  //   std::cout <<"point generation time: "<<localTime << std::endl;
+  // }
 
   ptsLen = pts.size();
 
@@ -147,10 +147,10 @@ int main(int argc, char ** argv ) {
 
   MPI_Barrier(MPI_COMM_WORLD);
 
-  if(!rank){
-    std::cout << "num points: " <<  tmpNodes.size() << std::endl;
-    std::cout <<"Removing bad points... "<<localTime << std::endl;
-  }
+  // if(!rank){
+  //   std::cout << "num points: " <<  tmpNodes.size() << std::endl;
+  //   std::cout <<"Removing bad points... "<<localTime << std::endl;
+  // }
 
   par::removeDuplicates<ot::TreeNode>(tmpNodes, false, MPI_COMM_WORLD);
   linOct = tmpNodes;
@@ -158,9 +158,9 @@ int main(int argc, char ** argv ) {
 
   MPI_Barrier(MPI_COMM_WORLD);
 
-  if(!rank){
-    std::cout <<"Partitioning Input... "<<localTime << std::endl;
-  }
+  // if(!rank){
+  //   std::cout <<"Partitioning Input... "<<localTime << std::endl;
+  // }
 
   par::partitionW<ot::TreeNode>(linOct, NULL, MPI_COMM_WORLD);
 
@@ -170,9 +170,9 @@ int main(int argc, char ** argv ) {
 
   MPI_Barrier(MPI_COMM_WORLD);
 
-  if(!rank) {
-    std::cout<<"# pts= " << totalSz<<std::endl;
-  }
+  // if(!rank) {
+  //   std::cout<<"# pts= " << totalSz<<std::endl;
+  // }
 
   MPI_Barrier(MPI_COMM_WORLD);
 
@@ -202,16 +202,16 @@ int main(int argc, char ** argv ) {
   PetscLogStagePop();
 #endif
   par::Mpi_Reduce<double>(&localTime, &globalTime, 1, MPI_MAX, 0, MPI_COMM_WORLD);
-  if(!rank){
-    std::cout <<"P2n Time: "<<globalTime << "secs " << std::endl;
-  }
+  // if(!rank){
+  //   std::cout <<"P2n Time: "<<globalTime << "secs " << std::endl;
+  // }
   pts.clear();
 
   localSz = linOct.size();
   par::Mpi_Reduce<DendroIntL>(&localSz, &totalSz, 1, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(rank==0) {
-    std::cout<<"linOct.size = " << totalSz<<std::endl;
-  }
+  // if(rank==0) {
+  //   std::cout<<"linOct.size = " << totalSz<<std::endl;
+  // }
 
   MPI_Barrier(MPI_COMM_WORLD);
 
@@ -227,16 +227,16 @@ int main(int argc, char ** argv ) {
 #endif
 
   par::Mpi_Reduce<double>(&localTime, &globalTime, 1, MPI_MAX, 0, MPI_COMM_WORLD);
-  if(!rank){
-    std::cout <<"Bal Time: "<<globalTime << "secs " << std::endl;
-  }
+  // if(!rank){
+  //   std::cout <<"Bal Time: "<<globalTime << "secs " << std::endl;
+  // }
   linOct.clear();
 
   localSz = balOct.size();
   par::Mpi_Reduce<DendroIntL>(&localSz, &totalSz, 1, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(rank==0) {
-    std::cout<<"balOct.size = " << totalSz<<std::endl;
-  }
+  // if(rank==0) {
+  //   std::cout<<"balOct.size = " << totalSz<<std::endl;
+  // }
 
 #ifdef PETSC_USE_LOG
   PetscLogStagePush(stages[2]);
@@ -244,15 +244,15 @@ int main(int argc, char ** argv ) {
 
   MPI_Barrier(MPI_COMM_WORLD);
 
-  if(rank==0) {
-    std::cout << "building DA" << std::endl;
-  }
+  // if(rank==0) {
+  //   std::cout << "building DA" << std::endl;
+  // }
 
   ot::DA da(balOct, PETSC_COMM_WORLD, PETSC_COMM_WORLD, compressLut);
 
-  if(rank==0) {
-    std::cout << "finished building DA" << std::endl;
-  }
+  // if(rank==0) {
+  //   std::cout << "finished building DA" << std::endl;
+  // }
   
 #ifdef PETSC_USE_LOG
   PetscLogStagePop();
@@ -279,25 +279,32 @@ int main(int argc, char ** argv ) {
   unsigned int el_beg, el_end, indep_beg, indep_end;
   da.getDepIndepIndices(&el_beg, &el_end, &indep_beg, &indep_end);
   
-  std::cout << rank << ": NumElements: " << da.getElementSize() << "(" << el_beg << ", " << el_end << ")" << std::endl;
-  std::cout << rank << ": NumIndependent : " << da.getIndependentSize() << "(" << indep_beg << ", " << indep_end << ")" << std::endl;
+  // std::cout << rank << ": NumElements: " << da.getElementSize() << "(" << el_beg << ", " << el_end << ")" << std::endl;
+  // std::cout << rank << ": NumIndependent : " << da.getIndependentSize() << "(" << indep_beg << ", " << indep_end << ")" << std::endl;
   
  //! write nodal vector to vtk file ...
   saveNodalVecAsVTK(&da, v, "fnViz" );
 
+  std::cout << "DA " << rank << " nodes (" << da.getPreGhostNodeSize() << ") " << da.getNodeSize() << " (" << da.getPostGhostNodeSize() << ")"  << " local: " << da.getLocalBufferSize() << " [" << da.getIdxElementBegin() << ", " << da.getIdxPostGhostBegin()  << "]" << std::endl;
+
+  for (unsigned int p=0; p< da.getSendProcSize(); ++p) {
+   std::cout << rank << " ~~> "  << da.getSendProcEntry(p) << " >>= " << da.getSendCountsEntry(p) << ", " << da.getSendCountsOffset(p) << std::endl;
+    std::cout << rank << " <~~ "  << da.getRecvProcEntry(p) << " >>= " << da.getRecvCountsEntry(p) << ", " << da.getRecvCountsOffset(p) << std::endl;
+  }
+
   
-  for ( da.init<ot::DA_FLAGS::INDEPENDENT>(), da.init<ot::DA_FLAGS::WRITABLE>(); 
-         da.curr() < da.end<ot::DA_FLAGS::INDEPENDENT>(); 
-        da.next<ot::DA_FLAGS::INDEPENDENT>() ) {
+  // for ( da.init<ot::DA_FLAGS::INDEPENDENT>(), da.init<ot::DA_FLAGS::WRITABLE>(); 
+  //        da.curr() < da.end<ot::DA_FLAGS::INDEPENDENT>(); 
+  //       da.next<ot::DA_FLAGS::INDEPENDENT>() ) {
     
-    std::cout << rank << ": indep: " << da.curr() << std::endl;
-  }
-  for ( da.init<ot::DA_FLAGS::W_DEPENDENT>(); 
-         da.curr() < da.end<ot::DA_FLAGS::W_DEPENDENT>(); 
-        da.next<ot::DA_FLAGS::W_DEPENDENT>() ) {
+  //   std::cout << rank << ": indep: " << da.curr() << std::endl;
+  // }
+  // for ( da.init<ot::DA_FLAGS::W_DEPENDENT>(); 
+  //        da.curr() < da.end<ot::DA_FLAGS::W_DEPENDENT>(); 
+  //       da.next<ot::DA_FLAGS::W_DEPENDENT>() ) {
     
-    std::cout << rank << ": dep: " << da.curr() << std::endl;
-  }
+  //   std::cout << rank << ": dep: " << da.curr() << std::endl;
+  // }
   
   // da.init<ot::DA_FLAGS::DEPENDENT>();
   // std::cout << rank << ": dep_beg: " << da.curr() << " end: " << da.end<ot::DA_FLAGS::DEPENDENT>() << std::endl;

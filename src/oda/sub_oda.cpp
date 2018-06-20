@@ -9,9 +9,10 @@ namespace ot {
 
 //***************Constructor*****************//
 subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain, double* gSize) {
-  std::cout << "subDA::Constructor - Starting " << std::endl;
+  // std::cout << "subDA::Constructor - Starting " << std::endl;
   m_da = da;
   m_dilpLocalToGlobal = NULL;
+  m_ucpSkipNodeList = NULL;
   m_bComputedLocalToGlobal = false;
 
 
@@ -26,7 +27,7 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   m_uiCommTag = 0;
   m_mpiContexts.clear();
 
-  std::cout << "subDA: mD= " << maxDepth << std::endl;
+  // std::cout << "subDA: mD= " << maxDepth << std::endl;
   auto inside = [](double d){ return d < 0.0; };
 
   double hx, hy, hz;
@@ -59,6 +60,10 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   m_da->vecGetBuffer<unsigned char>(gNumNonGhostNodes, m_ucpSkipNodeList, false, false, false, 1);  
   // std::cout << "vecGetBuffer done" << std::endl;
   
+  for (unsigned int i=0; i<m_da->getLocalBufferSize(); ++i) {
+    m_ucpSkipNodeList[i] = 0;
+  }
+
   // m_ucpSkipNodeList.clear();
   // m_ucpSkipNodeList.resize(m_da->getLocalBufferSize(), 1);
   m_uip_DA2sub_NodeMap.resize(m_da->getLocalBufferSize(), 0);
@@ -71,6 +76,7 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   std::cout << "basic sweep done" << std::endl;
   */    
 
+ unsigned int num_local_skip = 0;
   for ( m_da->init<ot::DA_FLAGS::ALL>(); 
         m_da->curr() < m_da->end<ot::DA_FLAGS::ALL>(); 
         m_da->next<ot::DA_FLAGS::ALL>() ) {
@@ -110,8 +116,7 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
             // std::cout << "subDA: skip element" << std::endl;
             // std::cout << "s" << da->curr() << ", ";
             m_ucpSkipList[m_da->curr()] = 1;
-          }
-          else {
+          } else {
             // touch nodes ....
             for(int k = 0; k < 8; k++) {
               if ( indices[k] < m_uip_DA2sub_NodeMap.size() )
@@ -123,17 +128,22 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
 
         } // for 
    // std::cout << std::endl;
+
+   m_da->vecRestoreBuffer<unsigned char>(gNumNonGhostNodes,  m_ucpSkipNodeList, false, false, false, 1);
+   m_da->vecGetBuffer<unsigned char>(gNumNonGhostNodes, m_ucpSkipNodeList, false, false, false, 1);  
+
   
   // std::cout << "read from ghosts" << std::endl;
   m_da->ReadFromGhostsBegin<unsigned char>(m_ucpSkipNodeList,1);
   m_da->ReadFromGhostsEnd<unsigned char>(m_ucpSkipNodeList);
   // std::cout << "read from ghosts done " << std::endl;
 
+  // skipNodeList should be correct at this point ...
   
   // compute the mapping ...
   unsigned int postG_beg = da->getIdxPostGhostBegin();
   unsigned int elem_beg = da->getIdxElementBegin();
-  
+
   unsigned int sum = 0;
   for (unsigned int i=0; i<m_uip_DA2sub_NodeMap.size(); ++i) {
     m_uip_DA2sub_NodeMap[i] = sum;
@@ -147,13 +157,14 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   m_uiLocalBufferSize = 0;
 
   m_uiPostGhostBegin = 0;
+  m_uiElementBegin = 0;
 
-  std::cout << rank << ": elem Sizes " << elem_beg << ", " << postG_beg << ", " << m_ucpSkipList.size() << std::endl;
+  // std::cout << rank << ": elem Sizes " << elem_beg << ", " << postG_beg << ", " << m_ucpSkipList.size() << std::endl;
 
-  std::cout <<rank << ": DA === preGhostBdy :" << m_da->getPreBoundaryNodeSize() << std::endl;
+  // std::cout <<rank << ": DA === preGhostBdy :" << m_da->getPreBoundaryNodeSize() << std::endl;
 
 
-  unsigned int pre_g=0, tmp1=0;
+  // unsigned int pre_g=0, tmp1=0;
 
   unsigned int j=0;
   for (unsigned int i=0; i<elem_beg; ++i) {
@@ -161,10 +172,10 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
       m_uiPreGhostElementSize++;
       m_uip_DA2sub_ElemMap[i] = j++;
     }
-    if ( (m_ucpSkipList[i] == 0) && ! (m_ucpSkipNodeList[i] == 0) ) {
-      pre_g++;
-    }
-    if  (m_ucpSkipNodeList[i] == 0) tmp1++;
+    // if ( (m_ucpSkipList[i] == 0) && ! (m_ucpSkipNodeList[i] == 0) ) {
+    //   pre_g++;
+    // }
+    // if  (m_ucpSkipNodeList[i] == 0) tmp1++;
   }
   
   
@@ -190,6 +201,8 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
     }
   }
 
+  // std::cout << rank << ": DA2sub done. " << m_uip_DA2sub_ElemMap.size() << ", " << j << std::endl;
+
   for (unsigned int i=0; i<m_uip_DA2sub_NodeMap.size(); ++i)  {
     if (m_ucpSkipNodeList[i] == 0) m_uiLocalBufferSize++;
   }
@@ -200,6 +213,7 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
       m_uip_sub2DA_NodeMap[m_uip_DA2sub_NodeMap[i]] = i;
     }
   }
+
 
   // std::cout << "[subDA::DEBUG] " << da->getRankAll() << ": ElementSize=" << m_uiElementSize << " , PreGhostElemSize=" << m_uiPreGhostElementSize << std::endl;
   
@@ -214,6 +228,7 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   for (unsigned int i=0; i<elem_beg; ++i) {
     if (m_ucpSkipNodeList[i] == 0) {
       m_uiPostGhostBegin++;
+      m_uiElementBegin++;
       if ( (m_da->getFlag(i) & ot::TreeNode::NODE ) && (m_da->getFlag(i) & ot::TreeNode::BOUNDARY ) )
         m_uiPreGhostBoundaryNodeSize++;
       else if (m_da->getFlag(i) & ot::TreeNode::NODE )
@@ -234,9 +249,13 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
     if ( (m_ucpSkipNodeList[i] == 0) &&  (m_da->getFlag(i) & ot::TreeNode::NODE ) ) m_uiPostGhostNodeSize++;
   }
 
+
+  // std::cout << rank << ": localBufferSize = " << m_uiLocalBufferSize << " [" << m_uiElementBegin << ", " << m_uiPostGhostBegin << "]" << std::endl;
+
+
   std::cout << "[subDA::DEBUG] " << rank << ": NodeSizes  (" << m_uiPreGhostNodeSize << ") " << m_uiNodeSize << " (" << m_uiPostGhostNodeSize << ")" << std::endl;
   std::cout << "[subDA::DEBUG] " << rank << ": BoundaryNodeSizes  (" << m_uiPreGhostBoundaryNodeSize << ") " << m_uiBoundaryNodeSize << std::endl;
-  std::cout << "DA " << rank << " nodes (" << m_da->getPreGhostNodeSize() << ") " << m_da->getNodeSize() << " (" << m_da->getPostGhostNodeSize() << ")" << std::endl;
+  // std::cout << "DA " << rank << " nodes (" << m_da->getPreGhostNodeSize() << ") " << m_da->getNodeSize() << " (" << m_da->getPostGhostNodeSize() << ")" << std::endl;
 
   // scatter map 
 
@@ -244,6 +263,7 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   m_uipSendCounts.clear();
   m_uipSendProcs.clear();
   m_uipSendOffsets.clear();
+
   // new
   unsigned int k=0; 
   unsigned int offset=0;
@@ -257,9 +277,10 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
       }
       k++;
     }
+    /*
     std::cout << rank << " ~~> "  << m_da->getSendProcEntry(p) << " >>= " << m_da->getSendCountsEntry(p) << ", " << m_da->getSendCountsOffset(p) << std::endl;
     std::cout << rank << " <~~ "  << m_da->getRecvProcEntry(p) << " >>= " << m_da->getRecvCountsEntry(p) << ", " << m_da->getRecvCountsOffset(p) << std::endl;
-    
+    */
     if (cnt) {
       m_uipSendProcs.push_back(m_da->getSendProcEntry(p));
       m_uipSendCounts.push_back(cnt);
@@ -272,10 +293,9 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   // std::cout << "subDA::constructor  sendProcs, Cnts, offsets " << m_uipSendProcs.size() << ", " << m_uipSendCounts.size() << ", " << m_uipSendOffsets.size() << std::endl;
   // std::cout << rank << ": sendProcs, Cnts, offsets " << m_uipSendProcs[0] << ", " << m_uipSendCounts[0] << ", " << m_uipSendOffsets[0] << std::endl;
   
-   for (unsigned int p=0; p<m_uipSendProcs.size(); ++p) {
-      std::cout << rank << " --> " << m_uipSendProcs[p] << " : " << m_uipSendCounts[p] << std::endl;
-   }
-
+  //  for (unsigned int p=0; p<m_uipSendProcs.size(); ++p) {
+  //     std::cout << rank << " --> " << m_uipSendProcs[p] << " : " << m_uipSendCounts[p] << ", " << m_uipSendOffsets[p] << std::endl;
+  //  }
 
   // compute recvProcs/recvCnts
   
@@ -324,6 +344,10 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   // for (unsigned int p=0; p<m_uipRecvProcs.size(); ++p) {
   //   std::cout << rank << " <==" << m_uipRecvProcs[p] << " : " << m_uipRecvCounts[p] << std::endl;
   // }
+  //   for (unsigned int p=0; p<m_uipRecvProcs.size(); ++p) {
+  //     std::cout << rank << " <== " << m_uipRecvProcs[p] << " : " << m_uipRecvCounts[p] << ", " << m_uipRecvOffsets[p] << std::endl;
+  //  }
+
 
   delete [] sbuff;
   delete [] rbuff;
@@ -352,6 +376,11 @@ subDA::~subDA() {
     delete [] m_dilpLocalToGlobal;
     m_dilpLocalToGlobal = NULL;
   }
+  if (m_ucpSkipNodeList != NULL) {
+    delete [] m_ucpSkipNodeList;
+    m_ucpSkipNodeList = NULL;
+  }
+
 }
 
 int subDA::createVector(Vec &arr, bool isElemental, bool isGhosted, unsigned int dof) {
@@ -433,7 +462,7 @@ int subDA::computeLocalToGlobalMappings() {
   MPI_Request sendRequest;
   MPI_Status status;
   
-  // std::cout << rank << ": compute_l2g:  localSize " << localNodeSize << std::endl; 
+  std::cout << rank << ": compute_l2g:  localSize " << localNodeSize << std::endl; 
 
   par::Mpi_Scan<DendroIntL>(&localNodeSize, &off1, 1, MPI_SUM, comm); 
   if(rank < (npes-1)) {
@@ -446,7 +475,7 @@ int subDA::computeLocalToGlobalMappings() {
     globalOffset = 0;
   }
   
-  // std::cout << rank << ": compute_l2g:  globalOffset " << globalOffset << std::endl;
+  std::cout << rank << ": compute_l2g:  globalOffset " << globalOffset << std::endl;
 
   std::vector<DendroIntL> gNumNonGhostNodes(localNodeSize); 
   for(DendroIntL i = 0; i < localNodeSize; i++) {
@@ -460,8 +489,14 @@ int subDA::computeLocalToGlobalMappings() {
     MPI_Wait(&sendRequest, &statusWait);
   }
 
+
   ReadFromGhostsBegin<DendroIntL>(m_dilpLocalToGlobal,1);
   ReadFromGhostsEnd<DendroIntL>(m_dilpLocalToGlobal);
+
+  // for (unsigned int i=0; i<m_uiLocalBufferSize; ++i) {
+  //   std::cout << rank << ": compute_l2g " << i << " = " << m_dilpLocalToGlobal[i] << std::endl;
+  // }
+
 
   /*
   for (unsigned int i=0; i<m_uiLocalBufferSize; ++i) {
@@ -470,6 +505,9 @@ int subDA::computeLocalToGlobalMappings() {
     }
   }
   */
+
+    unsigned int elem_beg = m_da->getIdxElementBegin();
+   std::cout << rank << ": elemBeg " << m_uip_DA2sub_NodeMap[elem_beg] << ", " << m_dilpLocalToGlobal[m_uip_DA2sub_NodeMap[elem_beg]] << std::endl;
 
   gNumNonGhostNodes.clear();
   m_bComputedLocalToGlobal = true;

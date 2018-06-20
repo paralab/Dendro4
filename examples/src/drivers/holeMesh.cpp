@@ -79,29 +79,29 @@ int main(int argc, char ** argv ) {
   
   // function2Octree(fx, nodes, 8, false, MPI_COMM_WORLD);
 
-  ot::DA *main_da =  ot::function_to_DA(fx_refine, 4, 7, gsz, MPI_COMM_WORLD);
-  std::cout << rank << ": finished building DA" << std::endl ;
+  ot::DA *main_da =  ot::function_to_DA(fx_refine, 3, 6, gsz, MPI_COMM_WORLD);
+  // std::cout << rank << ": finished building DA" << std::endl ;
   
   main_da->computeLocalToGlobalMappings();
 
   ot::subDA *da =  new ot::subDA(main_da, fx_retain, gsz);
-  std::cout << rank << ": finished building subDA" << std::endl ;
+  // std::cout << rank << ": finished building subDA" << std::endl ;
 
   da->computeLocalToGlobalMappings();
   
   PetscScalar zero = 1.0, nrm;
 
-  Vec v, w, y;
-  std::cout << rank << ": creating vector" << std::endl;
+  Vec v,  y; // , w;
+  // std::cout << rank << ": creating vector" << std::endl;
   
   da->createVector(v, false, false, DOF);
   da->createVector(y, false, false, DOF);
-  main_da->createVector(w, false, false, DOF);
-  std::cout << rank << ": created vector" << std::endl;
+  // main_da->createVector(w, false, false, DOF);
+  // std::cout << rank << ": created vector" << std::endl;
 
 
   VecSet(v, zero);
-  VecSet(w, zero);
+  // VecSet(w, zero);
   VecSet(y, zero);
   // std::cout << rank << ": set vector to 0" << std::endl;
 
@@ -115,7 +115,7 @@ int main(int argc, char ** argv ) {
 
     da->vecGetBuffer(v,   _vec, false, false, false,  DOF);
     da->vecGetBuffer(y,   _y, false, false, false,  DOF);
-    main_da->vecGetBuffer(w,   _w, false, false, false,  DOF);
+    // main_da->vecGetBuffer(w,   _w, false, false, false,  DOF);
 
     // da->ReadFromGhostsBegin<PetscScalar>(_vec, DOF);
     // da->ReadFromGhostsEnd<PetscScalar>(_vec);
@@ -131,6 +131,10 @@ int main(int argc, char ** argv ) {
     
     
    //  unsigned long _min = 100000, _max=0, _mxi=0, _mni=100000;
+
+    for(unsigned int i=0; i<da->getLocalBufferSize(); ++i) {
+      _y[i] = 0.0;
+    }
 
     unsigned int indep=0, dep=0;
     for ( da->init<ot::DA_FLAGS::INDEPENDENT>(); 
@@ -149,7 +153,12 @@ int main(int argc, char ** argv ) {
             //   if ( idx[q] < _mni) _mni = idx[q];
             // }
             for (unsigned int q=0; q<8; ++q) {
-              _vec[idx[q]] = 1; // l2g[idx[q]];
+              // std::cout << rank << ": idx " << idx[q] << " : " << l2g[idx[q]] << std::endl; 
+              if ( (idx[q] < 0) || idx[q] >= da->getLocalBufferSize() )
+                std::cout << "idx is wrong" << std::endl;
+              if (l2g[idx[q]] == 171396)
+                std::cout << rank << ": wrong index into l2g. " << idx[q] << std::endl;
+              // _vec[idx[q]] = 1; // l2g[idx[q]];
               _y[idx[q]] = l2g[idx[q]];
             }
         }
@@ -170,36 +179,45 @@ int main(int argc, char ** argv ) {
             //   if ( idx[q] < _mni) _mni = idx[q];
             // }
             for (unsigned int q=0; q<8; ++q) {
-              _vec[idx[q]] = 1; // l2g[idx[q]];
+              // std::cout << rank << ": idx " << idx[q] << " : " << l2g[idx[q]] << std::endl;
+              if ( (idx[q] < 0) || idx[q] >= da->getLocalBufferSize() )
+                std::cout << "idx is wrong" << std::endl;
+              if (l2g[idx[q]] == 171396)
+                std::cout << rank << ": wrong index into l2g. " << idx[q] << std::endl;
+              // _vec[idx[q]] = 1; // l2g[idx[q]];
               _y[idx[q]] = l2g[idx[q]];
             }
         }
 
 
-    for ( main_da->init<ot::DA_FLAGS::INDEPENDENT>(); 
-         main_da->curr() < main_da->end<ot::DA_FLAGS::INDEPENDENT>(); 
-        main_da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
-            main_da->getNodeIndices(idx);
+    // for ( main_da->init<ot::DA_FLAGS::INDEPENDENT>(); 
+    //      main_da->curr() < main_da->end<ot::DA_FLAGS::INDEPENDENT>(); 
+    //     main_da->next<ot::DA_FLAGS::INDEPENDENT>() ) {
+    //         main_da->getNodeIndices(idx);
             
-            for (unsigned int q=0; q<8; ++q) {
-              _w[idx[q]] = rank; // l2g[idx[q]];
-            }
-        }
-    for ( main_da->init<ot::DA_FLAGS::W_DEPENDENT>(); 
-         main_da->curr() < main_da->end<ot::DA_FLAGS::W_DEPENDENT>(); 
-        main_da->next<ot::DA_FLAGS::W_DEPENDENT>() ) {
-            main_da->getNodeIndices(idx);
+    //         for (unsigned int q=0; q<8; ++q) {
+    //           _w[idx[q]] = rank; // l2g[idx[q]];
+    //         }
+    //     }
+    // for ( main_da->init<ot::DA_FLAGS::W_DEPENDENT>(); 
+    //      main_da->curr() < main_da->end<ot::DA_FLAGS::W_DEPENDENT>(); 
+    //     main_da->next<ot::DA_FLAGS::W_DEPENDENT>() ) {
+    //         main_da->getNodeIndices(idx);
             
-            for (unsigned int q=0; q<8; ++q) {
-              _w[idx[q]] = rank; // l2g[idx[q]];
-            }
-        }      
+    //         for (unsigned int q=0; q<8; ++q) {
+    //           _w[idx[q]] = rank; // l2g[idx[q]];
+    //         }
+    //     }      
 
 
+    // for (unsigned int i=da->getIdxElementBegin(); i<da->getIdxPostGhostBegin(); ++i) {
+    //   std::cout << rank << ": y[" << i << "] = " << _y[i] << ", l2g " << l2g[i] << std::endl;
+    // }
 
-    da->vecRestoreBuffer(v,  _vec, false, false, false, DOF);
+
+    // da->vecRestoreBuffer(v,  _vec, false, false, false, DOF);
     da->vecRestoreBuffer(y,  _y, false, false, false, DOF);
-    main_da->vecRestoreBuffer(w,  _w, false, false, false, DOF);
+    // main_da->vecRestoreBuffer(w,  _w, false, false, false, DOF);
     // std::cout << rank << ": min,max l2g " << _min << ", " << _max << std::endl;
     // std::cout << rank << ": min,max idx " << _mni << ", " << _mxi << std::endl;
     // std::cout << rank << ": indep: " << indep << ", dep: " << dep << std::endl;
@@ -212,10 +230,13 @@ int main(int argc, char ** argv ) {
    PetscViewerDestroy(&viewer);
 
   PetscScalar cnt, sum;
+  PetscInt sz;
+  VecGetSize(v, &sz);
   VecSum(v, &cnt);
   VecSum(y, &sum);
-  if (rank) {
-    std::cout << "Testing: #dof " << cnt << ", sum_indices " << (long)sum << ", n(n+1)/2 = " << (long)((cnt-1)*(cnt)/2) << std::endl;
+ 
+  if (!rank) {
+    std::cout << "Testing: Vec size: " << sz << " #dof " << cnt << ", sum_indices " << (long)sum << ", n(n+1)/2 = " << (long)((cnt-1)*(cnt)/2) << std::endl;
   }
 
 
@@ -228,13 +249,13 @@ int main(int argc, char ** argv ) {
   MPI_Barrier(MPI_COMM_WORLD);
 
   // std::cout << rank << ": saving vtk" << std::endl;
-  saveNodalVecAsVTK(da, v, gsz, "sub_domain" );
-  saveNodalVecAsVTK(main_da, w, gsz, "full_domain" );
+  saveNodalVecAsVTK(da, y, gsz, "sub_domain" );
+  // saveNodalVecAsVTK(main_da, w, gsz, "full_domain" );
   // std::cout << rank << ": done saving vtk ===" << std::endl;
 
   // clean up
   VecDestroy(&v);
-  VecDestroy(&w);
+  VecDestroy(&y);
   
   // std::cout << rank << " === destroyed Vec ===" << std::endl;
  
