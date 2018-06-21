@@ -133,7 +133,7 @@ int main(int argc, char ** argv ) {
    //  unsigned long _min = 100000, _max=0, _mxi=0, _mni=100000;
 
     for(unsigned int i=0; i<da->getLocalBufferSize(); ++i) {
-      _y[i] = 0.0;
+      _y[i] = -100.0;
     }
 
     unsigned int indep=0, dep=0;

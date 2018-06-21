@@ -61,7 +61,7 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   // std::cout << "vecGetBuffer done" << std::endl;
   
   for (unsigned int i=0; i<m_da->getLocalBufferSize(); ++i) {
-    m_ucpSkipNodeList[i] = 0;
+    m_ucpSkipNodeList[i] = 1;
   }
 
   // m_ucpSkipNodeList.clear();
@@ -129,8 +129,8 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
         } // for 
    // std::cout << std::endl;
 
-   m_da->vecRestoreBuffer<unsigned char>(gNumNonGhostNodes,  m_ucpSkipNodeList, false, false, false, 1);
-   m_da->vecGetBuffer<unsigned char>(gNumNonGhostNodes, m_ucpSkipNodeList, false, false, false, 1);  
+   // m_da->vecRestoreBuffer<unsigned char>(gNumNonGhostNodes,  m_ucpSkipNodeList, false, false, false, 1);
+   // m_da->vecGetBuffer<unsigned char>(gNumNonGhostNodes, m_ucpSkipNodeList, false, false, false, 1);  
 
   
   // std::cout << "read from ghosts" << std::endl;
@@ -293,9 +293,9 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   // std::cout << "subDA::constructor  sendProcs, Cnts, offsets " << m_uipSendProcs.size() << ", " << m_uipSendCounts.size() << ", " << m_uipSendOffsets.size() << std::endl;
   // std::cout << rank << ": sendProcs, Cnts, offsets " << m_uipSendProcs[0] << ", " << m_uipSendCounts[0] << ", " << m_uipSendOffsets[0] << std::endl;
   
-  //  for (unsigned int p=0; p<m_uipSendProcs.size(); ++p) {
-  //     std::cout << rank << " --> " << m_uipSendProcs[p] << " : " << m_uipSendCounts[p] << ", " << m_uipSendOffsets[p] << std::endl;
-  //  }
+   for (unsigned int p=0; p<m_uipSendProcs.size(); ++p) {
+      std::cout << rank << " --> " << m_uipSendProcs[p] << " : " << m_uipSendCounts[p] << ", " << m_uipSendOffsets[p] << std::endl;
+   }
 
   // compute recvProcs/recvCnts
   
@@ -341,12 +341,12 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
 
 
   
-  // for (unsigned int p=0; p<m_uipRecvProcs.size(); ++p) {
-  //   std::cout << rank << " <==" << m_uipRecvProcs[p] << " : " << m_uipRecvCounts[p] << std::endl;
-  // }
-  //   for (unsigned int p=0; p<m_uipRecvProcs.size(); ++p) {
-  //     std::cout << rank << " <== " << m_uipRecvProcs[p] << " : " << m_uipRecvCounts[p] << ", " << m_uipRecvOffsets[p] << std::endl;
-  //  }
+  for (unsigned int p=0; p<m_uipRecvProcs.size(); ++p) {
+    std::cout << rank << " <==" << m_uipRecvProcs[p] << " : " << m_uipRecvCounts[p] << std::endl;
+  }
+    for (unsigned int p=0; p<m_uipRecvProcs.size(); ++p) {
+      std::cout << rank << " <== " << m_uipRecvProcs[p] << " : " << m_uipRecvCounts[p] << ", " << m_uipRecvOffsets[p] << std::endl;
+   }
 
 
   delete [] sbuff;
