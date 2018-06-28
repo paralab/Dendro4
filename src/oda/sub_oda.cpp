@@ -5,6 +5,8 @@
 
 #include "sub_oda.h"
 
+#include <set>
+
 namespace ot {
 
 //***************Constructor*****************//
@@ -894,6 +896,72 @@ int subDA::vecRestoreBuffer(Vec in, PetscScalar* out, bool isElemental, bool isG
     }
 
     return rval;
+  }
+
+  void subDA::getBoundaryNodeIndices(std::vector<DendroIntL>& glo_idx, std::function<double ( double, double, double ) > fx_retain, double* gSize) {
+
+    if (!m_bComputedLocalToGlobal) computeLocalToGlobalMappings();
+
+    MPI_Comm comm = m_da->getComm();
+    int npes = m_da->getNpesAll();
+    int rank = m_da->getRankAll();
+
+    unsigned int lev;
+  
+    unsigned maxDepth = m_da->getMaxDepth() - 1;
+
+    auto inside = [](double d){ return d < 0.0; };
+
+    double hx, hy, hz;
+    std::array<double, 8> dist;
+    Point pt;
+
+    double xFac = gSize[0]/((double)(1<<(maxDepth)));
+    double yFac = gSize[1]/((double)(1<<(maxDepth)));
+    double zFac = gSize[2]/((double)(1<<(maxDepth)));
+
+    unsigned int indices[8];
+
+    std::set<unsigned int> bdy_idx;
+
+    for ( m_da->init<ot::DA_FLAGS::ALL>(); 
+        m_da->curr() < m_da->end<ot::DA_FLAGS::ALL>(); 
+        m_da->next<ot::DA_FLAGS::ALL>() ) {
+
+          lev = m_da->getLevel(m_da->curr());
+          hx = xFac*(1<<(maxDepth +1 - lev));
+          hy = yFac*(1<<(maxDepth +1 - lev));
+          hz = zFac*(1<<(maxDepth +1 - lev));
+
+          pt = m_da->getCurrentOffset();
+
+          m_da->getNodeIndices(indices);
+
+
+          dist[0] = fx_retain(pt.x()*xFac, pt.y()*yFac, pt.z()*zFac);
+          dist[1] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac, pt.z()*zFac);
+          dist[2] = fx_retain(pt.x()*xFac, pt.y()*yFac+hy, pt.z()*zFac);
+          dist[3] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac+hy, pt.z()*zFac);
+
+          dist[4] = fx_retain(pt.x()*xFac, pt.y()*yFac, pt.z()*zFac+hz);
+          dist[5] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac, pt.z()*zFac+hz);
+          dist[6] = fx_retain(pt.x()*xFac, pt.y()*yFac+hy, pt.z()*zFac+hz);
+          dist[7] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac+hy, pt.z()*zFac +hz);
+
+
+          if ( ! std::all_of( dist.begin(), dist.end(), inside ) && ! std::none_of( dist.begin(), dist.end(), inside ) ) {
+            // boundary elements
+            for(int k = 0; k < 8; k++) {
+              if (dist[k] < 0.0 )
+                bdy_idx.insert(m_uip_DA2sub_NodeMap[indices[k]]);
+            } // k
+          } // bdy elem
+        } // for 
+
+        glo_idx.clear();
+        for (auto i: bdy_idx) {
+          glo_idx.push_back(m_dilpLocalToGlobal[i]);
+        }
   }
 
 }; // namespace ot

@@ -1075,6 +1075,9 @@ namespace ot {
       void skip_current();
       void finalize_skiplist();
 
+
+      void getBoundaryNodeIndices(std::vector<DendroIntL>& indices, std::function<double ( double, double, double ) > fx_retain, double* gSize);
+
   };
 
 }; // namespace ot

@@ -89,6 +89,9 @@ int main(int argc, char ** argv ) {
 
   da->computeLocalToGlobalMappings();
   
+  std::vector<DendroIntL> bdy_indices;
+  da->getBoundaryNodeIndices(bdy_indices, fx_retain, gsz);
+
   PetscScalar zero = 1.0, nrm;
 
   Vec v,  y; // , w;
