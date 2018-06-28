@@ -145,11 +145,16 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   unsigned int elem_beg = da->getIdxElementBegin();
 
   unsigned int sum = 0;
+  for (unsigned int i=0; i<m_uip_DA2sub_ElemMap.size(); ++i) {
+    m_uip_DA2sub_ElemMap[i] = sum;
+    if (m_ucpSkipList[i] == 0) sum++;
+  }
+  sum = 0;
   for (unsigned int i=0; i<m_uip_DA2sub_NodeMap.size(); ++i) {
     m_uip_DA2sub_NodeMap[i] = sum;
     if (m_ucpSkipNodeList[i] == 0) sum++;
   }
-
+  
   //! counts 
   // Elemental ...
   m_uiElementSize = 0;

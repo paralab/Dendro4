@@ -852,6 +852,11 @@ namespace ot {
           return m_da->curr();
         }
 
+        unsigned int curr_elem() {
+          unsigned int idx = m_da->curr();
+          return m_uip_DA2sub_ElemMap[idx];
+        }
+
         /**
 
           @author Hari Sundar
