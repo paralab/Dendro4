@@ -208,7 +208,9 @@ namespace ot {
   void assignBoundaryFlags(ot::DA* da, 
       std::vector<unsigned char> & bdyFlagVec);
 
-  
+  std::vector<TreeNode> function_to_TreeNodes(std::function<double ( double, double, double ) > fx_refine,
+      unsigned int d_min, unsigned int d_max, double* gSize, MPI_Comm comm);
+
   /**
    * @author Hari Sundar
    */ 
@@ -219,6 +221,7 @@ namespace ot {
   DA* function_to_DA_bool (std::function<bool ( double, double, double ) > fx_refine, unsigned int d_min, unsigned int d_max, double* gSize, MPI_Comm comm );
 
   // levels is an non-ghosted elemental array, created by the original DA and populated with the desired levels
+  std::vector<TreeNode> remesh_DA_TreeNodes (ot::DA* da, std::vector<unsigned int> levels, double* gSize, MPI_Comm comm);
   ot::DA* remesh_DA (ot::DA* da, std::vector<unsigned int> levels, double* gSize, MPI_Comm comm);
 
   /**

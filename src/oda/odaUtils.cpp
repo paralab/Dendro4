@@ -2261,16 +2261,82 @@ namespace ot {
 
   }// end of the function
 
-
-  // ot::DA* function_to_DA(std::function<double(double,double,double)> fx, unsigned int d_min, unsigned int d_max, double* gSize, bool reject_interior, MPI_Comm comm ) {
   DA* function_to_DA (std::function<double ( double, double, double ) > fx_refine, unsigned int d_min, unsigned int d_max, double* gSize, MPI_Comm comm ) {
+    bool compressLut = false;
+
+    std::vector<TreeNode> nodes_new = function_to_TreeNodes(fx_refine, d_min, d_max, gSize, comm);
+
+    // build DA.
+    /*
+      if(rank==0) {
+        std::cout << "building DA" << std::endl;
+      }
+  */
+    ot::DA *da = new ot::DA(nodes_new, comm, comm, 0.0, compressLut);
+
+    // if(rank==0) {
+    //  std::cout << rank << ": finished building DA" << std::endl;
+    // }
+
+    unsigned int lev;
+    /*
+    double xFac = gSize[0]/((double)(1<<(maxDepth)));
+    double yFac = gSize[1]/((double)(1<<(maxDepth)));
+    double zFac = gSize[2]/((double)(1<<(maxDepth)));
+    */
+
+    // now process the DA to skip interior elements
+    /* moved to subDA
+    if (reject_interior) {
+        da->initialize_skiplist();
+        for ( da->init<ot::DA_FLAGS::ALL>(); da->curr() < da->end<ot::DA_FLAGS::ALL>(); da->next<ot::DA_FLAGS::ALL>() ) {
+          lev = da->getLevel(da->curr());
+          hx = xFac*(1<<(maxDepth - lev));
+          hy = yFac*(1<<(maxDepth - lev));
+          hz = zFac*(1<<(maxDepth - lev));
+
+          pt = da->getCurrentOffset();
+
+          dist[0] = fx_retain(pt.x()*xFac, pt.y()*yFac, pt.z()*zFac);
+          dist[1] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac, pt.z()*zFac);
+          dist[2] = fx_retain(pt.x()*xFac, pt.y()*yFac+hy, pt.z()*zFac);
+          dist[3] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac+hy, pt.z()*zFac);
+
+          dist[4] = fx_retain(pt.x()*xFac, pt.y()*yFac, pt.z()*zFac+hz);
+          dist[5] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac, pt.z()*zFac+hz);
+          dist[6] = fx_retain(pt.x()*xFac, pt.y()*yFac+hy, pt.z()*zFac+hz);
+          dist[7] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac+hy, pt.z()*zFac +hz);
+
+          /
+          *
+          if (pt == Point(0,0,0)) {
+            for (auto dd: dist)
+              std::cout << "HS: " << dd << std::endl;
+          }
+          *
+          /
+
+          if ( std::all_of( dist.begin(), dist.end(), inside ) ) {
+            da->skip_current();
+          }
+        }
+
+        da->finalize_skiplist();
+    }
+    std::cout << rank << ": finished removing interior." << std::endl;
+    */
+
+    return da;
+  }
+
+  std::vector<TreeNode> function_to_TreeNodes (std::function<double ( double, double, double ) > fx_refine,
+      unsigned int d_min, unsigned int d_max, double* gSize, MPI_Comm comm ) {
   // PROF_F2O_BEGIN
     int size, rank;
     unsigned int dim = 3;
     unsigned maxDepth = 30;
     bool incCorner = 1;
-    bool compressLut = false;
-  
+
     MPI_Comm_size(comm, &size);
     MPI_Comm_rank(comm, &rank);
   
@@ -2425,68 +2491,9 @@ namespace ot {
     
     // balance 
     ot::balanceOctree (nodes, nodes_new, dim, maxDepth, incCorner, comm, NULL, NULL);
-  
-    // build DA.
-  /*  
-    if(rank==0) {
-      std::cout << "building DA" << std::endl;
-    }
-*/
-    ot::DA *da = new ot::DA(nodes_new, comm, comm, compressLut);
 
-    // if(rank==0) {
-    //  std::cout << rank << ": finished building DA" << std::endl;
-    // }
-   
-    unsigned int lev;
-    /*
-    double xFac = gSize[0]/((double)(1<<(maxDepth)));
-    double yFac = gSize[1]/((double)(1<<(maxDepth)));
-    double zFac = gSize[2]/((double)(1<<(maxDepth)));
-    */
+    return nodes_new;
 
-    // now process the DA to skip interior elements
-    /* moved to subDA
-    if (reject_interior) {
-        da->initialize_skiplist();
-        for ( da->init<ot::DA_FLAGS::ALL>(); da->curr() < da->end<ot::DA_FLAGS::ALL>(); da->next<ot::DA_FLAGS::ALL>() ) {
-          lev = da->getLevel(da->curr());
-          hx = xFac*(1<<(maxDepth - lev));
-          hy = yFac*(1<<(maxDepth - lev));
-          hz = zFac*(1<<(maxDepth - lev));
-
-          pt = da->getCurrentOffset();
-
-          dist[0] = fx_retain(pt.x()*xFac, pt.y()*yFac, pt.z()*zFac);
-          dist[1] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac, pt.z()*zFac);
-          dist[2] = fx_retain(pt.x()*xFac, pt.y()*yFac+hy, pt.z()*zFac);
-          dist[3] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac+hy, pt.z()*zFac);
-
-          dist[4] = fx_retain(pt.x()*xFac, pt.y()*yFac, pt.z()*zFac+hz);
-          dist[5] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac, pt.z()*zFac+hz);
-          dist[6] = fx_retain(pt.x()*xFac, pt.y()*yFac+hy, pt.z()*zFac+hz);
-          dist[7] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac+hy, pt.z()*zFac +hz);
-
-          / 
-          *
-          if (pt == Point(0,0,0)) {
-            for (auto dd: dist)
-              std::cout << "HS: " << dd << std::endl;
-          }
-          * 
-          /
-          
-          if ( std::all_of( dist.begin(), dist.end(), inside ) ) {
-            da->skip_current();
-          } 
-        }
-
-        da->finalize_skiplist();
-    }
-    std::cout << rank << ": finished removing interior." << std::endl;
-    */
-
-    return da;
   } // end of function.
   
   
@@ -2709,14 +2716,20 @@ namespace ot {
 
     return da;
   } // end of function f2DA_bool
-  
 
   ot::DA* remesh_DA (ot::DA* da, std::vector<unsigned int> levels, double* gSize, MPI_Comm comm) {
+    double tol = 0.0;
+    bool compressLut = false;
 
+    std::vector<TreeNode> linOct = remesh_DA_TreeNodes(da, levels, gSize, comm);
+    ot::DA *new_da = new ot::DA(linOct, comm, comm, tol, compressLut);
+    return new_da;
+  }
+
+  std::vector<TreeNode> remesh_DA_TreeNodes (ot::DA* da, std::vector<unsigned int> levels, double* gSize, MPI_Comm comm) {
     unsigned int dim = 3;
     unsigned int maxNumPts = 1;
     bool incCorner = 1;
-    bool compressLut = false;
     unsigned int maxDepth = da->getMaxDepth();
 
     // elemental loop - create new points
@@ -2762,11 +2775,6 @@ namespace ot {
 
     std::swap(linOct, tmpNodes);
     tmpNodes.clear();
-
-    ot::DA *new_da = new ot::DA(linOct, comm, comm, compressLut);
-
-    return new_da;
-
   } // remesh_DA
 
 }//end namespace
