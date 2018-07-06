@@ -703,10 +703,7 @@ namespace ot {
           */
         template <typename T>
           int  createVector(std::vector<T> &local, bool isElemental,
-              bool isGhosted, unsigned int dof=1) {
-                return m_da->createVector<T>(local, isElemental, isGhosted, dof);
-              }
-
+              bool isGhosted, unsigned int dof=1); 
         /**
           @author Hari Sundar
           @brief Returns a C-array of type PetscScalar from a PETSc Vec for quick local access. 

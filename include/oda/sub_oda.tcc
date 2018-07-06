@@ -38,6 +38,31 @@ namespace ot {
     }
 
   // vector functions
+    template <typename T>
+    int subDA::createVector(std::vector<T> &arr, bool isElemental,
+        bool isGhosted, unsigned int dof) {
+      // first determine the length of the vector ...
+      unsigned int sz = 0;
+      
+      if (isElemental) {
+        sz = m_uiElementSize;
+        if (isGhosted) {
+          sz += m_uiPreGhostElementSize;
+        }
+      } else {
+        sz = m_uiNodeSize + m_uiBoundaryNodeSize;
+        if (isGhosted) {
+          sz += (m_uiPreGhostNodeSize + m_uiPreGhostBoundaryNodeSize + m_uiPostGhostNodeSize);
+        }
+      }
+      // now for dof ...
+      sz *= dof;
+      
+      // now create the vector
+      arr.resize(sz);
+
+      return 0;
+    }
 
   template < typename T >
     int subDA::vecGetBuffer(std::vector<T> &in, T* &out, bool isElemental,
