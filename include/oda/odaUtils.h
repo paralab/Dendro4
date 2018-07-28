@@ -163,6 +163,7 @@ namespace ot {
   //Forward Declarations
   class TreeNode;
   class DA;
+  class subDA;
 
     void writeCommCountMapToFile(char * fileName, const std::vector<unsigned int>& commProcs, const std::vector<unsigned int>& commCounts, MPI_Comm comm,double threshold=0);
 
@@ -243,9 +244,15 @@ namespace ot {
     @param pts Points to evaluate the field 
     @author Rahul Sampath
     */
+   /*
   void interpolateData(ot::DA* da, std::vector<double>& in,
       std::vector<double>& out, std::vector<double>* gradOut,
       unsigned int dof, std::vector<double>& pts);
+
+  void interpolateData(ot::subDA* da, std::vector<double>& in,
+      std::vector<double>& out, std::vector<double>* gradOut,
+      unsigned int dof, std::vector<double>& pts);
+  */
 
   /**
     @brief Interpolates the function and (optionally) its gradient at the specified points
@@ -261,12 +268,15 @@ namespace ot {
     the gradient of the next component of in and so on.
     @param dof Degrees of freedom per node
     @param pts Points to evaluate the field 
-    @author Rahul Sampath
+    @author Hari Sundar
     */
   void interpolateData(ot::DA* da, Vec in, Vec out, Vec* gradOut,
       unsigned int dof, const std::vector<double>& pts, const double* problemSize=NULL);
+  void interpolateData(ot::subDA* da, Vec in, Vec out, Vec* gradOut,
+      unsigned int dof, const std::vector<double>& pts, const double* problemSize=NULL);
 
   void getNodeCoordinates(ot::DA* da, std::vector<double> &pts, const double* problemSize);
+  void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* problemSize);
 
   /**
     @author Rahul Sampath
