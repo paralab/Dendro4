@@ -510,13 +510,13 @@ namespace ot {
        * hence the error. You can fix it when you compute the TreeNode corresponding to the element.
        *   Hari, May 7, 2018
        */
-      if ( (xint == octMaxCoord) || ( fabs(pts[(3*i)] - subDASize[0]) < xFac ) ) {
+      if ( (xint == octMaxCoord) || ( fabs(pts[(3*i)] - subDASize[0]) < 1e-8 ) ) {
         xint = octMaxCoord - 1;
       }
-      if ( (yint == octMaxCoord) || ( fabs(pts[(3*i)+1] - subDASize[1]) < yFac ) ) {
+      if ( (yint == octMaxCoord) || ( fabs(pts[(3*i)+1] - subDASize[1]) < 1e-8 ) ) {
         yint = octMaxCoord - 1;
       }
-      if ( (zint == octMaxCoord) || ( fabs(pts[(3*i)+2] - subDASize[2]) < zFac ) ) {
+      if ( (zint == octMaxCoord) || ( fabs(pts[(3*i)+2] - subDASize[2]) < 1e-8 ) ) {
         zint = octMaxCoord - 1;
       }
 
