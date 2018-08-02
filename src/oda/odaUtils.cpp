@@ -451,7 +451,7 @@ namespace ot {
   }
 
   void interpolateData(ot::subDA* da, Vec in, Vec out, Vec* gradOut,
-      unsigned int dof, const std::vector<double>& pts, const double* problemSize) {
+      unsigned int dof, const std::vector<double>& pts, const double* problemSize, const double* subDASize) {
 
     assert(da != NULL);
 
@@ -495,6 +495,7 @@ namespace ot {
       yFac = static_cast<double>(1u << balOctMaxD);
       zFac = static_cast<double>(1u << balOctMaxD);
     }
+    
     for(int i = 0; i < numPts; i++) {
       ot::NodeAndValues<double, 3> tmpObj;
       unsigned int xint = static_cast<unsigned int>(pts[(3*i)]*xFac);
@@ -509,12 +510,15 @@ namespace ot {
        * hence the error. You can fix it when you compute the TreeNode corresponding to the element.
        *   Hari, May 7, 2018
        */
-      if (xint == octMaxCoord)
+      if ( (xint == octMaxCoord) || ( fabs(pts[(3*i)] - subDASize[0]) < xFac ) ) {
         xint = octMaxCoord - 1;
-      if (yint == octMaxCoord)
+      }
+      if ( (yint == octMaxCoord) || ( fabs(pts[(3*i)+1] - subDASize[1]) < yFac ) ) {
         yint = octMaxCoord - 1;
-      if (zint == octMaxCoord)
+      }
+      if ( (zint == octMaxCoord) || ( fabs(pts[(3*i)+2] - subDASize[2]) < zFac ) ) {
         zint = octMaxCoord - 1;
+      }
 
       tmpObj.node = ot::TreeNode(xint, yint, zint, maxDepth, 3, maxDepth);
       tmpObj.values[0] = pts[(3*i)];
@@ -632,9 +636,8 @@ namespace ot {
     PetscScalar* inArr;
     da->vecGetBuffer(in, inArr, false, false, true, dof);
 
-    if(da->iAmActive()) {
-      da->ReadFromGhostsBegin<PetscScalar>(inArr, dof);
-      da->ReadFromGhostsEnd<PetscScalar>(inArr);
+    da->ReadFromGhostsBegin<PetscScalar>(inArr, dof);
+    da->ReadFromGhostsEnd<PetscScalar>(inArr);
 
       //interpolate at the received points
       //The pts must be inside the domain and not on the positive boundaries
@@ -751,10 +754,9 @@ namespace ot {
 
       }//end writable loop
       // std::cout << "Interpolate Data: " << ptsCtr << "/" << localList.size() << std::endl;
-    } else {
-      assert(localList.empty());
-    }//end if active
-
+    // } else {
+    //   assert(localList.empty());
+    
     da->vecRestoreBuffer(in, inArr, false, false, true, dof);
 
     recvList.clear();
@@ -1348,7 +1350,7 @@ namespace ot {
 
   } // function.
 
-  void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* problemSize) {
+void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* problemSize) {
     DendroIntL localNodeSize = da->getNodeSize();
 
     pts.clear();
@@ -1360,97 +1362,97 @@ namespace ot {
     Point pt;
 
   
-  std::vector<DendroIntL> NonGhostNodes(localNodeSize); 
-  for(DendroIntL i = 0; i < localNodeSize; i++) {
-    NonGhostNodes[i] = i;   
-  }
-
-  DendroIntL* node_map;
-  da->vecGetBuffer<DendroIntL>(NonGhostNodes, node_map, false, false, true, 1);
-
-  unsigned int postG_beg = da->getIdxPostGhostBegin();
-  unsigned int elem_beg = da->getIdxElementBegin();
-
-  unsigned int domain_max = 1u << (maxD - 1);
-  DendroIntL index;
-  double xFac = problemSize[0] / ((double) (1 << (maxD - 1)));
-  double yFac = problemSize[1] / ((double) (1 << (maxD - 1)));
-  double zFac = problemSize[2] / ((double) (1 << (maxD - 1)));
-  double xx[8], yy[8], zz[8];
-  unsigned int idx[8];
-  for ( da->init<ot::DA_FLAGS::ALL>(); da->curr() < da->end<ot::DA_FLAGS::ALL>(); da->next<ot::DA_FLAGS::ALL>() ) {
-
-    da->getNodeIndices(idx);
-    pt = da->getCurrentOffset();
-    unsigned char hangingMask = da->getHangingNodeIndex(da->curr());
-    if (!(hangingMask & (1u << 0)) && (idx[0] >= elem_beg) && (idx[0] < postG_beg))
-    {
-        //! get the correct coordinates of the nodes ...
-        xx[0] = pt.x() * xFac;
-        yy[0] = pt.y() * yFac;
-        zz[0] = pt.z() * zFac;
-        index = 3*node_map[idx[0]];
-        pts.at(index) = xx[0];
-        pts.at(index+1) = yy[0];
-        pts.at(index+2) = zz[0];
-        // std::cout << da->curr() << " -> " << idx[0] << std::endl;
+    std::vector<DendroIntL> NonGhostNodes(localNodeSize); 
+    for(DendroIntL i = 0; i < localNodeSize; i++) {
+      NonGhostNodes[i] = i;   
     }
 
-    if (da->isBoundaryOctant())
-    {
-      // std::cout << "=== Boundary ===" << std::endl;
-        lev = da->getLevel(da->curr());
-        hx = xFac * (1 << (maxD - lev));
-        hy = yFac * (1 << (maxD - lev));
-        hz = zFac * (1 << (maxD - lev));
-        xx[0] = pt.x() * xFac;
-        yy[0] = pt.y() * yFac;
-        zz[0] = pt.z() * zFac;
-        xx[1] = pt.x() * xFac + hx;
-        yy[1] = pt.y() * yFac;
-        zz[1] = pt.z() * zFac;
-        xx[2] = pt.x() * xFac;
-        yy[2] = pt.y() * yFac + hy;
-        zz[2] = pt.z() * zFac;
-        xx[3] = pt.x() * xFac + hx;
-        yy[3] = pt.y() * yFac + hy;
-        zz[3] = pt.z() * zFac;
+    DendroIntL* node_map;
+    da->vecGetBuffer<DendroIntL>(NonGhostNodes, node_map, false, false, true, 1);
 
-        xx[4] = pt.x() * xFac;
-        yy[4] = pt.y() * yFac;
-        zz[4] = pt.z() * zFac + hz;
-        xx[5] = pt.x() * xFac + hx;
-        yy[5] = pt.y() * yFac;
-        zz[5] = pt.z() * zFac + hz;
-        xx[6] = pt.x() * xFac;
-        yy[6] = pt.y() * yFac + hy;
-        zz[6] = pt.z() * zFac + hz;
-        xx[7] = pt.x() * xFac + hx;
-        yy[7] = pt.y() * yFac + hy;
-        zz[7] = pt.z() * zFac + hz;
+    unsigned int postG_beg = da->getIdxPostGhostBegin();
+    unsigned int elem_beg = da->getIdxElementBegin();
 
-        for (int a=0; a<8; a++)
-        {
-            if (!(hangingMask & (1u << a)))
-            {
-                // boundary at x = 1, y = 1, z = 1
-                if ( ( idx[a] >= elem_beg ) && ( idx[a] < postG_beg) &&  (fabs(xx[a] - problemSize[0]) < hx/2 || fabs(yy[a] - problemSize[1]) < hy/2 || fabs(zz[a] - problemSize[2]) < hz/2) )
-                {
-                    // add node
-                    // std::cout << idx[a]*3 << " " << idx[a]*3 + 1 << " " << idx[a]*3 + 2 << "\n"; 
-                    index = 3*node_map[idx[a]];
-                    // std::cout <<  da->getRankAll() <<  ">>= " << da->curr() << " -> " << node_map[idx[a]] << " =<< (" << xx[a] << ", " << yy[a] << ", " << zz[a] << ") " << std::endl;
-                    pts[index] = xx[a];
-                    pts[index+1] = yy[a];
-                    pts[index+2] = zz[a];
-                }
-            }
-        } // for
-        // std::cout << "=== ===" << std::endl;
-    } // is Boundary
-  } // loop over Writable
+    unsigned int domain_max = 1u << (maxD - 1);
+    DendroIntL index;
+    double xFac = problemSize[0] / ((double) (1 << (maxD - 1)));
+    double yFac = problemSize[1] / ((double) (1 << (maxD - 1)));
+    double zFac = problemSize[2] / ((double) (1 << (maxD - 1)));
+    double xx[8], yy[8], zz[8];
+    unsigned int idx[8];
+    for ( da->init<ot::DA_FLAGS::ALL>(); da->curr() < da->end<ot::DA_FLAGS::ALL>(); da->next<ot::DA_FLAGS::ALL>() ) {
 
-  da->vecRestoreBuffer(NonGhostNodes, node_map, false, false, true, 1);
+      da->getNodeIndices(idx);
+      pt = da->getCurrentOffset();
+      unsigned char hangingMask = da->getHangingNodeIndex(da->curr());
+      if (!(hangingMask & (1u << 0)) && (idx[0] >= elem_beg) && (idx[0] < postG_beg))
+      {
+          //! get the correct coordinates of the nodes ...
+          xx[0] = pt.x() * xFac;
+          yy[0] = pt.y() * yFac;
+          zz[0] = pt.z() * zFac;
+          index = 3*node_map[idx[0]];
+          pts.at(index) = xx[0];
+          pts.at(index+1) = yy[0];
+          pts.at(index+2) = zz[0];
+          // std::cout << da->curr() << " -> " << idx[0] << std::endl;
+      }
+
+      if (da->isBoundaryOctant())
+      {
+        // std::cout << "=== Boundary ===" << std::endl;
+          lev = da->getLevel(da->curr());
+          hx = xFac * (1 << (maxD - lev));
+          hy = yFac * (1 << (maxD - lev));
+          hz = zFac * (1 << (maxD - lev));
+          xx[0] = pt.x() * xFac;
+          yy[0] = pt.y() * yFac;
+          zz[0] = pt.z() * zFac;
+          xx[1] = pt.x() * xFac + hx;
+          yy[1] = pt.y() * yFac;
+          zz[1] = pt.z() * zFac;
+          xx[2] = pt.x() * xFac;
+          yy[2] = pt.y() * yFac + hy;
+          zz[2] = pt.z() * zFac;
+          xx[3] = pt.x() * xFac + hx;
+          yy[3] = pt.y() * yFac + hy;
+          zz[3] = pt.z() * zFac;
+
+          xx[4] = pt.x() * xFac;
+          yy[4] = pt.y() * yFac;
+          zz[4] = pt.z() * zFac + hz;
+          xx[5] = pt.x() * xFac + hx;
+          yy[5] = pt.y() * yFac;
+          zz[5] = pt.z() * zFac + hz;
+          xx[6] = pt.x() * xFac;
+          yy[6] = pt.y() * yFac + hy;
+          zz[6] = pt.z() * zFac + hz;
+          xx[7] = pt.x() * xFac + hx;
+          yy[7] = pt.y() * yFac + hy;
+          zz[7] = pt.z() * zFac + hz;
+
+          for (int a=0; a<8; a++)
+          {
+              if (!(hangingMask & (1u << a)))
+              {
+                  // boundary at x = 1, y = 1, z = 1
+                  if ( ( idx[a] >= elem_beg ) && ( idx[a] < postG_beg) &&  (fabs(xx[a] - problemSize[0]) < hx/2 || fabs(yy[a] - problemSize[1]) < hy/2 || fabs(zz[a] - problemSize[2]) < hz/2) )
+                  {
+                      // add node
+                      // std::cout << idx[a]*3 << " " << idx[a]*3 + 1 << " " << idx[a]*3 + 2 << "\n"; 
+                      index = 3*node_map[idx[a]];
+                      // std::cout <<  da->getRankAll() <<  ">>= " << da->curr() << " -> " << node_map[idx[a]] << " =<< (" << xx[a] << ", " << yy[a] << ", " << zz[a] << ") " << std::endl;
+                      pts[index] = xx[a];
+                      pts[index+1] = yy[a];
+                      pts[index+2] = zz[a];
+                  }
+              }
+          } // for
+          // std::cout << "=== ===" << std::endl;
+      } // is Boundary
+    } // loop over Writable
+
+    da->vecRestoreBuffer(NonGhostNodes, node_map, false, false, true, 1);
 
   } // function.
 
