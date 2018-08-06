@@ -451,7 +451,7 @@ namespace ot {
   }
 
   void interpolateData(ot::subDA* da, Vec in, Vec out, Vec* gradOut,
-      unsigned int dof, const std::vector<double>& pts, const double* problemSize, const double* subDASize) {
+      unsigned int dof, const std::vector<double>& pts, const double* problemSize, const double* subDA_max) {
 
     assert(da != NULL);
 
@@ -496,6 +496,10 @@ namespace ot {
       zFac = static_cast<double>(1u << balOctMaxD);
     }
     
+    const unsigned int subDA_max_x = static_cast<unsigned int>(subDA_max[0]*xFac);
+    const unsigned int subDA_max_y = static_cast<unsigned int>(subDA_max[1]*yFac);
+    const unsigned int subDA_max_z = static_cast<unsigned int>(subDA_max[2]*zFac);
+
     for(int i = 0; i < numPts; i++) {
       ot::NodeAndValues<double, 3> tmpObj;
       unsigned int xint = static_cast<unsigned int>(pts[(3*i)]*xFac);
@@ -510,15 +514,20 @@ namespace ot {
        * hence the error. You can fix it when you compute the TreeNode corresponding to the element.
        *   Hari, May 7, 2018
        */
-      if ( (xint == octMaxCoord) || ( fabs(pts[(3*i)] - subDASize[0]) < 1e-8 ) ) {
-        xint = octMaxCoord - 1;
-      }
-      if ( (yint == octMaxCoord) || ( fabs(pts[(3*i)+1] - subDASize[1]) < 1e-8 ) ) {
-        yint = octMaxCoord - 1;
-      }
-      if ( (zint == octMaxCoord) || ( fabs(pts[(3*i)+2] - subDASize[2]) < 1e-8 ) ) {
-        zint = octMaxCoord - 1;
-      }
+
+      // if ( (xint == octMaxCoord) ) {
+      //   xint = octMaxCoord - 1;
+      // }
+      // if ( (yint == octMaxCoord) || ( fabs(pts[(3*i)+1] - subDASize[1]) < 1e-8 ) ) {
+      //   yint = octMaxCoord - 1;
+      // }
+      // if ( (zint == octMaxCoord) || ( fabs(pts[(3*i)+2] - subDASize[2]) < 1e-8 ) ) {
+      //   zint = octMaxCoord - 1;
+      // }
+
+      if ( xint > subDA_max_x ) xint = subDA_max_x;
+      if ( xint > subDA_max_y ) xint = subDA_max_y;
+      if ( xint > subDA_max_z ) xint = subDA_max_z;
 
       tmpObj.node = ot::TreeNode(xint, yint, zint, maxDepth, 3, maxDepth);
       tmpObj.values[0] = pts[(3*i)];
