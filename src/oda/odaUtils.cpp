@@ -1440,7 +1440,7 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
       }
 
       // if (da->isBoundaryOctant())
-      if ( (fabs(xx[0] - subDA_max[0]) <= hx || fabs(yy[0] - subDA_max[1]) <= hy || fabs(zz[0] - subDA_max[2]) <= hz) )
+      if ( (fabs(xx[0] - subDA_max[0]) < (hx+xFac) || fabs(yy[0] - subDA_max[1]) < (hy+yFac) || fabs(zz[0] - subDA_max[2]) < (hz + zFac) ) )
       {
         // std::cout << "=== Boundary ===" << std::endl;
           
