@@ -13,6 +13,9 @@
 #include <TreeNode.h>
 #include <cmath>
 
+
+#include <sub_oda.h>
+
 #ifdef MPI_WTIME_IS_GLOBAL
 #undef MPI_WTIME_IS_GLOBAL
 #endif
@@ -35,7 +38,8 @@
 
 // move to DA utils.
 void saveNodalVecAsVTK(ot::DA* da, Vec vec, double* gsz, const char *fname);
-void setScalarByFunction(ot::DA* da, Vec vec, std::function<double(double,double,double)> f, double *gSize);
+void saveNodalVecAsVTK(ot::subDA* da, Vec vec, double* gsz, const char *fname);
+void setScalarByFunction(ot::subDA* da, Vec vec, std::function<double(double,double,double)> f, double *gSize);
 
 void interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::DA* m_octDA);
 void interp_local_to_global(PetscScalar* __restrict loc, PetscScalar* glo, ot::DA* m_octDA);
@@ -57,6 +61,7 @@ int main(int argc, char ** argv ) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   double gsz[3] = {8.0, 8.0, 8.0};
+  double sub_max[3] = {5.5875, 5.5875, 8.0};
   double ctr[3] = {5.5, 5.5, 5.5};
   double yr[2] = {4.4375, 5.5875};         //  .25 .375 .4375 .5 .5875 .625 .75
   double r = 0.25;
@@ -66,11 +71,18 @@ int main(int argc, char ** argv ) {
     return sqrt((x-ctr[0])*(x-ctr[0]) + (z-ctr[2])*(z-ctr[2])) - r; 
   };
 
+  auto fx_retain = [ctr, r, yr](double x, double y, double z) -> double { 
+    if ( (y < yr[0]) || (y > yr[1]) || (x < yr[0]) || (x > yr[1])  ) return -1.0;
+    return 1.0; 
+  };
+
   auto fx_u = [yr](double x, double y, double z) -> double { 
-    return 1.0 + sin(M_PI*x)*sin(M_PI*y)*sin(M_PI*z)  ; //cos(M_PI*(1.0 - (x-0.5)*(x-0.5)*2.0))*cos(M_PI*(1.0 - (y-0.5)*(y-0.5)*2.0));
+    return 1.0 + sin(0.25*M_PI*x)*sin(0.25*M_PI*y)*sin(0.25*M_PI*z)  ; //cos(M_PI*(1.0 - (x-0.5)*(x-0.5)*2.0))*cos(M_PI*(1.0 - (y-0.5)*(y-0.5)*2.0));
   };
     
-  ot::DA *da =  ot::function_to_DA(fx_refine, 3, 5, gsz, MPI_COMM_WORLD);
+  ot::DA *main_da =  ot::function_to_DA(fx_refine, 3, 5, gsz, MPI_COMM_WORLD);
+  ot::subDA *da =  new ot::subDA(main_da, fx_retain, gsz);
+
 
   PetscScalar zero = 1.0, nrm;
   Vec v;
@@ -86,16 +98,17 @@ int main(int argc, char ** argv ) {
 
   if (!rank) std::cout << "======================================" << std::endl;
   // === === === === === ===   
-  ctr[0] = 6.6;
-  ctr[1] = 6.6;
-  ctr[2] = 6.6;
+  // ctr[0] = 6.6;
+  // ctr[1] = 6.6;
+  // ctr[2] = 6.6;
 
-  yr[0] = 5.5375;
-  yr[1] = 6.6875;
+  // yr[0] = 5.5375;
+  // yr[1] = 6.6875;
 
-  r = 0.4;
+  // r = 0.4;
 
-  ot::DA *da_new =  ot::function_to_DA(fx_refine, 4, 6, gsz, MPI_COMM_WORLD);  
+  ot::DA *main_da_new =  ot::function_to_DA(fx_refine, 4, 6, gsz, MPI_COMM_WORLD);  
+  ot::subDA *da_new =  new ot::subDA(main_da_new, fx_retain, gsz);
 
   // MPI_Barrier(MPI_COMM_WORLD);
 
@@ -103,7 +116,9 @@ int main(int argc, char ** argv ) {
     std::cout << "Constructed new DA" << std::endl;
 
   std::vector<double> pts;
-  getNodeCoordinates(da_new, pts, gsz);
+  getNodeCoordinates(da_new, pts, gsz, sub_max);
+
+  // std::cout << "num pts for interpolate: " << pts.size() << std::endl;
 
   Vec v_n;
   // std::cout << rank << ": creating new vector" << std::endl;
@@ -113,7 +128,7 @@ int main(int argc, char ** argv ) {
   VecSet(v_n, minus_two);
   
   // now interpolate 
-  interpolateData(da, v, v_n, NULL, 1, pts, gsz);
+  interpolateData(da, v, v_n, NULL, 1, pts, gsz, sub_max);
 
   // write out ...
   if (!rank) std::cout << "Saving interpolated vtk" << std::endl;
@@ -128,6 +143,180 @@ int main(int argc, char ** argv ) {
   PetscFinalize();
 }//end main
 
+
+void saveNodalVecAsVTK(ot::subDA* da, Vec vec, double* gSize, const char *file_prefix) {
+  int rank, size;
+  char fname[256];
+
+
+	MPI_Comm_rank(da->getComm(), &rank);
+	MPI_Comm_size(da->getComm(), &size);
+
+  sprintf(fname, "%s_%05d.vtk", file_prefix, rank);
+
+  if ( !rank ) std::cout << "Writing to VTK file: " << fname << std::endl;
+
+  std::ofstream out;
+  out.open( fname );
+
+
+  out << "# vtk DataFile Version 2.0" << std::endl;
+  out << "DENDRO OCTREES" << std::endl;
+  out << "ASCII" << std::endl;
+  out << "DATASET UNSTRUCTURED_GRID" << std::endl;
+
+  int dim = 3;
+
+  int unit_points = 1 << dim;
+  int num_cells = 0; // da->getElementSize();
+    
+  for ( da->init<ot::DA_FLAGS::WRITABLE>(); 
+         da->curr() < da->end<ot::DA_FLAGS::WRITABLE>(); 
+        da->next<ot::DA_FLAGS::WRITABLE>() ) {
+
+    num_cells++;
+  }
+  int num_vertices = num_cells * (unit_points);
+
+  out << "POINTS " << num_vertices << " float" << std::endl;
+
+  { // dim = 3
+
+    unsigned int len; //!  ??
+    unsigned int xl, yl, zl;  //! ??
+
+    int num_data_field = 2; // rank and data
+    
+
+    int dof=DOF;
+    PetscScalar *_vec=NULL;
+
+    da->vecGetBuffer(vec,   _vec, false, false, true,  dof);
+
+    da->ReadFromGhostsBegin<PetscScalar>(_vec, dof);
+    da->ReadFromGhostsEnd<PetscScalar>(_vec);
+
+    unsigned int maxD = da->getMaxDepth();
+    unsigned int lev;
+    double hx, hy, hz;
+    Point pt;
+    
+    // double gSize[3] = {1.0, 1.0, 1.0};
+
+    double xFac = gSize[0]/((double)(1<<(maxD-1)));
+    double yFac = gSize[1]/((double)(1<<(maxD-1)));
+    double zFac = gSize[2]/((double)(1<<(maxD-1)));
+    double xx, yy, zz;
+    unsigned int idx[8];
+
+    DendroIntL* l2g = da->getLocalToGlobalMap();
+         
+         /*
+    std::cout << "=== Printing initials ===" << std::endl;
+    da->init<ot::DA_FLAGS::ALL>();
+    std::cout << rank << ": init<All> " << da->curr() << std::endl; // ", " << l2g[da->curr()] << 
+    da->init<ot::DA_FLAGS::INDEPENDENT>();
+    std::cout << rank << ": init<Indep> " << da->curr() << std::endl;
+    da->init<ot::DA_FLAGS::W_DEPENDENT>();
+    std::cout << rank << ": init<W_Dep> " << da->curr() << std::endl;
+    da->init<ot::DA_FLAGS::WRITABLE>();
+    std::cout << rank << ": init<Writ> " << da->curr() << std::endl;
+    */
+
+    for ( da->init<ot::DA_FLAGS::WRITABLE>(); 
+         da->curr() < da->end<ot::DA_FLAGS::WRITABLE>(); 
+        da->next<ot::DA_FLAGS::WRITABLE>() ) {
+      // set the value
+      lev = da->getLevel(da->curr());
+      hx = xFac*(1<<(maxD - lev));
+      hy = yFac*(1<<(maxD - lev));
+      hz = zFac*(1<<(maxD - lev));
+
+      pt = da->getCurrentOffset();
+
+      xx = pt.x()*xFac; yy = pt.y()*yFac; zz = pt.z()*zFac;
+
+      out << pt.x()*xFac << " " <<  pt.y()*yFac << " " << pt.z()*zFac << std::endl;
+      out << pt.x()*xFac + hx << " " <<  pt.y()*yFac << " " << pt.z()*zFac << std::endl;
+      out << pt.x()*xFac + hx << " " <<  pt.y()*yFac + hy << " " << pt.z()*zFac << std::endl;
+      out << pt.x()*xFac << " " <<  pt.y()*yFac + hy << " " << pt.z()*zFac << std::endl;
+
+      out << pt.x()*xFac << " " <<  pt.y()*yFac << " " << pt.z()*zFac + hz<< std::endl;
+      out << pt.x()*xFac + hx << " " <<  pt.y()*yFac << " " << pt.z()*zFac + hz << std::endl;
+      out << pt.x()*xFac + hx << " " <<  pt.y()*yFac + hy << " " << pt.z()*zFac + hz << std::endl;
+      out << pt.x()*xFac << " " <<  pt.y()*yFac + hy << " " << pt.z()*zFac + hz << std::endl;
+      
+      // num_cells++;
+    }
+
+    int num_cells_elements = num_cells * unit_points + num_cells;
+
+    out << "CELLS " << num_cells << " " << num_cells_elements << std::endl;
+
+    for (int i = 0; i < num_cells; i++) {
+      out << unit_points << " ";
+      for (int j = 0; j < unit_points; j++) {
+        out << (i * unit_points + j) << " ";
+      }
+      out << std::endl;
+    }
+
+    out << "CELL_TYPES " << num_cells << std::endl;
+    for (int i = 0; i < num_cells; i++) {
+      out << VTK_HEXAHEDRON << std::endl;
+    }
+
+    //myfile<<"CELL_DATA "<<num_cells<<std::endl;
+
+    out << std::endl;
+    out << "POINT_DATA " << num_vertices  << std::endl;
+    out << "SCALARS foo float 1" << std::endl;
+    out << "LOOKUP_TABLE default" << std::endl;
+
+    PetscScalar* local = new PetscScalar[8];
+
+    for ( da->init<ot::DA_FLAGS::WRITABLE>(); 
+         da->curr() < da->end<ot::DA_FLAGS::WRITABLE>(); 
+        da->next<ot::DA_FLAGS::WRITABLE>() ) {
+
+          // std::cout << da->curr() << ", "; // std::endl;
+
+      da->getNodeIndices(idx);
+  
+      // @hari - fix this. temporarily bug in 
+      // interp_global_to_local(_vec, local, da->global_domain());
+      for (int q=0; q<8; ++q)
+        local[q] = _vec[idx[q]];
+
+        out << local[0] << " ";
+        out << local[1] << " ";
+        out << local[3] << " ";
+        out << local[2] << " ";
+        out << local[4] << " ";
+        out << local[5] << " ";
+        out << local[7] << " ";
+        out << local[6] << " ";
+        /*
+        out << _vec[idx[0]] << " ";
+        out << _vec[idx[1]] << " ";
+        out << _vec[idx[3]] << " ";
+        out << _vec[idx[2]] << " ";
+        out << _vec[idx[4]] << " ";
+        out << _vec[idx[5]] << " ";
+        out << _vec[idx[7]] << " ";
+        out << _vec[idx[6]] << " "; */
+
+    }
+
+    out << std::endl;
+
+    delete [] local;
+
+    da->vecRestoreBuffer(vec,  _vec, false, false, true,  dof);
+  }
+
+  out.close();
+}
 
 void saveNodalVecAsVTK(ot::DA* da, Vec vec, double* gSize, const char *file_prefix) {
   int rank, size;
@@ -298,7 +487,7 @@ void saveNodalVecAsVTK(ot::DA* da, Vec vec, double* gSize, const char *file_pref
   out.close();
 }
 
-void setScalarByFunction(ot::DA* da, Vec vec, std::function<double(double,double,double)> f, double *gSize) {
+void setScalarByFunction(ot::subDA* da, Vec vec, std::function<double(double,double,double)> f, double *gSize) {
 	int dof=1;
   PetscScalar *_vec=NULL;
 

@@ -1388,3 +1388,379 @@ void interp_local_to_global(PetscScalar* __restrict loc, PetscScalar* glo, ot::D
   } // switch chNum
 } // loc_to_glo
 
+/*
+void correct_elemental_matrix(PetscScalar *Ke, DA* da, int m_uiDof) {
+  /// not the most efficient. Will make efficient later.
+  //  
+  //  - pass in pre-allocated arrays for Q, Qt and temp 
+  //  - build Qt while building Q.
+
+  unsigned int idx[8];
+	unsigned char hangingMask = da->getHangingNodeIndex(da->curr());
+	unsigned int chNum = da->getChildNumber();
+	da->getNodeIndices(idx);
+
+  //=== Step 1
+  // build interp matrix - keep it 8x8
+  double *Q  = new double[64];
+  double *Qt = new double[64];
+
+  for (unsigned int i=0; i<64; ++i) {
+    Q[i]  = 0.0;
+    Qt[i] = 0.0;
+  }
+
+  switch (chNum) {
+    case 0:
+      // 0,7 are not hanging
+      Q[0] = 1.0;
+      if ( hangingMask & NODE_1 ) {
+        Q[8] = 0.5; Q[9] = 0.5;
+      } else {
+        Q[9] = 1.0;
+      }  
+      if ( hangingMask & NODE_2 ) {
+        Q[16] = 0.5; Q[18] = 0.5;
+      } else {
+        Q[18] = 1.0;
+      }
+      if ( hangingMask & NODE_3 ) {
+        Q[24] = 0.25; Q[25] = 0.25;
+        Q[26] = 0.25; Q[27] = 0.25;
+      } else {
+        Q[27] = 1.0;
+      }
+      if ( hangingMask & NODE_4 ) {
+        Q[32] = 0.5;  Q[36] = 0.5;
+      } else {
+        Q[36] = 1.0;
+      }
+      if ( hangingMask & NODE_5 ) {
+        Q[40] = 0.25; Q[41] = 0.25;
+        Q[44] = 0.25; Q[45] = 0.25;
+      } else {
+        Q[45] = 1.0;
+      }
+      if ( hangingMask & NODE_6 ) {
+        Q[48] = 0.25; Q[50] = 0.25;
+        Q[52] = 0.25; Q[54] = 0.25;
+      } else {
+        Q[54] = 1.0;
+      }
+      Q[63] = 1.0;
+      break;
+    case 1:
+      // 1,6 are not hanging
+      if ( hangingMask & NODE_0 ) {
+        Q[0] = 0.5; Q[1] = 0.5;
+      } else {
+        Q[0] = 1.0;
+      }
+      Q[9] = 1.0;  
+      if ( hangingMask & NODE_2 ) {
+        Q[16] = 0.25; Q[17] = 0.25;
+        Q[18] = 0.25; Q[19] = 0.25;
+      } else {
+        Q[18] = 1.0;
+      }
+      if ( hangingMask & NODE_3 ) {
+        Q[25] = 0.5; Q[27] = 0.5;
+      } else {
+        Q[27] = 1.0;
+      }
+      if ( hangingMask & NODE_4 ) {
+        Q[32] = 0.25; Q[33] = 0.25;
+        Q[36] = 0.25; Q[37] = 0.25;
+      } else {
+        Q[36] = 1.0;
+      }
+      if ( hangingMask & NODE_5 ) {
+        Q[41] = 0.5; Q[45] = 0.5;
+      } else {
+        Q[45] = 1.0;
+      }
+      Q[54] = 1.0;
+      if ( hangingMask & NODE_7 ) {
+        Q[57] = 0.25; Q[59] = 0.25;
+        Q[61] = 0.25; Q[63] = 0.25;
+      } else {
+        Q[63] = 1.0;
+      }
+      break;
+    case 2:
+      // 2,5 are not hanging
+      if ( hangingMask & NODE_0 ) {
+        Q[0] = 0.5; Q[2] = 0.5;
+      } else {
+        Q[0] = 1.0;
+      }
+      if ( hangingMask & NODE_1 ) {
+        Q[8] = 0.25; Q[9] = 0.25; 
+        Q[10] = 0.25; Q[11] = 0.25;
+      } else {
+        Q[9] = 1.0;
+      }
+      Q[18] = 1.0;
+      if ( hangingMask & NODE_3 ) {
+        Q[26] = 0.5; Q[27] = 0.5;
+      } else {
+        Q[27] = 1.0;
+      }
+      if ( hangingMask & NODE_4 ) {
+        Q[32] = 0.25; Q[34] = 0.25;
+        Q[36] = 0.25; Q[38] = 0.25;
+      } else {
+        Q[36] = 1.0;
+      }
+      Q[45] = 1.0;
+      if ( hangingMask & NODE_6 ) {
+        Q[50] = 0.5; Q[54] = 0.5;
+      } else {
+        Q[54] = 1.0;
+      }
+      if ( hangingMask & NODE_7 ) {
+        Q[58] = 0.25; Q[59] = 0.25;
+        Q[62] = 0.25; Q[63] = 0.25;
+      } else {
+        Q[63] = 1.0;
+      }
+      break;
+    case 3:
+      // 3,4 are not hanging
+      if ( hangingMask & NODE_0 ) {
+        Q[0] = 0.25; Q[1] = 0.25;
+        Q[2] = 0.25; Q[3] = 0.25;
+      } else {
+        Q[0] = 1.0;
+      }
+      if ( hangingMask & NODE_1 ) {
+        Q[9] = 0.5; Q[11] = 0.5;
+      } else {
+        Q[9] = 1.0;
+      }
+      if ( hangingMask & NODE_2 ) {
+        Q[18] = 0.5; Q[19] = 0.5;
+      } else {
+        Q[18] = 1.0;
+      }
+      Q[27] = 1.0;
+      Q[36] = 1.0;
+      if ( hangingMask & NODE_5 ) {
+        Q[41] = 0.25; Q[43] = 0.25;
+        Q[45] = 0.25; Q[47] = 0.25;
+      } else {
+        Q[45] = 1.0;
+      }
+      if ( hangingMask & NODE_6 ) {
+        Q[50] = 0.25; Q[51] = 0.25;
+        Q[54] = 0.25; Q[55] = 0.25;
+      } else {
+        Q[54] = 1.0;
+      }
+      if ( hangingMask & NODE_7 ) {
+        Q[59] = 0.5; Q[63] = 0.5;
+      } else {
+        Q[63] = 1.0;
+      }
+      break;
+    case 4:
+		  // 4,3 are not hanging
+      if ( hangingMask & NODE_0 ) {
+        Q[0] = 0.5; Q[4] = 0.5;
+      } else {
+        Q[0] = 1.0;
+      }
+      if ( hangingMask & NODE_1 ) {
+        Q[8] = 0.25; Q[9] = 0.25;
+        Q[12] = 0.25; Q[13] = 0.25;
+      } else {
+        Q[9] = 1.0;
+      }
+      if ( hangingMask & NODE_2 ) {
+        Q[16] = 0.25; Q[18] = 0.25;
+        Q[20] = 0.25; Q[22] = 0.25;
+      } else {
+        Q[18] = 1.0;
+      }
+      Q[27] = 1.0;
+      Q[36] = 1.0;
+      if ( hangingMask & NODE_5 ) {
+        Q[44] = 0.5; Q[45] = 0.5;
+      } else {
+        Q[45] = 1.0;
+      }
+      if ( hangingMask & NODE_6 ) {
+        Q[52] = 0.5; Q[54] = 0.5;
+      } else {
+        Q[54] = 1.0;
+      }
+      if ( hangingMask & NODE_7 ) {
+        Q[60] = 0.25; Q[61] = 0.25;
+        Q[62] = 0.25; Q[63] = 0.25;
+      } else {
+        Q[63] = 1.0;
+      }
+      break;
+    case 5:
+      // 5,2 are not hanging
+      if ( hangingMask & NODE_0 ) {
+        Q[0] = 0.25; Q[1] = 0.25;
+        Q[4] = 0.25; Q[5] = 0.25;
+      } else {
+        Q[0] = 1.0;
+      }
+      if ( hangingMask & NODE_1 ) {
+        Q[9] = 0.5; Q[13] = 0.5;
+      } else {
+        Q[9] = 1.0;
+      }
+      Q[18] = 1.0;
+      if ( hangingMask & NODE_3 ) {
+        Q[25] = 0.25; Q[27] = 0.25;
+        Q[29] = 0.25; Q[31] = 0.25;
+      } else {
+        Q[27] = 1.0;
+      }
+      if ( hangingMask & NODE_4 ) {
+        Q[36] = 0.5;  Q[37] = 0.5;
+      } else {
+        Q[36] = 1.0;
+      }
+      Q[45] = 1.0;
+      if ( hangingMask & NODE_6 ) {
+        Q[52] = 0.25; Q[53] = 0.25;
+        Q[54] = 0.25; Q[55] = 0.25;
+      } else {
+        Q[54] = 1.0;
+      }
+      if ( hangingMask & NODE_7 ) {
+        Q[61] = 0.5; Q[63] = 0.5;
+      } else {
+        Q[63] = 1.0;
+      }
+      break;
+    case 6:
+      // 6,1 are not hanging
+       if ( hangingMask & NODE_0 ) {
+        Q[0] = 0.25; Q[1] = 0.25;
+        Q[4] = 0.25; Q[5] = 0.25;
+      } else {
+        Q[0] = 1.0;
+      }
+      Q[9] = 1.0;
+      if ( hangingMask & NODE_2 ) {
+        Q[18] = 0.5; Q[22] = 0.5;
+      } else {
+        Q[18] = 1.0;
+      }
+      if ( hangingMask & NODE_3 ) {
+        Q[26] = 0.25; Q[27] = 0.25;
+        Q[30] = 0.25; Q[31] = 0.25;
+      } else {
+        Q[27] = 1.0;
+      }
+      if ( hangingMask & NODE_4 ) {
+        Q[36] = 0.5;  Q[38] = 0.5;
+      } else {
+        Q[36] = 1.0;
+      }
+      if ( hangingMask & NODE_5 ) {
+        Q[44] = 0.25; Q[45] = 0.25;
+        Q[46] = 0.25; Q[47] = 0.25;
+      } else {
+        Q[45] = 1.0;
+      }
+      Q[54] = 1.0;
+      if ( hangingMask & NODE_7 ) {
+        Q[62] = 0.5; Q[63] = 0.5;
+      } else {
+        Q[63] = 1.0;
+      }
+      break;
+    case 7:
+      // 7,0 are not hanging
+      Q[0] = 1.0;
+      if ( hangingMask & NODE_1 ) {
+        Q[9] = 0.25; Q[11] = 0.25; 
+        Q[13] = 0.25; Q[15] = 0.25;
+      } else {
+        Q[9] = 1.0;
+      }
+      if ( hangingMask & NODE_2 ) {
+        Q[18] = 0.25; Q[19] = 0.25;
+        Q[22] = 0.25; Q[23] = 0.25;
+      } else {
+        Q[18] = 1.0;
+      }
+      if ( hangingMask & NODE_3 ) {
+        Q[27] = 0.5; Q[31] = 0.5;
+      } else {
+        Q[27] = 1.0;
+      }
+      if ( hangingMask & NODE_4 ) {
+        Q[36] = 0.25; Q[37] = 0.25;
+        Q[38] = 0.25; Q[39] = 0.25;
+      } else {
+        Q[36] = 1.0;
+      }
+      if ( hangingMask & NODE_5 ) {
+        Q[45] = 0.5; Q[47] = 0.5;
+      } else {
+        Q[45] = 1.0;
+      }
+      if ( hangingMask & NODE_6 ) {
+        Q[54] = 0.5; Q[55] = 0.5;
+      } else {
+        Q[54] = 1.0;
+      }
+      Q[63] = 1.0;
+      break;
+    default:
+			std::cout<<"in correct elemental matrix: incorrect child num = " << chNum << std::endl;
+			assert(false);
+      break;
+  } // switch
+
+  // === Allocate 
+  unsigned int n = 8*m_uiDof;
+  double* T = new double [n*n];
+
+  //=== Step 2
+  // right multiply by Q
+  // T = Ke * Q
+  for (unsigned int j=0; j<8; ++j) {
+    for (unsigned int i=0; i<8; ++i) {
+      for (unsigned int d=0; d<m_uiDof; ++d) {
+        T[ m_uiDof*(8*j + i) + d]=0;
+        for(unsigned int k=0; k<8; ++k) {
+          // T [j, i] = Ke [j,k] * Q[k,i]
+          T[ m_uiDof*(8*j + i) + d ] += Ke[ m_uiDof*(8*j + k) + d ] * Q[8*k + i];
+        } // k
+      } // dof
+    } // j
+  } // i
+
+  //=== Step 3
+  // left multiply by Qt
+  // Ke = Qt * T
+  for (unsigned int j=0; j<8; ++j) {
+    for (unsigned int i=0; i<8; ++i) {
+      for (unsigned int d=0; d<m_uiDof; ++d) {
+        Ke[ m_uiDof*(8*j + i) + d] = 0;
+        for(unsigned int k=0; k<8; ++k) {
+          // Ke [j, i] = Q [j,k] * T[k,i]
+          Ke[ m_uiDof*(8*j + i) + d ] += T[ m_uiDof*(8*k + i) + d ] * Q[8*j + k];
+        } // k
+      } // dof
+    } // j
+  } // i
+
+
+  // clean up
+  delete [] Q;
+  delete [] Qt;
+  delete [] T;
+
+}
+*/
+

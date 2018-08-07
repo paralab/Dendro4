@@ -260,8 +260,8 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   // std::cout << rank << ": localBufferSize = " << m_uiLocalBufferSize << " [" << m_uiElementBegin << ", " << m_uiPostGhostBegin << "]" << std::endl;
 
 
-  std::cout << "[subDA::DEBUG] " << rank << ": NodeSizes  (" << m_uiPreGhostNodeSize << ") " << m_uiNodeSize << " (" << m_uiPostGhostNodeSize << ")" << std::endl;
-  std::cout << "[subDA::DEBUG] " << rank << ": BoundaryNodeSizes  (" << m_uiPreGhostBoundaryNodeSize << ") " << m_uiBoundaryNodeSize << std::endl;
+  // std::cout << "[subDA::DEBUG] " << rank << ": NodeSizes  (" << m_uiPreGhostNodeSize << ") " << m_uiNodeSize << " (" << m_uiPostGhostNodeSize << ")" << std::endl;
+  // std::cout << "[subDA::DEBUG] " << rank << ": BoundaryNodeSizes  (" << m_uiPreGhostBoundaryNodeSize << ") " << m_uiBoundaryNodeSize << std::endl;
   // std::cout << "DA " << rank << " nodes (" << m_da->getPreGhostNodeSize() << ") " << m_da->getNodeSize() << " (" << m_da->getPostGhostNodeSize() << ")" << std::endl;
 
   // scatter map 
@@ -300,9 +300,9 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   // std::cout << "subDA::constructor  sendProcs, Cnts, offsets " << m_uipSendProcs.size() << ", " << m_uipSendCounts.size() << ", " << m_uipSendOffsets.size() << std::endl;
   // std::cout << rank << ": sendProcs, Cnts, offsets " << m_uipSendProcs[0] << ", " << m_uipSendCounts[0] << ", " << m_uipSendOffsets[0] << std::endl;
   
-   for (unsigned int p=0; p<m_uipSendProcs.size(); ++p) {
-      std::cout << rank << " --> " << m_uipSendProcs[p] << " : " << m_uipSendCounts[p] << ", " << m_uipSendOffsets[p] << std::endl;
-   }
+  //  for (unsigned int p=0; p<m_uipSendProcs.size(); ++p) {
+  //     std::cout << rank << " --> " << m_uipSendProcs[p] << " : " << m_uipSendCounts[p] << ", " << m_uipSendOffsets[p] << std::endl;
+  //  }
 
   // compute recvProcs/recvCnts
   
@@ -348,12 +348,12 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
 
 
   
-  for (unsigned int p=0; p<m_uipRecvProcs.size(); ++p) {
-    std::cout << rank << " <==" << m_uipRecvProcs[p] << " : " << m_uipRecvCounts[p] << std::endl;
-  }
-    for (unsigned int p=0; p<m_uipRecvProcs.size(); ++p) {
-      std::cout << rank << " <== " << m_uipRecvProcs[p] << " : " << m_uipRecvCounts[p] << ", " << m_uipRecvOffsets[p] << std::endl;
-   }
+  // for (unsigned int p=0; p<m_uipRecvProcs.size(); ++p) {
+  //   std::cout << rank << " <==" << m_uipRecvProcs[p] << " : " << m_uipRecvCounts[p] << std::endl;
+  // }
+  //   for (unsigned int p=0; p<m_uipRecvProcs.size(); ++p) {
+  //     std::cout << rank << " <== " << m_uipRecvProcs[p] << " : " << m_uipRecvCounts[p] << ", " << m_uipRecvOffsets[p] << std::endl;
+  //  }
 
 
   delete [] sbuff;

@@ -276,7 +276,7 @@ namespace ot {
       unsigned int dof, const std::vector<double>& pts, const double* problemSize, const double* subDA_max);
 
   void getNodeCoordinates(ot::DA* da, std::vector<double> &pts, const double* problemSize);
-  void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* problemSize);
+  void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* problemSize,  const double* subDA_max);
 
   /**
     @author Rahul Sampath

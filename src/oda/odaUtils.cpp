@@ -525,15 +525,22 @@ namespace ot {
       //   zint = octMaxCoord - 1;
       // }
 
-      if ( xint > subDA_max_x ) xint = subDA_max_x;
-      if ( xint > subDA_max_y ) xint = subDA_max_y;
-      if ( xint > subDA_max_z ) xint = subDA_max_z;
+      if ( xint >= subDA_max_x ) {
+        xint = subDA_max_x-1;
+        // std::cout << "correcting node. xint " << xint << " -> " << ((double)xint)/xFac << std::endl;
+      }
+      if ( yint >= subDA_max_y ) { 
+        yint = subDA_max_y-1;
+        // std::cout << "correcting node. yint " << yint << " -> " << ((double)yint)/yFac << std::endl;
+      }
+      if ( zint >= subDA_max_z ) zint = subDA_max_z-1;
 
       tmpObj.node = ot::TreeNode(xint, yint, zint, maxDepth, 3, maxDepth);
       tmpObj.values[0] = pts[(3*i)];
       tmpObj.values[1] = pts[(3*i) + 1];
       tmpObj.values[2] = pts[(3*i) + 2];
       ptsWrapper.push_back(tmpObj);
+      // std::cout << "Adding node: (" << xint << ", " << yint << ", " << zint << ") " << tmpObj.node << " -> (" << pts[(3*i)] << ", " << pts[(3*i)+1]  << ", " << pts[(3*i)+2] << ")" << std::endl;
     }//end for i
 
     //Re-distribute ptsWrapper to align with minBlocks
@@ -661,14 +668,28 @@ namespace ot {
         hyFac = (problemSize[1]/static_cast<double>(1u << balOctMaxD));
         hzFac = (problemSize[2]/static_cast<double>(1u << balOctMaxD));
       }
+
+      // std::cout << "first point: " << (localList[ptsCtr].value)->node << " -- " << ((localList[ptsCtr].value)->values)[0] << "," << ((localList[ptsCtr].value)->values)[1] << ", " << ((localList[ptsCtr].value)->values)[2] <<  std::endl;
+
       for(da->init<ot::DA_FLAGS::WRITABLE>();
           (da->curr() < da->end<ot::DA_FLAGS::WRITABLE>()) && 
           (ptsCtr < localList.size()); da->next<ot::DA_FLAGS::WRITABLE>()) {
+
 
         Point pt = da->getCurrentOffset();
         unsigned int currLev = da->getLevel(da->curr());
 
         ot::TreeNode currOct(pt.xint(), pt.yint(), pt.zint(), currLev, 3, maxDepth);
+
+        unsigned int outIdx = localList[ptsCtr].index;
+
+        while ((localList[ptsCtr].value)->node < currOct ) {
+          // std::cout << "skipping " << ptsCtr << ": " << (localList[ptsCtr].value)->node << " >>= " << currOct << std::endl; 
+          for(int k = 0; k < dof; k++)
+             tmpOut[(dof*outIdx) + k] = -2.0;
+          ptsCtr++;
+          outIdx = localList[ptsCtr].index;
+        }
 
         unsigned int indices[8];
         da->getNodeIndices(indices);
@@ -688,6 +709,11 @@ namespace ot {
         //So the ptsCtr will be incremented properly inside this loop.
         //Evaluate at all points within this octant
         unsigned bdy_max = 1u << (maxDepth - 1);
+        //~~~~~~~~~~~~~~~
+        // std::cout << "Interpolate Data: " << ptsCtr << "/" << localList.size() << std::endl;
+        // std::cout << "currOct: " << currOct << std::endl;
+        // std::cout << "localList"
+        //~~~~~~~~~~~~~~~
         while( (ptsCtr < localList.size()) &&
             ( (currOct == ((localList[ptsCtr].value)->node)) ||
               (currOct.isAncestor(((localList[ptsCtr].value)->node))) 
@@ -715,7 +741,7 @@ namespace ot {
                 (ShapeFnCoeffs[childNum][elemType][j][7]*xloc*yloc*zloc) );
           }//end for j
 
-          unsigned int outIdx = localList[ptsCtr].index;
+          
 
           for(int k = 0; k < dof; k++) {
             tmpOut[(dof*outIdx) + k] = 0.0;
@@ -759,6 +785,7 @@ namespace ot {
           }//end if need grad
 
           ptsCtr++;
+          outIdx = localList[ptsCtr].index;
         }//end while
 
       }//end writable loop
@@ -1359,7 +1386,7 @@ namespace ot {
 
   } // function.
 
-void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* problemSize) {
+void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* problemSize, const double* subDA_max) {
     DendroIntL localNodeSize = da->getNodeSize();
 
     pts.clear();
@@ -1404,16 +1431,19 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
           pts.at(index) = xx[0];
           pts.at(index+1) = yy[0];
           pts.at(index+2) = zz[0];
-          // std::cout << da->curr() << " -> " << idx[0] << std::endl;
-      }
 
-      if (da->isBoundaryOctant())
-      {
-        // std::cout << "=== Boundary ===" << std::endl;
           lev = da->getLevel(da->curr());
           hx = xFac * (1 << (maxD - lev));
           hy = yFac * (1 << (maxD - lev));
           hz = zFac * (1 << (maxD - lev));
+          // std::cout << da->curr() << " -> " << idx[0] << std::endl;
+      }
+
+      // if (da->isBoundaryOctant())
+      if ( (fabs(xx[0] - subDA_max[0]) <= hx || fabs(yy[0] - subDA_max[1]) <= hy || fabs(zz[0] - subDA_max[2]) <= hz) )
+      {
+        // std::cout << "=== Boundary ===" << std::endl;
+          
           xx[0] = pt.x() * xFac;
           yy[0] = pt.y() * yFac;
           zz[0] = pt.z() * zFac;
@@ -1442,10 +1472,11 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
 
           for (int a=0; a<8; a++)
           {
-              if (!(hangingMask & (1u << a)))
+            // std::cout <<  " =<< (" << xx[a] << ", " << yy[a] << ", " << zz[a] << ") " << std::endl;
+              // if (!(hangingMask & (1u << a)))
               {
                   // boundary at x = 1, y = 1, z = 1
-                  if ( ( idx[a] >= elem_beg ) && ( idx[a] < postG_beg) &&  (fabs(xx[a] - problemSize[0]) < hx/2 || fabs(yy[a] - problemSize[1]) < hy/2 || fabs(zz[a] - problemSize[2]) < hz/2) )
+                  if ( ( idx[a] >= elem_beg ) && ( idx[a] < postG_beg) ) // &&  (fabs(xx[a] - subDA_max[0]) < hx || fabs(yy[a] - subDA_max[1]) < hy || fabs(zz[a] - subDA_max[2]) < hz) )
                   {
                       // add node
                       // std::cout << idx[a]*3 << " " << idx[a]*3 + 1 << " " << idx[a]*3 + 2 << "\n"; 
