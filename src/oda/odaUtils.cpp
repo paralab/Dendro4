@@ -533,7 +533,9 @@ namespace ot {
         yint = subDA_max_y-1;
         // std::cout << "correcting node. yint " << yint << " -> " << ((double)yint)/yFac << std::endl;
       }
-      if ( zint >= subDA_max_z ) zint = subDA_max_z-1;
+      if ( zint >= subDA_max_z ) {
+        zint = subDA_max_z-1;
+      }
 
       tmpObj.node = ot::TreeNode(xint, yint, zint, maxDepth, 3, maxDepth);
       tmpObj.values[0] = pts[(3*i)];
@@ -1406,6 +1408,8 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
     DendroIntL* node_map;
     da->vecGetBuffer<DendroIntL>(NonGhostNodes, node_map, false, false, true, 1);
 
+    // get da2sub map
+
     unsigned int postG_beg = da->getIdxPostGhostBegin();
     unsigned int elem_beg = da->getIdxElementBegin();
 
@@ -1415,31 +1419,48 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
     double yFac = problemSize[1] / ((double) (1 << (maxD - 1)));
     double zFac = problemSize[2] / ((double) (1 << (maxD - 1)));
     double xx[8], yy[8], zz[8];
+    
     unsigned int idx[8];
-    for ( da->init<ot::DA_FLAGS::ALL>(); da->curr() < da->end<ot::DA_FLAGS::ALL>(); da->next<ot::DA_FLAGS::ALL>() ) {
+    // unsigned int sub_idx[8];
 
-      da->getNodeIndices(idx);
-      pt = da->getCurrentOffset();
-      unsigned char hangingMask = da->getHangingNodeIndex(da->curr());
-      if (!(hangingMask & (1u << 0)) && (idx[0] >= elem_beg) && (idx[0] < postG_beg))
-      {
+    ot::DA* main_da = da->global_domain();
+
+    // loop over DA elements
+    // If regular element ... and not skipped, add node ... 
+    // if boundary octact 
+
+
+    for ( main_da->init<ot::DA_FLAGS::ALL>(); main_da->curr() < main_da->end<ot::DA_FLAGS::ALL>(); main_da->next<ot::DA_FLAGS::ALL>() ) {
+
+      main_da->getNodeIndices(idx);
+      // da->getNodeIndices(sub_idx);
+
+      pt = main_da->getCurrentOffset();
+      unsigned char hangingMask = main_da->getHangingNodeIndex(main_da->curr());
+
           //! get the correct coordinates of the nodes ...
           xx[0] = pt.x() * xFac;
           yy[0] = pt.y() * yFac;
           zz[0] = pt.z() * zFac;
-          index = 3*node_map[idx[0]];
-          pts.at(index) = xx[0];
-          pts.at(index+1) = yy[0];
-          pts.at(index+2) = zz[0];
 
-          lev = da->getLevel(da->curr());
+        if (!da->skipElem(main_da->curr()) ) {
+          unsigned int sub_idx = da->getDA2SubNode(idx[0]);
+          if (!(hangingMask & (1u << 0)) && (sub_idx >= elem_beg) && (sub_idx < postG_beg))
+          {        
+            index = 3*node_map[sub_idx];
+            pts.at(index) = xx[0];
+            pts.at(index+1) = yy[0];
+            pts.at(index+2) = zz[0];
+          } 
+        } // if not skipped
+
+          lev = main_da->getLevel(main_da->curr());
           hx = xFac * (1 << (maxD - lev));
           hy = yFac * (1 << (maxD - lev));
           hz = zFac * (1 << (maxD - lev));
           // std::cout << da->curr() << " -> " << idx[0] << std::endl;
-      }
 
-      // if (da->isBoundaryOctant())
+      // if ( main_da->isBoundaryOctant() && 
       if ( (fabs(xx[0] - subDA_max[0]) < (hx+xFac) || fabs(yy[0] - subDA_max[1]) < (hy+yFac) || fabs(zz[0] - subDA_max[2]) < (hz + zFac) ) )
       {
         // std::cout << "=== Boundary ===" << std::endl;
@@ -1447,12 +1468,15 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
           xx[0] = pt.x() * xFac;
           yy[0] = pt.y() * yFac;
           zz[0] = pt.z() * zFac;
+
           xx[1] = pt.x() * xFac + hx;
           yy[1] = pt.y() * yFac;
           zz[1] = pt.z() * zFac;
+          
           xx[2] = pt.x() * xFac;
           yy[2] = pt.y() * yFac + hy;
           zz[2] = pt.z() * zFac;
+          
           xx[3] = pt.x() * xFac + hx;
           yy[3] = pt.y() * yFac + hy;
           zz[3] = pt.z() * zFac;
@@ -1460,12 +1484,15 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
           xx[4] = pt.x() * xFac;
           yy[4] = pt.y() * yFac;
           zz[4] = pt.z() * zFac + hz;
+          
           xx[5] = pt.x() * xFac + hx;
           yy[5] = pt.y() * yFac;
           zz[5] = pt.z() * zFac + hz;
+          
           xx[6] = pt.x() * xFac;
           yy[6] = pt.y() * yFac + hy;
           zz[6] = pt.z() * zFac + hz;
+          
           xx[7] = pt.x() * xFac + hx;
           yy[7] = pt.y() * yFac + hy;
           zz[7] = pt.z() * zFac + hz;
@@ -1476,11 +1503,12 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
               // if (!(hangingMask & (1u << a)))
               {
                   // boundary at x = 1, y = 1, z = 1
-                  if ( ( idx[a] >= elem_beg ) && ( idx[a] < postG_beg) ) // &&  (fabs(xx[a] - subDA_max[0]) < hx || fabs(yy[a] - subDA_max[1]) < hy || fabs(zz[a] - subDA_max[2]) < hz) )
+                  unsigned int sub_idx = da->getDA2SubNode(idx[a]);
+                  if ( ( sub_idx >= elem_beg ) && ( sub_idx < postG_beg) ) // &&  (fabs(xx[a] - subDA_max[0]) < hx || fabs(yy[a] - subDA_max[1]) < hy || fabs(zz[a] - subDA_max[2]) < hz) )
                   {
                       // add node
                       // std::cout << idx[a]*3 << " " << idx[a]*3 + 1 << " " << idx[a]*3 + 2 << "\n"; 
-                      index = 3*node_map[idx[a]];
+                      index = 3*node_map[sub_idx];
                       // std::cout <<  da->getRankAll() <<  ">>= " << da->curr() << " -> " << node_map[idx[a]] << " =<< (" << xx[a] << ", " << yy[a] << ", " << zz[a] << ") " << std::endl;
                       pts[index] = xx[a];
                       pts[index+1] = yy[a];
