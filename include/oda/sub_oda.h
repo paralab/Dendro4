@@ -76,6 +76,10 @@ namespace ot {
         std::vector<updateContext>              m_mpiContexts;
         unsigned int                            m_uiCommTag;
 
+
+        double                                  m_dMinBB[3];
+        double                                  m_dMaxBB[3];
+
         /*  
         std::vector<unsigned int>               m_uipElemScatterMap;
         std::vector<unsigned int>               m_uipElemSendOffsets;
@@ -128,6 +132,19 @@ namespace ot {
           @author Hari Sundar
           */
         int getNpesAll() { return m_da->getNpesAll(); }
+
+        /**
+         * Compute the bounding box for this subDomain.
+         * 
+         * _min, _max are double [3]
+         * 
+         * 
+         * @author Hari Sundar
+         **/ 
+        void getBoundingBox(double* _min, double* _max) {
+          _min[0] = m_dMinBB[0]; _min[1] = m_dMinBB[1]; _min[2] = m_dMinBB[2];
+          _max[0] = m_dMaxBB[0]; _max[1] = m_dMaxBB[1]; _max[2] = m_dMaxBB[2];
+        }
 
         const unsigned char* getSkipList() { return m_ucpSkipNodeList; }
 

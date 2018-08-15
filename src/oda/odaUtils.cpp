@@ -1461,8 +1461,8 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
           // std::cout << da->curr() << " -> " << idx[0] << std::endl;
 
       // if ( main_da->isBoundaryOctant() && 
-      if ( (fabs(xx[0] - subDA_max[0]) < (hx+xFac) || fabs(yy[0] - subDA_max[1]) < (hy+yFac) || fabs(zz[0] - subDA_max[2]) < (hz + zFac) ) )
-      {
+      // if ( (fabs(xx[0] - subDA_max[0]) < (hx+xFac) || fabs(yy[0] - subDA_max[1]) < (hy+yFac) || fabs(zz[0] - subDA_max[2]) < (hz + zFac) ) )
+      // {
         // std::cout << "=== Boundary ===" << std::endl;
           
           xx[0] = pt.x() * xFac;
@@ -1501,6 +1501,7 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
           {
             // std::cout <<  " =<< (" << xx[a] << ", " << yy[a] << ", " << zz[a] << ") " << std::endl;
               // if (!(hangingMask & (1u << a)))
+              if ( fabs(xx[a] - subDA_max[0]) < xFac || fabs(yy[a] - subDA_max[1]) < yFac || fabs(zz[a] - subDA_max[2]) < zFac )
               {
                   // boundary at x = 1, y = 1, z = 1
                   unsigned int sub_idx = da->getDA2SubNode(idx[a]);
@@ -1517,7 +1518,7 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
               }
           } // for
           // std::cout << "=== ===" << std::endl;
-      } // is Boundary
+      // } // is Boundary
     } // loop over Writable
 
     da->vecRestoreBuffer(NonGhostNodes, node_map, false, false, true, 1);

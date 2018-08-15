@@ -78,6 +78,13 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
   std::cout << "basic sweep done" << std::endl;
   */    
 
+  double _min[3], _max[3];
+
+ _min[0] = gSize[0]; _min[1] = gSize[1]; _min[2] = gSize[2];
+ _max[0] = 0.0; _max[1] = 0.0;  _max[2] = 0.0; 
+
+double x, y, z;
+
  unsigned int num_local_skip = 0;
   for ( m_da->init<ot::DA_FLAGS::ALL>(); 
         m_da->curr() < m_da->end<ot::DA_FLAGS::ALL>(); 
@@ -92,16 +99,17 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
 
           m_da->getNodeIndices(indices);
 
+          x = pt.x()*xFac; y = pt.y()*yFac; z = pt.z()*zFac;
 
-          dist[0] = fx_retain(pt.x()*xFac, pt.y()*yFac, pt.z()*zFac);
-          dist[1] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac, pt.z()*zFac);
-          dist[2] = fx_retain(pt.x()*xFac, pt.y()*yFac+hy, pt.z()*zFac);
-          dist[3] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac+hy, pt.z()*zFac);
+          dist[0] = fx_retain(x,    y,    z);
+          dist[1] = fx_retain(x+hx, y,    z);
+          dist[2] = fx_retain(x,    y+hy, z);
+          dist[3] = fx_retain(x+hx, y+hy, z);
 
-          dist[4] = fx_retain(pt.x()*xFac, pt.y()*yFac, pt.z()*zFac+hz);
-          dist[5] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac, pt.z()*zFac+hz);
-          dist[6] = fx_retain(pt.x()*xFac, pt.y()*yFac+hy, pt.z()*zFac+hz);
-          dist[7] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac+hy, pt.z()*zFac +hz);
+          dist[4] = fx_retain(x,    y,    z+hz);
+          dist[5] = fx_retain(x+hx, y,    z+hz);
+          dist[6] = fx_retain(x,    y+hy, z+hz);
+          dist[7] = fx_retain(x+hx, y+hy, z +hz);
 
           /*
           for (auto q: dist)
@@ -119,6 +127,15 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
             // std::cout << "s" << da->curr() << ", ";
             m_ucpSkipList[m_da->curr()] = 1;
           } else {
+            // element is in ... update bounding box ...
+            if ( x < _min[0] ) _min[0] = x;
+            if ( y < _min[1] ) _min[1] = y;
+            if ( z < _min[2] ) _min[2] = z;
+            x += hx; y += hy; z += hz;  
+            if ( x > _max[0] ) _max[0] = x;
+            if ( y > _max[1] ) _max[1] = y;
+            if ( z > _max[2] ) _max[2] = z;
+
             // touch nodes ....
             for(int k = 0; k < 8; k++) {
               if ( indices[k] < m_uip_DA2sub_NodeMap.size() )
@@ -134,6 +151,9 @@ subDA::subDA(DA* da, std::function<double ( double, double, double ) > fx_retain
    // m_da->vecRestoreBuffer<unsigned char>(gNumNonGhostNodes,  m_ucpSkipNodeList, false, false, false, 1);
    // m_da->vecGetBuffer<unsigned char>(gNumNonGhostNodes, m_ucpSkipNodeList, false, false, false, 1);  
 
+  // update bounding box ...
+  par::Mpi_Allreduce(_min, m_dMinBB, 3, MPI_MIN, comm);
+  par::Mpi_Allreduce(_max, m_dMaxBB, 3, MPI_MAX, comm);
   
   // std::cout << "read from ghosts" << std::endl;
   m_da->ReadFromGhostsBegin<unsigned char>(m_ucpSkipNodeList,1);
