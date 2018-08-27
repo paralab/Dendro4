@@ -153,6 +153,10 @@ namespace ot {
         unsigned char skipElem(unsigned int i) {
           return m_ucpSkipList[i];
         }
+        
+        unsigned char skipNode(unsigned int i) {
+          return m_ucpSkipNodeList[i];
+        }
 
         unsigned int getDA2SubNode(unsigned int i) {
           return m_uip_DA2sub_NodeMap[i];
