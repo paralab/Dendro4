@@ -1438,26 +1438,28 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
       pt = main_da->getCurrentOffset();
       unsigned char hangingMask = main_da->getHangingNodeIndex(main_da->curr());
 
-          //! get the correct coordinates of the nodes ...
-          xx[0] = pt.x() * xFac;
-          yy[0] = pt.y() * yFac;
-          zz[0] = pt.z() * zFac;
+      //! get the correct coordinates of the nodes ...
+      xx[0] = pt.x() * xFac;
+      yy[0] = pt.y() * yFac;
+      zz[0] = pt.z() * zFac;
 
-        if (!da->skipElem(main_da->curr()) ) {
-          unsigned int sub_idx = da->getDA2SubNode(idx[0]);
-          if (!(hangingMask & (1u << 0)) && (sub_idx >= elem_beg) && (sub_idx < postG_beg))
-          {        
-            index = 3*node_map[sub_idx];
-            pts.at(index) = xx[0];
-            pts.at(index+1) = yy[0];
-            pts.at(index+2) = zz[0];
-          } 
-        } // if not skipped
+      /*
+      if (!da->skipElem(main_da->curr()) ) {
+        unsigned int sub_idx = da->getDA2SubNode(idx[0]);
+        if (!(hangingMask & (1u << 0)) && (sub_idx >= elem_beg) && (sub_idx < postG_beg))
+        {        
+          index = 3*node_map[sub_idx];
+          pts.at(index) = xx[0];
+          pts.at(index+1) = yy[0];
+          pts.at(index+2) = zz[0];
+        } 
+      } // if not skipped
+      */
 
-          lev = main_da->getLevel(main_da->curr());
-          hx = xFac * (1 << (maxD - lev));
-          hy = yFac * (1 << (maxD - lev));
-          hz = zFac * (1 << (maxD - lev));
+      lev = main_da->getLevel(main_da->curr());
+      hx = xFac * (1 << (maxD - lev));
+      hy = yFac * (1 << (maxD - lev));
+      hz = zFac * (1 << (maxD - lev));
           // std::cout << da->curr() << " -> " << idx[0] << std::endl;
 
       // if ( main_da->isBoundaryOctant() && 
@@ -1465,43 +1467,44 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
       // {
         // std::cout << "=== Boundary ===" << std::endl;
           
-          xx[0] = pt.x() * xFac;
-          yy[0] = pt.y() * yFac;
-          zz[0] = pt.z() * zFac;
+      xx[0] = pt.x() * xFac;
+      yy[0] = pt.y() * yFac;
+      zz[0] = pt.z() * zFac;
 
-          xx[1] = pt.x() * xFac + hx;
-          yy[1] = pt.y() * yFac;
-          zz[1] = pt.z() * zFac;
+      xx[1] = pt.x() * xFac + hx;
+      yy[1] = pt.y() * yFac;
+      zz[1] = pt.z() * zFac;
           
-          xx[2] = pt.x() * xFac;
-          yy[2] = pt.y() * yFac + hy;
-          zz[2] = pt.z() * zFac;
+      xx[2] = pt.x() * xFac;
+      yy[2] = pt.y() * yFac + hy;
+      zz[2] = pt.z() * zFac;
           
-          xx[3] = pt.x() * xFac + hx;
-          yy[3] = pt.y() * yFac + hy;
-          zz[3] = pt.z() * zFac;
+      xx[3] = pt.x() * xFac + hx;
+      yy[3] = pt.y() * yFac + hy;
+      zz[3] = pt.z() * zFac;
 
-          xx[4] = pt.x() * xFac;
-          yy[4] = pt.y() * yFac;
-          zz[4] = pt.z() * zFac + hz;
+      xx[4] = pt.x() * xFac;
+      yy[4] = pt.y() * yFac;
+      zz[4] = pt.z() * zFac + hz;
           
-          xx[5] = pt.x() * xFac + hx;
-          yy[5] = pt.y() * yFac;
-          zz[5] = pt.z() * zFac + hz;
+      xx[5] = pt.x() * xFac + hx;
+      yy[5] = pt.y() * yFac;
+      zz[5] = pt.z() * zFac + hz;
           
-          xx[6] = pt.x() * xFac;
-          yy[6] = pt.y() * yFac + hy;
-          zz[6] = pt.z() * zFac + hz;
+      xx[6] = pt.x() * xFac;
+      yy[6] = pt.y() * yFac + hy;
+      zz[6] = pt.z() * zFac + hz;
           
-          xx[7] = pt.x() * xFac + hx;
-          yy[7] = pt.y() * yFac + hy;
-          zz[7] = pt.z() * zFac + hz;
+      xx[7] = pt.x() * xFac + hx;
+      yy[7] = pt.y() * yFac + hy;
+      zz[7] = pt.z() * zFac + hz;
 
-          for (int a=0; a<8; a++)
-          {
+      for (int a=0; a<8; a++)
+      {
             // std::cout <<  " =<< (" << xx[a] << ", " << yy[a] << ", " << zz[a] << ") " << std::endl;
               // if (!(hangingMask & (1u << a)))
-              if ( !(hangingMask & (1u << a)) && ( fabs(xx[a] - subDA_max[0]) < xFac || fabs(yy[a] - subDA_max[1]) < yFac || fabs(zz[a] - subDA_max[2]) < zFac ) )
+              // if ( fabs(xx[a] - subDA_max[0]) < xFac || fabs(yy[a] - subDA_max[1]) < yFac || fabs(zz[a] - subDA_max[2]) < zFac )
+              if ( !(hangingMask & (1u << a)) && ! da->skipNode(idx[a]) )
               {
                   // boundary at x = 1, y = 1, z = 1
                   unsigned int sub_idx = da->getDA2SubNode(idx[a]);
