@@ -1501,7 +1501,7 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
           {
             // std::cout <<  " =<< (" << xx[a] << ", " << yy[a] << ", " << zz[a] << ") " << std::endl;
               // if (!(hangingMask & (1u << a)))
-              if ( fabs(xx[a] - subDA_max[0]) < xFac || fabs(yy[a] - subDA_max[1]) < yFac || fabs(zz[a] - subDA_max[2]) < zFac )
+              if ( !(hangingMask & (1u << a)) && ( fabs(xx[a] - subDA_max[0]) < xFac || fabs(yy[a] - subDA_max[1]) < yFac || fabs(zz[a] - subDA_max[2]) < zFac ) )
               {
                   // boundary at x = 1, y = 1, z = 1
                   unsigned int sub_idx = da->getDA2SubNode(idx[a]);
