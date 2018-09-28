@@ -79,7 +79,7 @@ int main(int argc, char ** argv ) {
   
   // function2Octree(fx, nodes, 8, false, MPI_COMM_WORLD);
 
-  ot::DA *main_da =  ot::function_to_DA(fx_refine, 3, 6, gsz, MPI_COMM_WORLD);
+  ot::DA *main_da =  ot::function_to_DA(fx_refine, 3, 6, 100, gsz, MPI_COMM_WORLD);
   // std::cout << rank << ": finished building DA" << std::endl ;
   
   main_da->computeLocalToGlobalMappings();

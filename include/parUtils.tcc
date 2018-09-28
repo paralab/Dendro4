@@ -748,8 +748,6 @@ namespace par {
         PROF_PAR_ALL2ALLV_DENSE_END
     }
 
-
-
   template<typename T>
   unsigned int defaultWeight(const T *a) {
     return 1;

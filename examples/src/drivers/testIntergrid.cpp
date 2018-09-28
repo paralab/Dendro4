@@ -61,9 +61,17 @@ int main(int argc, char ** argv ) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   double gsz[3] = {8.0, 8.0, 8.0};
+ 
   double sub_max[3] = {5.5875, 5.5875, 8.0};
   double ctr[3] = {5.5, 5.5, 5.5};
   double yr[2] = {4.4375, 5.5875};         //  .25 .375 .4375 .5 .5875 .625 .75
+
+  //  double gsz[3] = {10.66, 10.66, 10.66};
+
+  // double sub_max[3] = {8.66, 8.66, 10.66};
+  // double ctr[3] = {4.33, 4.33, 5.33};
+  // double yr[2] = {0.0, 8.66};
+
   double r = 0.25;
   
   auto fx_refine = [ctr, r, yr](double x, double y, double z) -> double { 
@@ -80,7 +88,7 @@ int main(int argc, char ** argv ) {
     return 1.0 + sin(0.25*M_PI*x)*sin(0.25*M_PI*y)*sin(0.25*M_PI*z)  ; //cos(M_PI*(1.0 - (x-0.5)*(x-0.5)*2.0))*cos(M_PI*(1.0 - (y-0.5)*(y-0.5)*2.0));
   };
     
-  ot::DA *main_da =  ot::function_to_DA(fx_refine, 3, 5, gsz, MPI_COMM_WORLD);
+  ot::DA *main_da =  ot::function_to_DA(fx_refine, 3, 5, 100, gsz, MPI_COMM_WORLD);
   ot::subDA *da =  new ot::subDA(main_da, fx_retain, gsz);
 
 
@@ -107,7 +115,7 @@ int main(int argc, char ** argv ) {
 
   // r = 0.4;
 
-  ot::DA *main_da_new =  ot::function_to_DA(fx_refine, 4, 6, gsz, MPI_COMM_WORLD);  
+  ot::DA *main_da_new =  ot::function_to_DA(fx_refine, 4, 6, 100, gsz, MPI_COMM_WORLD);  
   ot::subDA *da_new =  new ot::subDA(main_da_new, fx_retain, gsz);
 
   // MPI_Barrier(MPI_COMM_WORLD);

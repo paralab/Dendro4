@@ -2861,7 +2861,7 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
 
 
   // ot::DA* function_to_DA(std::function<double(double,double,double)> fx, unsigned int d_min, unsigned int d_max, double* gSize, bool reject_interior, MPI_Comm comm ) {
-  DA* function_to_DA (std::function<double ( double, double, double ) > fx_refine, unsigned int d_min, unsigned int d_max, double* gSize, MPI_Comm comm ) {
+  DA* function_to_DA (std::function<double ( double, double, double ) > fx_refine, unsigned int d_min, unsigned int d_max, unsigned int surface_assembly_cost, double* gSize, MPI_Comm comm ) {
   // PROF_F2O_BEGIN
     int size, rank;
     unsigned int dim = 3;
@@ -3023,7 +3023,40 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
     
     // balance 
     ot::balanceOctree (nodes, nodes_new, dim, maxDepth, incCorner, comm, NULL, NULL);
+
+    // set weights ...
+    for (auto elem: nodes_new) {
+      hx = xFac * ( 1 << (maxDepth - elem.getLevel()));
+      hy = yFac * ( 1 << (maxDepth - elem.getLevel()));
+      hz = zFac * ( 1 << (maxDepth - elem.getLevel()));
+        
+      // check and split
+      pt = elem.getAnchor();
+      pt *= p2;
+
+      dist[0] = fx_refine(pt.x(), pt.y(), pt.z());
+      dist[1] = fx_refine(pt.x()+hx, pt.y(), pt.z());
+      dist[2] = fx_refine(pt.x(), pt.y()+hy, pt.z());
+      dist[3] = fx_refine(pt.x()+hx, pt.y()+hy, pt.z());
+
+      dist[4] = fx_refine(pt.x(), pt.y(), pt.z()+hz);
+      dist[5] = fx_refine(pt.x()+hx, pt.y(), pt.z()+hz);
+      dist[6] = fx_refine(pt.x(), pt.y()+hy, pt.z()+hz);
+      dist[7] = fx_refine(pt.x()+hx, pt.y()+hy, pt.z() +hz);
+        
+      if ( std::none_of(dist.begin(), dist.end(), inside )) {
+        elem.setWeight(100);
+      } else if ( std::all_of(dist.begin(), dist.end(), inside ) ) {
+        elem.setWeight(10);
+      } else {
+        // intersection.
+        elem.setWeight(surface_assembly_cost);
+      }
+      
+    }
   
+    par::partitionW<ot::TreeNode>(nodes_new, ot::getNodeWeight, comm);
+
     // build DA.
   /*  
     if(rank==0) {
