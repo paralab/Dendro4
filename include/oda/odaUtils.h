@@ -219,6 +219,7 @@ namespace ot {
   // unsigned int surface_assembly_cost specifies the relative cost of assembling a surface element compared to the stanbard volume element in percent. So 1.5 times assembly 
   // cost will be expressed as 150
   DA* function_to_DA (std::function<double ( double, double, double ) > fx_refine, unsigned int d_min, unsigned int d_max, unsigned int surface_assembly_cost, double* gSize, MPI_Comm comm );
+  std::vector<ot::TreeNode> function_to_Treenode (std::function<double ( double, double, double ) > fx_refine, unsigned int d_min, unsigned int d_max, unsigned int surface_assembly_cost, double* gSize, MPI_Comm comm );
   
   DA* function_to_DA_bool (std::function<bool ( double, double, double ) > fx_refine, unsigned int d_min, unsigned int d_max, double* gSize, MPI_Comm comm );
 
