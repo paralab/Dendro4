@@ -42,7 +42,7 @@ namespace ot {
     MPI_Comm_rank(commActive, &rankActive);
     MPI_Comm_size(commActive, &npesActive);
 
-    //Reset weights
+    //Reset weights to 1
     std::vector<bool> isSingular(globalCoarse.size());
     unsigned int nodeCnt = 0;
     for (int i = 0; i < globalCoarse.size(); i++) {
@@ -303,7 +303,9 @@ namespace ot {
 #endif
       if ((recvK[nextNode].isAncestor(nodes[nextPt])) ||
           (recvK[nextNode] == nodes[nextPt])) {
-        wts[nextNode]++;
+        // @ hari 10/22/2017 - potential fix ? 
+        // wts[nextNode]++;
+        wts[nextNode] += nodes[nextPt].getWeight();
         if( (recvK[nextNode].getAnchor() == nodes[nextPt].getAnchor()) &&
             (!(nodes[nextPt].getFlag() & ot::TreeNode::NODE)) ) {
           isAnchorHanging[nextNode] = 1;
