@@ -489,7 +489,7 @@ int subDA::computeLocalToGlobalMappings() {
   MPI_Request sendRequest;
   MPI_Status status;
   
-  std::cout << rank << ": compute_l2g:  localSize " << localNodeSize << std::endl; 
+  // std::cout << rank << ": compute_l2g:  localSize " << localNodeSize << std::endl; 
 
   par::Mpi_Scan<DendroIntL>(&localNodeSize, &off1, 1, MPI_SUM, comm); 
   if(rank < (npes-1)) {
@@ -502,7 +502,7 @@ int subDA::computeLocalToGlobalMappings() {
     globalOffset = 0;
   }
   
-  std::cout << rank << ": compute_l2g:  globalOffset " << globalOffset << std::endl;
+  // std::cout << rank << ": compute_l2g:  globalOffset " << globalOffset << std::endl;
 
   std::vector<DendroIntL> gNumNonGhostNodes(localNodeSize); 
   for(DendroIntL i = 0; i < localNodeSize; i++) {
@@ -533,8 +533,8 @@ int subDA::computeLocalToGlobalMappings() {
   }
   */
 
-    unsigned int elem_beg = m_da->getIdxElementBegin();
-   std::cout << rank << ": elemBeg " << m_uip_DA2sub_NodeMap[elem_beg] << ", " << m_dilpLocalToGlobal[m_uip_DA2sub_NodeMap[elem_beg]] << std::endl;
+   // unsigned int elem_beg = m_da->getIdxElementBegin();
+   // std::cout << rank << ": elemBeg " << m_uip_DA2sub_NodeMap[elem_beg] << ", " << m_dilpLocalToGlobal[m_uip_DA2sub_NodeMap[elem_beg]] << std::endl;
 
   gNumNonGhostNodes.clear();
   m_bComputedLocalToGlobal = true;

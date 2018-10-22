@@ -3057,6 +3057,10 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
   
     par::partitionW<ot::TreeNode>(nodes_new, ot::getNodeWeight, comm);
 
+    // unsigned int hs_sz = nodes_new.size();
+    // std::cout << rank << ": __HARI__ f2da " << hs_sz << ", " << nodes_new[0].getWeight() << ", " << nodes_new[hs_sz/2].getWeight() << std::endl;
+
+
     // build DA.
   /*  
     if(rank==0) {

@@ -151,20 +151,29 @@ void DA::DA_FactoryPart1(std::vector<ot::TreeNode>& in) {
 #endif
   PROF_BUILD_DA_STAGE1_BEGIN
 
-   assert(!in.empty());
+  assert(!in.empty());
+  
+  int rank,size;
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_size(MPI_COMM_WORLD,&size);
+
+
+  // unsigned int hs_sz = in.size();
+  // std::cout << rank << ": __HARI__ da_fac_1 " << hs_sz << ", " << in[0].getWeight() << ", " << in[hs_sz/2].getWeight() << std::endl;
+
 
   // first generate the boundary nodes ...
   std::vector<ot::TreeNode> positiveBoundaryOctants;
 
-  int rank,size;
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
   //Assumption: in is globally sorted to begin with. 
   //Guarantee: in remains globally sorted in the end.
   //positiveBoundaryOctants need not be globally sorted, in fact I don't think
   //it will be sorted even on 1 processor.
   assert(par::test::isUniqueAndSorted(in,m_mpiCommActive));
   addBoundaryNodesType1(in, positiveBoundaryOctants, m_uiDimension, m_uiMaxDepth);
+
+  // hs_sz = in.size();
+  // std::cout << rank << ": __HARI__ da_fac_1 - after addBdy " << hs_sz << ", " << in[0].getWeight() << ", " << in[hs_sz/2].getWeight() << std::endl;  
 
   in.insert(in.end(),positiveBoundaryOctants.begin(),positiveBoundaryOctants.end());
   m_uiMaxDepth=m_uiMaxDepth+1;
@@ -177,6 +186,9 @@ void DA::DA_FactoryPart1(std::vector<ot::TreeNode>& in) {
   SFC::parSort::SFC_treeSort(in,tmp,tmp,tmp,m_uiTreeSortTol,m_uiMaxDepth,root,0,1,0,NUM_NPES_THRESHOLD,m_mpiCommActive);
 #else
   par::sampleSort(in,tmp,m_mpiCommActive);
+  // hs_sz = in.size();
+  // std::cout << rank << ": __HARI__ da_fac_1 sort in  " << hs_sz << ", " << in[0].getWeight() << ", " << in[hs_sz/2].getWeight() << std::endl;
+  // std::cout << rank << ": __HARI__ da_fac_1 sort tmp " << hs_sz << ", " << tmp[0].getWeight() << ", " << tmp[hs_sz/2].getWeight() << std::endl;
   std::swap(in,tmp);
   tmp.clear();
 #endif
@@ -235,6 +247,8 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
       if(!m_iRankActive)
           std::cout<<GRN<<"ot::blockPartStage1 begin"<<NRM<<std::endl;*/
     PROF_DA_BPART1_BEGIN
+    // unsigned int hs_sz = in.size();
+    // std::cout << rank << ": __HARI__ " << hs_sz << ", " << in[0].getWeight() << ", " << in[hs_sz/2].getWeight() << std::endl;
     ot::blockPartStage1(in, blocks, m_uiDimension, m_uiMaxDepth, m_mpiCommActive,m_uiTreeSortTol);
     /*MPI_Barrier(m_mpiCommActive);
     if(!m_iRankActive)

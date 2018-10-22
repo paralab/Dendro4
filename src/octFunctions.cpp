@@ -695,6 +695,8 @@ namespace ot {
       unsigned int y = in[i].getY();
       unsigned int z = in[i].getZ();
 
+      unsigned int w = in[i].getWeight();
+
       unsigned char bdyFlags;
       // check if this is a boundary octant or not ...
       if ( in[i].isBoundaryOctant(ot::TreeNode::POSITIVE, &bdyFlags) ) {
@@ -754,6 +756,7 @@ namespace ot {
 
       // Embed the actual octant in one level higher ...
       in[i] = ot::TreeNode(x, y, z, d+1, dim, maxDepth+1);
+      in[i].setWeight(w);
 
     }//end for i
 
