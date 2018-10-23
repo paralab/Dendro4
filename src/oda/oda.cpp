@@ -248,7 +248,7 @@ namespace ot {
 
   //***************Constructor*****************//
   DA::DA(std::vector<ot::TreeNode> &in, MPI_Comm comm, MPI_Comm activeInputComm,double tol,
-      bool compressLut, const std::vector<ot::TreeNode>* blocksPtr,bool* iAmActive ) {
+      bool compressLut, const std::vector<ot::TreeNode>* blocksPtr, bool* iAmActive ) {
 
 #ifdef __PROF_WITH_BARRIER__
     MPI_Barrier(comm);
