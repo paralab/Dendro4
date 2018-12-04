@@ -3544,7 +3544,7 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
   } // end of function f2DA_bool
   
 
-  ot::DA* remesh_DA (ot::DA* da, std::vector<unsigned int> levels, double* gSize, MPI_Comm comm) {
+  ot::DA* remesh_DA (ot::DA* da, std::vector<unsigned int> levels, double* gSize, unsigned int surface_assembly_cost, MPI_Comm comm) {
 
     unsigned int dim = 3;
     unsigned int maxNumPts = 1;
@@ -3593,6 +3593,40 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
 
     ot::balanceOctree (linOct, tmpNodes, dim, maxDepth, incCorner, comm, NULL, NULL);
 
+        // set weights ...
+    for (auto &elem: tmpNodes) {
+      hx = xFac * ( 1 << (maxDepth - elem.getLevel()));
+      hy = yFac * ( 1 << (maxDepth - elem.getLevel()));
+      hz = zFac * ( 1 << (maxDepth - elem.getLevel()));
+        
+      // check and split
+      pt = elem.getAnchor();
+      pt *= p2;
+
+      dist[0] = fx_refine(pt.x(), pt.y(), pt.z());
+      dist[1] = fx_refine(pt.x()+hx, pt.y(), pt.z());
+      dist[2] = fx_refine(pt.x(), pt.y()+hy, pt.z());
+      dist[3] = fx_refine(pt.x()+hx, pt.y()+hy, pt.z());
+
+      dist[4] = fx_refine(pt.x(), pt.y(), pt.z()+hz);
+      dist[5] = fx_refine(pt.x()+hx, pt.y(), pt.z()+hz);
+      dist[6] = fx_refine(pt.x(), pt.y()+hy, pt.z()+hz);
+      dist[7] = fx_refine(pt.x()+hx, pt.y()+hy, pt.z() +hz);
+        
+      if ( std::none_of(dist.begin(), dist.end(), inside )) {
+        elem.setWeight(100);
+      } else if ( std::all_of(dist.begin(), dist.end(), inside ) ) {
+        elem.setWeight(10);
+      } else {
+        // intersection.
+        elem.setWeight(surface_assembly_cost);
+      }
+      
+    }
+  
+    par::partitionW<ot::TreeNode>(tmpNodes, ot::getNodeWeight, comm);
+
+
     std::swap(linOct, tmpNodes);
     tmpNodes.clear();
 
@@ -3602,4 +3636,89 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
 
   } // remesh_DA
 
+std::vector<ot::TreeNode> remesh_DA_Treenode (ot::DA* da, std::vector<unsigned int> levels, double* gSize, unsigned int surface_assembly_cost, MPI_Comm comm) {
+
+    unsigned int dim = 3;
+    unsigned int maxNumPts = 1;
+    bool incCorner = 1;
+    bool compressLut = false;
+    unsigned int maxDepth = da->getMaxDepth();
+
+    // elemental loop - create new points
+    std::vector<double> pts;
+    std::vector<ot::TreeNode> tmpNodes, linOct;
+    
+    for(da->init<ot::DA_FLAGS::WRITABLE>(); da->curr() < da->end<ot::DA_FLAGS::WRITABLE>(); da->next<ot::DA_FLAGS::WRITABLE>()) {
+      // get coords of current element
+      Point pt = da->getCurrentOffset();
+      unsigned int currLev = da->getLevel(da->curr()) - 1;
+      unsigned int newLev = levels[da->curr()];
+
+      ot::TreeNode currOct(pt.xint(), pt.yint(), pt.zint(), currLev, 3, maxDepth-1);
+      if (currLev > newLev ) {
+        ot::TreeNode newOct = currOct.getAncestor(newLev);
+        tmpNodes.push_back(newOct);
+      } else if (currLev == newLev) {
+        tmpNodes.push_back(currOct);
+      } else  {
+        currOct.addChildren(tmpNodes, newLev - currLev);
+      }
+    }
+
+    par::removeDuplicates<ot::TreeNode>(tmpNodes,false,MPI_COMM_WORLD);
+    std::swap(linOct, tmpNodes);
+    tmpNodes.clear();
+    par::partitionW<ot::TreeNode>(linOct, NULL,MPI_COMM_WORLD);
+
+    maxDepth--; 
+
+    pts.resize(3*(linOct.size()));
+    unsigned int ptsLen = (3*(linOct.size()));
+    for(int i = 0; i < linOct.size(); i++) {
+      pts[3*i] = (((double)(linOct[i].getX())) + 0.5)/((double)(1u << maxDepth))* gSize[0];
+      pts[(3*i)+1] = (((double)(linOct[i].getY())) +0.5)/((double)(1u << maxDepth))* gSize[1];
+      pts[(3*i)+2] = (((double)(linOct[i].getZ())) +0.5)/((double)(1u << maxDepth))* gSize[2];
+    }//end for i
+    linOct.clear();
+
+    ot::points2Octree(pts, gSize, linOct, dim, maxDepth, maxNumPts, comm);
+
+    ot::balanceOctree (linOct, tmpNodes, dim, maxDepth, incCorner, comm, NULL, NULL);
+
+        // set weights ...
+    for (auto &elem: tmpNodes) {
+      hx = xFac * ( 1 << (maxDepth - elem.getLevel()));
+      hy = yFac * ( 1 << (maxDepth - elem.getLevel()));
+      hz = zFac * ( 1 << (maxDepth - elem.getLevel()));
+        
+      // check and split
+      pt = elem.getAnchor();
+      pt *= p2;
+
+      dist[0] = fx_refine(pt.x(), pt.y(), pt.z());
+      dist[1] = fx_refine(pt.x()+hx, pt.y(), pt.z());
+      dist[2] = fx_refine(pt.x(), pt.y()+hy, pt.z());
+      dist[3] = fx_refine(pt.x()+hx, pt.y()+hy, pt.z());
+
+      dist[4] = fx_refine(pt.x(), pt.y(), pt.z()+hz);
+      dist[5] = fx_refine(pt.x()+hx, pt.y(), pt.z()+hz);
+      dist[6] = fx_refine(pt.x(), pt.y()+hy, pt.z()+hz);
+      dist[7] = fx_refine(pt.x()+hx, pt.y()+hy, pt.z() +hz);
+        
+      if ( std::none_of(dist.begin(), dist.end(), inside )) {
+        elem.setWeight(100);
+      } else if ( std::all_of(dist.begin(), dist.end(), inside ) ) {
+        elem.setWeight(10);
+      } else {
+        // intersection.
+        elem.setWeight(surface_assembly_cost);
+      }
+      
+    }
+  
+    par::partitionW<ot::TreeNode>(tmpNodes, ot::getNodeWeight, comm);
+
+    return tmpNodes;
+
+  } // remesh_DA_Treenode
 }//end namespace
