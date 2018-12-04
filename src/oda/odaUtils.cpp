@@ -3544,7 +3544,7 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
   } // end of function f2DA_bool
   
 
-  ot::DA* remesh_DA (ot::DA* da, std::vector<unsigned int> levels, double* gSize, unsigned int surface_assembly_cost, MPI_Comm comm) {
+  ot::DA* remesh_DA (ot::DA* da, std::vector<unsigned int> levels, double* gSize, std::function<bool ( double, double, double ) > fx_refine, unsigned int surface_assembly_cost, MPI_Comm comm) {
 
     unsigned int dim = 3;
     unsigned int maxNumPts = 1;
@@ -3592,6 +3592,20 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
     ot::points2Octree(pts, gSize, linOct, dim, maxDepth, maxNumPts, comm);
 
     ot::balanceOctree (linOct, tmpNodes, dim, maxDepth, incCorner, comm, NULL, NULL);
+
+
+    double hx, hy, hz;
+    std::array<bool, 8> dist;
+    Point pt;
+        
+    auto inside = [](bool d){ return d; };
+
+    double xFac = gSize[0]/((double)(1<<(maxDepth)));
+    double yFac = gSize[1]/((double)(1<<(maxDepth)));
+    double zFac = gSize[2]/((double)(1<<(maxDepth)));
+
+    Point p2(xFac, yFac, zFac);
+
 
         // set weights ...
     for (auto &elem: tmpNodes) {
@@ -3636,7 +3650,7 @@ void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* p
 
   } // remesh_DA
 
-std::vector<ot::TreeNode> remesh_DA_Treenode (ot::DA* da, std::vector<unsigned int> levels, double* gSize, unsigned int surface_assembly_cost, MPI_Comm comm) {
+std::vector<ot::TreeNode> remesh_DA_Treenode (ot::DA* da, std::vector<unsigned int> levels, double* gSize, std::function<bool ( double, double, double ) > fx_refine, unsigned int surface_assembly_cost, MPI_Comm comm) {
 
     unsigned int dim = 3;
     unsigned int maxNumPts = 1;
@@ -3684,6 +3698,19 @@ std::vector<ot::TreeNode> remesh_DA_Treenode (ot::DA* da, std::vector<unsigned i
     ot::points2Octree(pts, gSize, linOct, dim, maxDepth, maxNumPts, comm);
 
     ot::balanceOctree (linOct, tmpNodes, dim, maxDepth, incCorner, comm, NULL, NULL);
+
+        double hx, hy, hz;
+    std::array<bool, 8> dist;
+    Point pt;
+        
+    auto inside = [](bool d){ return d; };
+
+    double xFac = gSize[0]/((double)(1<<(maxDepth)));
+    double yFac = gSize[1]/((double)(1<<(maxDepth)));
+    double zFac = gSize[2]/((double)(1<<(maxDepth)));
+
+    Point p2(xFac, yFac, zFac);
+
 
         // set weights ...
     for (auto &elem: tmpNodes) {
