@@ -577,7 +577,7 @@ namespace ot {
 #ifdef TREE_SORT
       SFC::parSort::SFC_PartitionW(nodes,tol,maxDepth,comm);
 #else
-      par::partitionW<ot::TreeNode>(nodes, NULL,comm);
+      par::partitionW<ot::TreeNode>(nodes, getNodeWeight, comm); // hari 2019
 #endif
     // std::cout << "blk part after SFC part" << std::endl;
     /*MPI_Barrier(comm);
@@ -613,8 +613,9 @@ namespace ot {
     //with high priority. The number to be picked is determined by a percentage
     //of the total local wt.
 
-
-
+    long totalWt = 0;
+    for (auto n: nodes)
+      totalWt += n.getWeight();
 
     for (unsigned int i = 0; i < localCoarse.size(); i++) {
       localCoarse[i].setWeight(0);
@@ -634,7 +635,8 @@ namespace ot {
 #endif
       if ((localCoarse[nextNode].isAncestor(nodes[nextPt])) ||
           (localCoarse[nextNode] == nodes[nextPt])) {
-        localCoarse[nextNode].addWeight(1);
+        // localCoarse[nextNode].addWeight(1);
+        localCoarse[nextNode].addWeight(nodes[nextPt].getWeight());
         nextPt++;
       } else {
         nextNode++;
@@ -652,7 +654,7 @@ namespace ot {
     long localWt = 0;
     unsigned int cnt = 0;
     while ( ( cnt < localCoarse.size() ) &&
-        (localWt <= ( (long)( thFac*( (double)(nodes.size()) ) ) ) ) ) {
+        (localWt <= ( (long)( thFac*( (double)(totalWt) ) ) ) ) ) {
       localBlocks.push_back(localCoarse[cnt]);
       localWt += (long)(localCoarse[cnt].getWeight());
       cnt++;
@@ -915,7 +917,8 @@ namespace ot {
       assert(areComparable(recvK[nextNode], nodes[nextPt]));
 #endif
       if ((recvK[nextNode].isAncestor(nodes[nextPt])) || (recvK[nextNode] == nodes[nextPt])) {
-        wts[nextNode]++;
+        // wts[nextNode]++;
+        wts[nextNode] += nodes[nextPt].getWeight();
         nextPt++;
       } else {
         nextNode++;
