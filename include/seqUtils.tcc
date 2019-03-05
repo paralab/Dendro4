@@ -12,8 +12,6 @@
 #include <assert.h>
 #include <test/testUtils.h>
 
-
-
 namespace seq {
 
 

@@ -1289,7 +1289,7 @@ PROF_COMPLETE_REGION_END
 int function2Octree(std::function<double(double,double,double)> fx, std::vector<TreeNode> & nodes, 
                       unsigned int d_max, bool reject_interior, MPI_Comm comm ) 
 {
-  PROF_F2O_BEGIN
+  // PROF_F2O_BEGIN
   int size, rank;
   unsigned int dim = 3;
   unsigned maxDepth = 30;
@@ -1420,7 +1420,7 @@ int function2Octree(std::function<double(double,double,double)> fx, std::vector<
       nodes_new.clear();
     }
   
-  PROF_F2O_END
+  // PROF_F2O_END
 } // end function2Octree
 
 

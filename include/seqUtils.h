@@ -11,6 +11,7 @@
 #include <vector>
 #include "dendro.h"
 
+#include <TreeNode.h>
 
 /**
   @namespace seq
@@ -51,6 +52,17 @@ namespace seq {
     */
   template <typename T> 
     void makeVectorUnique(std::vector<T>& vec, bool isSorted) ;
+
+  /**
+    @brief Removes duplicates from the vector.  
+    @author		Hari Sundar
+    @param vec    The octree to be made free of duplicates, including ancestors.
+    @param isSorted Pass 'true' if the input is sorted.    
+
+    If the vector is not sorted,
+    it is first sorted before removing duplicates.
+    */
+    void makeOctreeUnique(std::vector<ot::TreeNode>& vec, bool isSorted) ;
 
   /**
     @brief A binary search implementation.	
