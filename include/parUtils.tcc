@@ -1717,6 +1717,121 @@ namespace par {
   }//end function
 
 
+    template<typename T>
+  int removeDuplicatesAndAncestors(std::vector<T> &vecT, bool isSorted,MPI_Comm comm) {
+#ifdef __PROFILE_WITH_BARRIER__
+    MPI_Barrier(comm);
+#endif
+    PROF_REMDUP_BEGIN
+
+    int size, rank;
+    MPI_Comm_size(comm, &size);
+    MPI_Comm_rank(comm, &rank);
+
+    std::vector<T> tmpVec;
+    if (!isSorted) {
+      //Sort partitions vecT and tmpVec internally.
+      //std::cout << "  rank: " << rank << " before samplesort, size: " << vecT.size() << std::endl;
+
+
+      par::sampleSort<T>(vecT, tmpVec, comm);
+      //std::cout << "  rank: " << rank << " after samplesort, size: " << tmpVec.size() << std::endl;
+    } else {
+      swap(tmpVec, vecT);
+    }
+
+#ifdef __DEBUG_PAR__
+    MPI_Barrier(comm);
+    if(!rank) {
+      std::cout<<"RemDup: Stage-1 passed."<<std::endl;
+    }
+    MPI_Barrier(comm);
+#endif
+
+    vecT.clear();
+    par::partitionW<T>(tmpVec, NULL, comm);
+
+#ifdef __DEBUG_PAR__
+    MPI_Barrier(comm);
+    if(!rank) {
+      std::cout<<"RemDup: Stage-2 passed."<<std::endl;
+    }
+    MPI_Barrier(comm);
+#endif
+
+    //Remove duplicates locally
+    seq::makeOctreeUnique(tmpVec, true);
+
+#ifdef __DEBUG_PAR__
+    MPI_Barrier(comm);
+    if(!rank) {
+      std::cout<<"RemDup: Stage-3 passed."<<std::endl;
+    }
+    MPI_Barrier(comm);
+#endif
+
+    //Creating groups
+
+    int new_rank, new_size;
+    MPI_Comm new_comm;
+    // very quick and dirty solution -- assert that tmpVec is non-emply at every processor (repetetive calls to splitComm2way exhaust MPI resources)
+    // par::splitComm2way(tmpVec.empty(), &new_comm, comm);
+    new_comm = comm;
+    assert(!tmpVec.empty());
+    MPI_Comm_rank(new_comm, &new_rank);
+    MPI_Comm_size(new_comm, &new_size);
+
+#ifdef __DEBUG_PAR__
+    MPI_Barrier(comm);
+    if(!rank) {
+      std::cout<<"RemDup: Stage-4 passed."<<std::endl;
+    }
+    MPI_Barrier(comm);
+#endif
+
+    //Checking boundaries...
+    if (!tmpVec.empty()) {
+      T end = tmpVec[tmpVec.size() - 1];
+      T endRecv;
+
+      //communicate end to the next processor.
+      MPI_Status status;
+
+      par::Mpi_Sendrecv<T, T>(&end, 1, ((new_rank < (new_size - 1)) ? (new_rank + 1) : 0), 1, &endRecv,
+                              1, ((new_rank > 0) ? (new_rank - 1) : (new_size - 1)), 1, new_comm, &status);
+
+      //Remove endRecv if it exists (There can be no more than one copy of this)
+      if (new_rank) {
+        typename std::vector<T>::iterator Iter = std::find(tmpVec.begin(), tmpVec.end(), endRecv);
+        if (Iter != tmpVec.end()) {
+          tmpVec.erase(Iter);
+        }//end if found
+      }//end if p not 0
+    }//end if not empty
+
+#ifdef __DEBUG_PAR__
+    MPI_Barrier(comm);
+    if(!rank) {
+      std::cout<<"RemDup: Stage-5 passed."<<std::endl;
+    }
+    MPI_Barrier(comm);
+#endif
+
+    swap(vecT, tmpVec);
+    tmpVec.clear();
+    par::partitionW<T>(vecT, NULL, comm);
+
+#ifdef __DEBUG_PAR__
+    MPI_Barrier(comm);
+    if(!rank) {
+      std::cout<<"RemDup: Stage-6 passed."<<std::endl;
+    }
+    MPI_Barrier(comm);
+#endif
+
+    PROF_REMDUP_END
+  }//end function
+
 
 
 

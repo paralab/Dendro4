@@ -437,6 +437,17 @@ namespace par {
   template<typename T>
     int removeDuplicates(std::vector<T>& nodes, bool isSorted,MPI_Comm comm);
 
+    /**
+    @brief Removes duplicates and Ancestors in parallel. If the input is not sorted, sample sort will be called 
+    within the function to sort the vector and then duplicates will be removed.
+    @param nodes the input vector.
+    @param isSorted pass 'true' if the vector is globally sorted.
+    @param comm The communicator
+    @author Hari Sundar
+    */
+  template<typename T>
+    int removeDuplicatesAndAncestors(std::vector<T>& nodes, bool isSorted,MPI_Comm comm);
+
   /**
     @brief Splits a communication group into two, one containing processors that passed a value of 'false' 
     for the parameter 'iAmEmpty' and the another containing processors that passed a value of 'true' 
