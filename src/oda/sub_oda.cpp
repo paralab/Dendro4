@@ -403,6 +403,10 @@ subDA::~subDA() {
     delete [] m_dilpLocalToGlobal;
     m_dilpLocalToGlobal = NULL;
   }
+  if (m_bComputedLocalToGlobalElems && !m_dilpLocalToGlobalElems) {
+    delete [] m_dilpLocalToGlobalElems;
+    m_dilpLocalToGlobalElems = NULL;
+  }
   if (m_ucpSkipNodeList != NULL) {
     delete [] m_ucpSkipNodeList;
     m_ucpSkipNodeList = NULL;
