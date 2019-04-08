@@ -3978,7 +3978,7 @@ DA *function_to_DA_bool(std::function<bool(double, double, double)> fx_refine, u
   return da;
 } // end of function f2DA_bool
 
-ot::DA *remesh_DA(ot::DA *da, std::vector<unsigned int> levels, double *gSize, std::function<bool(double, double, double)> fx_refine, std::function<double ( double, double, double ) > fx_retain, unsigned int surface_assembly_cost, MPI_Comm comm)
+ot::DA *remesh_DA(ot::DA *da, std::vector<unsigned int> levels, double *gSize, std::function<double(double, double, double)> fx_refine, std::function<double ( double, double, double ) > fx_retain, unsigned int surface_assembly_cost, MPI_Comm comm)
 {
 
   unsigned int dim = 3;
