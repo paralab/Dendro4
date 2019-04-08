@@ -3226,7 +3226,7 @@ void writeCommCountMapToFile(char *fileName, const std::vector<unsigned int> &co
 } // end of the function
 
 // ot::DA* function_to_DA(std::function<double(double,double,double)> fx, unsigned int d_min, unsigned int d_max, double* gSize, bool reject_interior, MPI_Comm comm ) {
-DA *function_to_DA(std::function<double(double, double, double)> fx_refine, unsigned int d_min, unsigned int d_max, unsigned int surface_assembly_cost, double *gSize, MPI_Comm comm)
+DA *function_to_DA(std::function<double(double, double, double)> fx_refine, std::function<double ( double, double, double ) > fx_retain, unsigned int d_min, unsigned int d_max, unsigned int surface_assembly_cost, double *gSize, MPI_Comm comm)
 {
   // PROF_F2O_BEGIN
   int size, rank;
@@ -4112,7 +4112,7 @@ ot::DA *remesh_DA(ot::DA *da, std::vector<unsigned int> levels, double *gSize, s
 
 } // remesh_DA
 
-std::vector<ot::TreeNode> remesh_DA_Treenode(ot::DA *da, std::vector<unsigned int> levels, double *gSize, std::function<bool(double, double, double)> fx_refine, std::function<double ( double, double, double ) > fx_retain, unsigned int surface_assembly_cost, MPI_Comm comm)
+std::vector<ot::TreeNode> remesh_DA_Treenode(ot::DA *da, std::vector<unsigned int> levels, double *gSize, std::function<double(double, double, double)> fx_refine, std::function<double ( double, double, double ) > fx_retain, unsigned int surface_assembly_cost, MPI_Comm comm)
 {
 
   unsigned int dim = 3;
