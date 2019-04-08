@@ -3513,7 +3513,7 @@ DA *function_to_DA(std::function<double(double, double, double)> fx_refine, unsi
   return da;
 } // end of function.
 
-std::vector<ot::TreeNode> function_to_Treenode(std::function<double(double, double, double)> fx_refine, unsigned int d_min, unsigned int d_max, unsigned int surface_assembly_cost, double *gSize, MPI_Comm comm)
+std::vector<ot::TreeNode> function_to_Treenode(std::function<double(double, double, double)> fx_refine, std::function<double ( double, double, double ) > fx_retain, unsigned int d_min, unsigned int d_max, unsigned int surface_assembly_cost, double *gSize, MPI_Comm comm)
 {
   // PROF_F2O_BEGIN
   int size, rank;
@@ -3536,6 +3536,7 @@ std::vector<ot::TreeNode> function_to_Treenode(std::function<double(double, doub
   Point pt;
 
   auto inside = [](double d) { return d < 0.0; };
+  auto inside_retain = [](double d){ return d > 0.0; };
 
   double xFac = gSize[0] / ((double)(1 << (maxDepth)));
   double yFac = gSize[1] / ((double)(1 << (maxDepth)));
@@ -3585,35 +3586,15 @@ std::vector<ot::TreeNode> function_to_Treenode(std::function<double(double, doub
         dist[6] = fx_refine(pt.x(), pt.y() + hy, pt.z() + hz);
         dist[7] = fx_refine(pt.x() + hx, pt.y() + hy, pt.z() + hz);
 
-        ifretain[0] = fx_retain(pt.x(), pt.y(), pt.z());
-        ifretain[1] = fx_retain(pt.x() + hx, pt.y(), pt.z());
-        ifretain[2] = fx_retain(pt.x(), pt.y() + hy, pt.z());
-        ifretain[3] = fx_retain(pt.x() + hx, pt.y() + hy, pt.z());
-
-        ifretain[4] = fx_retain(pt.x(), pt.y(), pt.z() + hz);
-        ifretain[5] = fx_retain(pt.x() + hx, pt.y(), pt.z() + hz);
-        ifretain[6] = fx_retain(pt.x(), pt.y() + hy, pt.z() + hz);
-        ifretain[7] = fx_retain(pt.x() + hx, pt.y() + hy, pt.z() + hz);
-
-        if (std::any_of(ifretain.begin(), ifretain.end(), inside_retain))
-        {
-          if (std::none_of(dist.begin(), dist.end(), inside))
-          {
-            elem.setWeight(1000);
-          }
-          else if (std::all_of(dist.begin(), dist.end(), inside))
-          {
-            elem.setWeight(10);
-          }
-          else
-          {
-            // intersection.
-            elem.setWeight(surface_assembly_cost);
-          }
-        }
-        else
-        {
-          elem.setWeight(1);
+        if (std::none_of(dist.begin(), dist.end(), inside)) {
+            // outside, retain but do not refine
+            nodes_new.push_back(elem);
+        } else if (std::all_of(dist.begin(), dist.end(), inside)) {
+            // if (!reject_interior)
+            nodes_new.push_back(elem);
+        } else {
+          elem.addChildren(nodes_new);
+          num_intersected++;
         }
       }
       depth++;
@@ -3731,19 +3712,29 @@ std::vector<ot::TreeNode> function_to_Treenode(std::function<double(double, doub
     dist[6] = fx_refine(pt.x(), pt.y() + hy, pt.z() + hz);
     dist[7] = fx_refine(pt.x() + hx, pt.y() + hy, pt.z() + hz);
 
-    if (std::none_of(dist.begin(), dist.end(), inside))
-    {
-      elem.setWeight(100);
-    }
-    else if (std::all_of(dist.begin(), dist.end(), inside))
-    {
-      elem.setWeight(10);
-    }
-    else
-    {
-      // intersection.
-      elem.setWeight(surface_assembly_cost);
-    }
+     ifretain[0] = fx_retain(pt.x(), pt.y(), pt.z());
+      ifretain[1] = fx_retain(pt.x()+hx, pt.y(), pt.z());
+      ifretain[2] = fx_retain(pt.x(), pt.y()+hy, pt.z());
+      ifretain[3] = fx_retain(pt.x()+hx, pt.y()+hy, pt.z());
+
+      ifretain[4] = fx_retain(pt.x(), pt.y(), pt.z()+hz);
+      ifretain[5] = fx_retain(pt.x()+hx, pt.y(), pt.z()+hz);
+      ifretain[6] = fx_retain(pt.x(), pt.y()+hy, pt.z()+hz);
+      ifretain[7] = fx_retain(pt.x()+hx, pt.y()+hy, pt.z() +hz);
+
+
+      if (std::any_of(ifretain.begin(), ifretain.end(), inside_retain)) {
+        if ( std::none_of(dist.begin(), dist.end(), inside )) {
+          elem.setWeight(1000);
+        } else if ( std::all_of(dist.begin(), dist.end(), inside ) ) {
+          elem.setWeight(10);
+        } else {
+          // intersection.
+          elem.setWeight(surface_assembly_cost);
+        }
+      } else {
+        elem.setWeight(1);
+      }
   }
 
   par::partitionW<ot::TreeNode>(nodes_new, ot::getNodeWeight, comm);
@@ -3987,7 +3978,7 @@ DA *function_to_DA_bool(std::function<bool(double, double, double)> fx_refine, u
   return da;
 } // end of function f2DA_bool
 
-ot::DA *remesh_DA(ot::DA *da, std::vector<unsigned int> levels, double *gSize, std::function<bool(double, double, double)> fx_refine, unsigned int surface_assembly_cost, MPI_Comm comm)
+ot::DA *remesh_DA(ot::DA *da, std::vector<unsigned int> levels, double *gSize, std::function<bool(double, double, double)> fx_refine, std::function<double ( double, double, double ) > fx_retain, unsigned int surface_assembly_cost, MPI_Comm comm)
 {
 
   unsigned int dim = 3;
@@ -4049,6 +4040,7 @@ ot::DA *remesh_DA(ot::DA *da, std::vector<unsigned int> levels, double *gSize, s
   Point pt;
 
   auto inside = [](bool d) { return d; };
+  auto inside_retain = [](double d){ return d > 0.0; };
 
   double xFac = gSize[0] / ((double)(1 << (maxDepth)));
   double yFac = gSize[1] / ((double)(1 << (maxDepth)));
@@ -4120,7 +4112,7 @@ ot::DA *remesh_DA(ot::DA *da, std::vector<unsigned int> levels, double *gSize, s
 
 } // remesh_DA
 
-std::vector<ot::TreeNode> remesh_DA_Treenode(ot::DA *da, std::vector<unsigned int> levels, double *gSize, std::function<bool(double, double, double)> fx_refine, unsigned int surface_assembly_cost, MPI_Comm comm)
+std::vector<ot::TreeNode> remesh_DA_Treenode(ot::DA *da, std::vector<unsigned int> levels, double *gSize, std::function<bool(double, double, double)> fx_refine, std::function<double ( double, double, double ) > fx_retain, unsigned int surface_assembly_cost, MPI_Comm comm)
 {
 
   unsigned int dim = 3;
@@ -4182,6 +4174,7 @@ std::vector<ot::TreeNode> remesh_DA_Treenode(ot::DA *da, std::vector<unsigned in
   Point pt;
 
   auto inside = [](bool d) { return d; };
+  auto inside_retain = [](double d){ return d > 0.0; };
 
   double xFac = gSize[0] / ((double)(1 << (maxDepth)));
   double yFac = gSize[1] / ((double)(1 << (maxDepth)));
