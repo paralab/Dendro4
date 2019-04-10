@@ -1936,6 +1936,7 @@ namespace par {
       if (!SortedElem.empty()) {
         par::bitonicSort<T>(SortedElem, new_comm);
         //std::cout<<"Rank:"<<rank<<" bitonic search complete"<<std::endl;
+        MPI_Comm_free(&new_comm);
       }
 
 #ifdef __DEBUG_PAR__
@@ -2369,6 +2370,8 @@ namespace par {
           bitonicSort<T>(in, new_comm);
         }
 
+        MPI_Comm_free(&new_comm);
+
         // 3. Do a special merge of the two segments. (original comm).
         Par_bitonic_merge_incr(in, binOp::getNextHighestPowerOfTwo(npes), comm);
 
@@ -2380,6 +2383,8 @@ namespace par {
         } else {
           bitonicSort<T>(in, new_comm);
         }
+
+        MPI_Comm_free(&new_comm);
       }//end if isPower of 2
     }//end if single processor
   }//end function
