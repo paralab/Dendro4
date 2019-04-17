@@ -223,7 +223,7 @@ namespace ot {
 
 
 
-  DA* function_to_DA_bool (std::function<bool ( double, double, double ) > fx_refine, unsigned int d_min, unsigned int d_max, double* gSize, MPI_Comm comm );
+  // DA* function_to_DA_bool (std::function<bool ( double, double, double ) > fx_refine, unsigned int d_min, unsigned int d_max, double* gSize, MPI_Comm comm );
 
   // levels is an non-ghosted elemental array, created by the original DA and populated with the desired levels
   ot::DA* remesh_DA (ot::DA* da, std::vector<unsigned int> levels, double* gSize, std::function<double ( double, double, double ) > fx_refine, std::function<double ( double, double, double ) > fx_retain, unsigned int surface_assembly_cost, MPI_Comm comm);

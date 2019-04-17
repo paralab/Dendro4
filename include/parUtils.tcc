@@ -1987,19 +1987,19 @@ namespace par {
       // std::cout << RED " Splittersn in Sample Sort Rank:"<<rank<< NRM << std::endl;
       //std::cout << BLU << "===============================================" << NRM << std::endl;
 
-      std::ostringstream convert;
-      convert << sendSplits[i - 1];
-      std::vector<std::string> results;
-      std::stringstream s(convert.str());
-      while (!s.eof()) {
-        std::string tmp;
-        s >> tmp;
-        results.push_back(tmp);
-      }
+      // std::ostringstream convert;
+      // convert << sendSplits[i - 1];
+      // std::vector<std::string> results;
+      // std::stringstream s(convert.str());
+      // while (!s.eof()) {
+      //   std::string tmp;
+      //   s >> tmp;
+      //   results.push_back(tmp);
+      // }
 
-      temp = ot::TreeNode(1, atoi(results[0].c_str()), atoi(results[1].c_str()), atoi(results[2].c_str()),
-                          atoi(results[3].c_str()), 3, 8);
-      treenode_split.push_back(temp);
+      // temp = ot::TreeNode(1, atoi(results[0].c_str()), atoi(results[1].c_str()), atoi(results[2].c_str()),
+      //                     atoi(results[3].c_str()), 3, 8);
+      // treenode_split.push_back(temp);
       // std::cout <<"Rank: "<<rank<<"  "<<sendSplits[i-1]<<std::endl;
 
     }//end for i

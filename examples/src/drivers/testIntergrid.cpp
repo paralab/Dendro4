@@ -88,7 +88,7 @@ int main(int argc, char ** argv ) {
     return 1.0 + sin(0.25*M_PI*x)*sin(0.25*M_PI*y)*sin(0.25*M_PI*z)  ; //cos(M_PI*(1.0 - (x-0.5)*(x-0.5)*2.0))*cos(M_PI*(1.0 - (y-0.5)*(y-0.5)*2.0));
   };
     
-  ot::DA *main_da =  ot::function_to_DA(fx_refine, 3, 5, 100, gsz, MPI_COMM_WORLD);
+  ot::DA *main_da =  ot::function_to_DA(fx_refine, fx_retain, 3, 5, 100, gsz, MPI_COMM_WORLD);
   ot::subDA *da =  new ot::subDA(main_da, fx_retain, gsz);
 
 
@@ -115,7 +115,7 @@ int main(int argc, char ** argv ) {
 
   // r = 0.4;
 
-  ot::DA *main_da_new =  ot::function_to_DA(fx_refine, 4, 6, 100, gsz, MPI_COMM_WORLD);  
+  ot::DA *main_da_new =  ot::function_to_DA(fx_refine, fx_retain, 4, 6, 100, gsz, MPI_COMM_WORLD);  
   ot::subDA *da_new =  new ot::subDA(main_da_new, fx_retain, gsz);
 
   // MPI_Barrier(MPI_COMM_WORLD);

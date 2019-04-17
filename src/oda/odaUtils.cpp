@@ -3229,286 +3229,11 @@ void writeCommCountMapToFile(char *fileName, const std::vector<unsigned int> &co
 DA *function_to_DA(std::function<double(double, double, double)> fx_refine, std::function<double ( double, double, double ) > fx_retain, unsigned int d_min, unsigned int d_max, unsigned int surface_assembly_cost, double *gSize, MPI_Comm comm)
 {
   // PROF_F2O_BEGIN
-  int size, rank;
-  unsigned int dim = 3;
-  unsigned maxDepth = 30;
-  bool incCorner = 1;
   bool compressLut = false;
-
-  MPI_Comm_size(comm, &size);
-  MPI_Comm_rank(comm, &rank);
-
-  std::vector<TreeNode> nodes;
-  std::vector<ot::TreeNode> nodes_new;
-
-  unsigned int depth = 1;
-  unsigned int num_intersected = 1;
-
-  double hx, hy, hz;
-  std::array<double, 8> dist;
-  Point pt;
-
-  auto inside = [](double d) { return d < 0.0; };
-
-  double xFac = gSize[0] / ((double)(1 << (maxDepth)));
-  double yFac = gSize[1] / ((double)(1 << (maxDepth)));
-  double zFac = gSize[2] / ((double)(1 << (maxDepth)));
-
-  Point p2(xFac, yFac, zFac);
-
-  if (!rank)
-  {
-    // root does the initial refinement
-    ot::TreeNode root = ot::TreeNode(dim, maxDepth);
-    root.addChildren(nodes);
-
-    while ((num_intersected > 0) && (num_intersected < size * size) && (depth < d_max))
-    {
-      // std::cout << "Depth: " << depth << " n = " << nodes.size() << std::endl;
-      num_intersected = 0;
-      for (auto elem : nodes)
-      {
-        if (elem.getLevel() != depth)
-        {
-          nodes_new.push_back(elem);
-          continue;
-        }
-        if (depth < d_min)
-        {
-          elem.addChildren(nodes_new);
-          num_intersected++;
-          continue;
-        }
-
-        hx = xFac * (1 << (maxDepth - elem.getLevel()));
-        hy = yFac * (1 << (maxDepth - elem.getLevel()));
-        hz = zFac * (1 << (maxDepth - elem.getLevel()));
-
-        // check and split
-        pt = elem.getAnchor();
-        pt *= p2;
-
-        dist[0] = fx_refine(pt.x(), pt.y(), pt.z());
-        dist[1] = fx_refine(pt.x() + hx, pt.y(), pt.z());
-        dist[2] = fx_refine(pt.x(), pt.y() + hy, pt.z());
-        dist[3] = fx_refine(pt.x() + hx, pt.y() + hy, pt.z());
-
-        dist[4] = fx_refine(pt.x(), pt.y(), pt.z() + hz);
-        dist[5] = fx_refine(pt.x() + hx, pt.y(), pt.z() + hz);
-        dist[6] = fx_refine(pt.x(), pt.y() + hy, pt.z() + hz);
-        dist[7] = fx_refine(pt.x() + hx, pt.y() + hy, pt.z() + hz);
-
-        if (std::none_of(dist.begin(), dist.end(), inside))
-        {
-          // outside, retain but do not refine
-          nodes_new.push_back(elem);
-        }
-        else if (std::all_of(dist.begin(), dist.end(), inside))
-        {
-          // if (!reject_interior)
-          nodes_new.push_back(elem);
-        }
-        else
-        {
-          // intersection.
-          elem.addChildren(nodes_new);
-          num_intersected++;
-        }
-      }
-      depth++;
-
-      std::swap(nodes, nodes_new);
-      nodes_new.clear();
-    }
-  } // !rank
-
-  // now scatter the elements.
-  DendroIntL totalNumOcts = nodes.size(), numOcts;
-
-  par::Mpi_Bcast<DendroIntL>(&totalNumOcts, 1, 0, comm);
-
-  // TODO do proper load balancing -> partitionW ?
-
-  numOcts = totalNumOcts / size + (rank < totalNumOcts % size);
-  // std::cout << rank << ": numOcts " <<  numOcts << std::endl;
-  par::scatterValues<ot::TreeNode>(nodes, nodes_new, numOcts, comm);
-  std::swap(nodes, nodes_new);
-  nodes_new.clear();
-
-  // std::cout << rank << ": numOcts after part " <<  nodes.size() << std::endl;
-
-  // now refine in parallel.
-  par::Mpi_Bcast(&depth, 1, 0, comm);
-  num_intersected = 1;
-
-  while ((depth < d_max) || ((num_intersected > 0) && (depth < d_max)))
-  {
-    // std::cout << "Depth: " << depth << " n = " << nodes.size() << std::endl;
-    num_intersected = 0;
-    for (auto elem : nodes)
-    {
-      if (elem.getLevel() != depth)
-      {
-        nodes_new.push_back(elem);
-        continue;
-      }
-      if (depth < d_min)
-      {
-        elem.addChildren(nodes_new);
-        num_intersected++;
-        continue;
-      }
-
-      hx = xFac * (1 << (maxDepth - elem.getLevel()));
-      hy = yFac * (1 << (maxDepth - elem.getLevel()));
-      hz = zFac * (1 << (maxDepth - elem.getLevel()));
-
-      // check and split
-      pt = elem.getAnchor();
-      pt *= p2;
-
-      dist[0] = fx_refine(pt.x(), pt.y(), pt.z());
-      dist[1] = fx_refine(pt.x() + hx, pt.y(), pt.z());
-      dist[2] = fx_refine(pt.x(), pt.y() + hy, pt.z());
-      dist[3] = fx_refine(pt.x() + hx, pt.y() + hy, pt.z());
-
-      dist[4] = fx_refine(pt.x(), pt.y(), pt.z() + hz);
-      dist[5] = fx_refine(pt.x() + hx, pt.y(), pt.z() + hz);
-      dist[6] = fx_refine(pt.x(), pt.y() + hy, pt.z() + hz);
-      dist[7] = fx_refine(pt.x() + hx, pt.y() + hy, pt.z() + hz);
-
-      if (std::none_of(dist.begin(), dist.end(), inside))
-      {
-        // outside, retain but do not refine
-        nodes_new.push_back(elem);
-      }
-      else if (std::all_of(dist.begin(), dist.end(), inside))
-      {
-        // if (!reject_interior)
-        nodes_new.push_back(elem);
-      }
-      else
-      {
-        // intersection.
-        elem.addChildren(nodes_new);
-        num_intersected++;
-      }
-    }
-    depth++;
-
-    std::swap(nodes, nodes_new);
-    nodes_new.clear();
-  }
-  // PROF_F2O_END
-
-  // partition
-  // if(!rank){       std::cout <<"Partitioning Input... " << std::endl;    }
-
-  par::partitionW<ot::TreeNode>(nodes, NULL, comm);
-
-  // balance
-  ot::balanceOctree(nodes, nodes_new, dim, maxDepth, incCorner, comm, NULL, NULL);
-
-  // set weights ...
-  for (auto &elem : nodes_new)
-  {
-    hx = xFac * (1 << (maxDepth - elem.getLevel()));
-    hy = yFac * (1 << (maxDepth - elem.getLevel()));
-    hz = zFac * (1 << (maxDepth - elem.getLevel()));
-
-    // check and split
-    pt = elem.getAnchor();
-    pt *= p2;
-
-    dist[0] = fx_refine(pt.x(), pt.y(), pt.z());
-    dist[1] = fx_refine(pt.x() + hx, pt.y(), pt.z());
-    dist[2] = fx_refine(pt.x(), pt.y() + hy, pt.z());
-    dist[3] = fx_refine(pt.x() + hx, pt.y() + hy, pt.z());
-
-    dist[4] = fx_refine(pt.x(), pt.y(), pt.z() + hz);
-    dist[5] = fx_refine(pt.x() + hx, pt.y(), pt.z() + hz);
-    dist[6] = fx_refine(pt.x(), pt.y() + hy, pt.z() + hz);
-    dist[7] = fx_refine(pt.x() + hx, pt.y() + hy, pt.z() + hz);
-
-    if (std::none_of(dist.begin(), dist.end(), inside))
-    {
-      elem.setWeight(100);
-    }
-    else if (std::all_of(dist.begin(), dist.end(), inside))
-    {
-      elem.setWeight(10);
-    }
-    else
-    {
-      // intersection.
-      elem.setWeight(surface_assembly_cost);
-    }
-  }
-
-  par::partitionW<ot::TreeNode>(nodes_new, ot::getNodeWeight, comm);
-
-  // unsigned int hs_sz = nodes_new.size();
-  // std::cout << rank << ": __HARI__ f2da " << hs_sz << ", " << nodes_new[0].getWeight() << ", " << nodes_new[hs_sz/2].getWeight() << std::endl;
-
+  
   // build DA.
-  /*  
-    if(rank==0) {
-      std::cout << "building DA" << std::endl;
-    }
-*/
+  std::vector<ot::TreeNode> nodes_new = function_to_Treenode(fx_refine, fx_retain, d_min, d_max, surface_assembly_cost, gSize, comm);  
   ot::DA *da = new ot::DA(nodes_new, comm, comm, compressLut);
-
-  // if(rank==0) {
-  //  std::cout << rank << ": finished building DA" << std::endl;
-  // }
-
-  unsigned int lev;
-  /*
-    double xFac = gSize[0]/((double)(1<<(maxDepth)));
-    double yFac = gSize[1]/((double)(1<<(maxDepth)));
-    double zFac = gSize[2]/((double)(1<<(maxDepth)));
-    */
-
-  // now process the DA to skip interior elements
-  /* moved to subDA
-    if (reject_interior) {
-        da->initialize_skiplist();
-        for ( da->init<ot::DA_FLAGS::ALL>(); da->curr() < da->end<ot::DA_FLAGS::ALL>(); da->next<ot::DA_FLAGS::ALL>() ) {
-          lev = da->getLevel(da->curr());
-          hx = xFac*(1<<(maxDepth - lev));
-          hy = yFac*(1<<(maxDepth - lev));
-          hz = zFac*(1<<(maxDepth - lev));
-
-          pt = da->getCurrentOffset();
-
-          dist[0] = fx_retain(pt.x()*xFac, pt.y()*yFac, pt.z()*zFac);
-          dist[1] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac, pt.z()*zFac);
-          dist[2] = fx_retain(pt.x()*xFac, pt.y()*yFac+hy, pt.z()*zFac);
-          dist[3] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac+hy, pt.z()*zFac);
-
-          dist[4] = fx_retain(pt.x()*xFac, pt.y()*yFac, pt.z()*zFac+hz);
-          dist[5] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac, pt.z()*zFac+hz);
-          dist[6] = fx_retain(pt.x()*xFac, pt.y()*yFac+hy, pt.z()*zFac+hz);
-          dist[7] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac+hy, pt.z()*zFac +hz);
-
-          / 
-          *
-          if (pt == Point(0,0,0)) {
-            for (auto dd: dist)
-              std::cout << "HS: " << dd << std::endl;
-          }
-          * 
-          /
-          
-          if ( std::all_of( dist.begin(), dist.end(), inside ) ) {
-            da->skip_current();
-          } 
-        }
-
-        da->finalize_skiplist();
-    }
-    std::cout << rank << ": finished removing interior." << std::endl;
-    */
 
   return da;
 } // end of function.
@@ -3520,7 +3245,6 @@ std::vector<ot::TreeNode> function_to_Treenode(std::function<double(double, doub
   unsigned int dim = 3;
   unsigned maxDepth = 30;
   bool incCorner = 1;
-  bool compressLut = false;
 
   MPI_Comm_size(comm, &size);
   MPI_Comm_rank(comm, &rank);
@@ -3742,6 +3466,7 @@ std::vector<ot::TreeNode> function_to_Treenode(std::function<double(double, doub
   return nodes_new;
 } // end of function.
 
+/*
 DA *function_to_DA_bool(std::function<bool(double, double, double)> fx_refine, unsigned int d_min, unsigned int d_max, double *gSize, MPI_Comm comm)
 {
   // PROF_F2O_BEGIN
@@ -3916,11 +3641,7 @@ DA *function_to_DA_bool(std::function<bool(double, double, double)> fx_refine, u
   ot::balanceOctree(nodes, nodes_new, dim, maxDepth, incCorner, comm, NULL, NULL);
 
   // build DA.
-  /*  
-    if(rank==0) {
-      std::cout << "building DA" << std::endl;
-    }
-*/
+ 
   ot::DA *da = new ot::DA(nodes_new, comm, comm, compressLut);
 
   // if(rank==0) {
@@ -3928,185 +3649,23 @@ DA *function_to_DA_bool(std::function<bool(double, double, double)> fx_refine, u
   // }
 
   unsigned int lev;
-  /*
-    double xFac = gSize[0]/((double)(1<<(maxDepth)));
-    double yFac = gSize[1]/((double)(1<<(maxDepth)));
-    double zFac = gSize[2]/((double)(1<<(maxDepth)));
-    */
+  
 
   // now process the DA to skip interior elements
-  /* moved to subDA
-    if (reject_interior) {
-        da->initialize_skiplist();
-        for ( da->init<ot::DA_FLAGS::ALL>(); da->curr() < da->end<ot::DA_FLAGS::ALL>(); da->next<ot::DA_FLAGS::ALL>() ) {
-          lev = da->getLevel(da->curr());
-          hx = xFac*(1<<(maxDepth - lev));
-          hy = yFac*(1<<(maxDepth - lev));
-          hz = zFac*(1<<(maxDepth - lev));
-
-          pt = da->getCurrentOffset();
-
-          dist[0] = fx_retain(pt.x()*xFac, pt.y()*yFac, pt.z()*zFac);
-          dist[1] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac, pt.z()*zFac);
-          dist[2] = fx_retain(pt.x()*xFac, pt.y()*yFac+hy, pt.z()*zFac);
-          dist[3] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac+hy, pt.z()*zFac);
-
-          dist[4] = fx_retain(pt.x()*xFac, pt.y()*yFac, pt.z()*zFac+hz);
-          dist[5] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac, pt.z()*zFac+hz);
-          dist[6] = fx_retain(pt.x()*xFac, pt.y()*yFac+hy, pt.z()*zFac+hz);
-          dist[7] = fx_retain(pt.x()*xFac+hx, pt.y()*yFac+hy, pt.z()*zFac +hz);
-
-          / 
-          *
-          if (pt == Point(0,0,0)) {
-            for (auto dd: dist)
-              std::cout << "HS: " << dd << std::endl;
-          }
-          * 
-          /
-          
-          if ( std::all_of( dist.begin(), dist.end(), inside ) ) {
-            da->skip_current();
-          } 
-        }
-
-        da->finalize_skiplist();
-    }
-    std::cout << rank << ": finished removing interior." << std::endl;
-    */
+  
 
   return da;
 } // end of function f2DA_bool
+*/
+
 
 ot::DA *remesh_DA(ot::DA *da, std::vector<unsigned int> levels, double *gSize, std::function<double(double, double, double)> fx_refine, std::function<double ( double, double, double ) > fx_retain, unsigned int surface_assembly_cost, MPI_Comm comm)
 {
-
-  unsigned int dim = 3;
-  unsigned int maxNumPts = 1;
-  bool incCorner = 1;
   bool compressLut = false;
-  unsigned int maxDepth = da->getMaxDepth();
 
-  // elemental loop - create new points
-  std::vector<double> pts;
-  std::vector<ot::TreeNode> tmpNodes, linOct;
+  std::vector<ot::TreeNode> nodes = remesh_DA_Treenode(da, levels, gSize, fx_refine, fx_retain, surface_assembly_cost, comm);
 
-  for (da->init<ot::DA_FLAGS::WRITABLE>(); da->curr() < da->end<ot::DA_FLAGS::WRITABLE>(); da->next<ot::DA_FLAGS::WRITABLE>())
-  {
-    // get coords of current element
-    Point pt = da->getCurrentOffset();
-    unsigned int currLev = da->getLevel(da->curr()) - 1;
-    unsigned int newLev = levels[da->curr()];
-
-    ot::TreeNode currOct(pt.xint(), pt.yint(), pt.zint(), currLev, 3, maxDepth - 1);
-    if (currLev > newLev)
-    {
-      ot::TreeNode newOct = currOct.getAncestor(newLev);
-      tmpNodes.push_back(newOct);
-    }
-    else if (currLev == newLev)
-    {
-      tmpNodes.push_back(currOct);
-    }
-    else
-    {
-      currOct.addChildren(tmpNodes, newLev - currLev);
-    }
-  }
-
-  par::removeDuplicates<ot::TreeNode>(tmpNodes, false, MPI_COMM_WORLD);
-  std::swap(linOct, tmpNodes);
-  tmpNodes.clear();
-  par::partitionW<ot::TreeNode>(linOct, NULL, MPI_COMM_WORLD);
-
-  maxDepth--;
-
-  pts.resize(3 * (linOct.size()));
-  unsigned int ptsLen = (3 * (linOct.size()));
-  for (int i = 0; i < linOct.size(); i++)
-  {
-    pts[3 * i] = (((double)(linOct[i].getX())) + 0.5) / ((double)(1u << maxDepth)) * gSize[0];
-    pts[(3 * i) + 1] = (((double)(linOct[i].getY())) + 0.5) / ((double)(1u << maxDepth)) * gSize[1];
-    pts[(3 * i) + 2] = (((double)(linOct[i].getZ())) + 0.5) / ((double)(1u << maxDepth)) * gSize[2];
-  } //end for i
-  linOct.clear();
-
-  ot::points2Octree(pts, gSize, linOct, dim, maxDepth, maxNumPts, comm);
-
-  ot::balanceOctree(linOct, tmpNodes, dim, maxDepth, incCorner, comm, NULL, NULL);
-
-  double hx, hy, hz;
-  std::array<bool, 8> dist, ifretain;
-  Point pt;
-
-  auto inside = [](bool d) { return d; };
-  auto inside_retain = [](double d){ return d > 0.0; };
-
-  double xFac = gSize[0] / ((double)(1 << (maxDepth)));
-  double yFac = gSize[1] / ((double)(1 << (maxDepth)));
-  double zFac = gSize[2] / ((double)(1 << (maxDepth)));
-
-  Point p2(xFac, yFac, zFac);
-
-  // set weights ...
-  for (auto &elem : tmpNodes)
-  {
-    hx = xFac * (1 << (maxDepth - elem.getLevel()));
-    hy = yFac * (1 << (maxDepth - elem.getLevel()));
-    hz = zFac * (1 << (maxDepth - elem.getLevel()));
-
-    // check and split
-    pt = elem.getAnchor();
-    pt *= p2;
-
-    dist[0] = fx_refine(pt.x(), pt.y(), pt.z());
-    dist[1] = fx_refine(pt.x() + hx, pt.y(), pt.z());
-    dist[2] = fx_refine(pt.x(), pt.y() + hy, pt.z());
-    dist[3] = fx_refine(pt.x() + hx, pt.y() + hy, pt.z());
-
-    dist[4] = fx_refine(pt.x(), pt.y(), pt.z() + hz);
-    dist[5] = fx_refine(pt.x() + hx, pt.y(), pt.z() + hz);
-    dist[6] = fx_refine(pt.x(), pt.y() + hy, pt.z() + hz);
-    dist[7] = fx_refine(pt.x() + hx, pt.y() + hy, pt.z() + hz);
-
-    ifretain[0] = fx_retain(pt.x(), pt.y(), pt.z());
-    ifretain[1] = fx_retain(pt.x() + hx, pt.y(), pt.z());
-    ifretain[2] = fx_retain(pt.x(), pt.y() + hy, pt.z());
-    ifretain[3] = fx_retain(pt.x() + hx, pt.y() + hy, pt.z());
-
-    ifretain[4] = fx_retain(pt.x(), pt.y(), pt.z() + hz);
-    ifretain[5] = fx_retain(pt.x() + hx, pt.y(), pt.z() + hz);
-    ifretain[6] = fx_retain(pt.x(), pt.y() + hy, pt.z() + hz);
-    ifretain[7] = fx_retain(pt.x() + hx, pt.y() + hy, pt.z() + hz);
-
-    if (std::any_of(ifretain.begin(), ifretain.end(), inside_retain))
-    {
-      if (std::none_of(dist.begin(), dist.end(), inside))
-      {
-        elem.setWeight(1000);
-      }
-      else if (std::all_of(dist.begin(), dist.end(), inside))
-      {
-        elem.setWeight(10);
-      }
-      else
-      {
-        // intersection.
-        elem.setWeight(surface_assembly_cost);
-      }
-    }
-    else
-    {
-      elem.setWeight(1);
-    }
-  }
-
-  par::partitionW<ot::TreeNode>(tmpNodes, ot::getNodeWeight, comm);
-
-  std::swap(linOct, tmpNodes);
-  tmpNodes.clear();
-
-  ot::DA *new_da = new ot::DA(linOct, comm, comm, compressLut);
+  ot::DA *new_da = new ot::DA(nodes, comm, comm, compressLut);
 
   return new_da;
 
@@ -4118,7 +3677,6 @@ std::vector<ot::TreeNode> remesh_DA_Treenode(ot::DA *da, std::vector<unsigned in
   unsigned int dim = 3;
   unsigned int maxNumPts = 1;
   bool incCorner = 1;
-  bool compressLut = false;
   unsigned int maxDepth = da->getMaxDepth();
 
   // elemental loop - create new points
