@@ -3731,7 +3731,7 @@ std::vector<ot::TreeNode> remesh_DA_Treenode(ot::DA *da, std::vector<unsigned in
   std::array<double, 8> dist, ifretain;
   Point pt;
 
-  auto inside = [](bool d) { return d; };
+  auto inside = [](double d) { return d < 0.0; };
   auto inside_retain = [](double d){ return d > 0.0; };
 
   double xFac = gSize[0] / ((double)(1 << (maxDepth)));
