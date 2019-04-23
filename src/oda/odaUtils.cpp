@@ -3728,7 +3728,7 @@ std::vector<ot::TreeNode> remesh_DA_Treenode(ot::DA *da, std::vector<unsigned in
   ot::balanceOctree(linOct, tmpNodes, dim, maxDepth, incCorner, comm, NULL, NULL);
 
   double hx, hy, hz;
-  std::array<bool, 8> dist, ifretain;
+  std::array<double, 8> dist, ifretain;
   Point pt;
 
   auto inside = [](bool d) { return d; };
