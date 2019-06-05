@@ -709,21 +709,21 @@ namespace ot {
         if ( bdyFlags & ot::TreeNode::X_POS_BDY ) {
           bdy.push_back(ot::TreeNode( (1u << maxDepth), y, z, (d+1) |
                 ot::TreeNode::BOUNDARY, dim, maxDepth+1));
-          bdy.back().setWeight(100);
+          bdy.back().setWeight(1);
         }
 
         // +y and more ... add additional octant in +y dir
         if ( bdyFlags & ot::TreeNode::Y_POS_BDY ) {
           bdy.push_back(ot::TreeNode(x, (1u << maxDepth), z,
                 (d+1) | ot::TreeNode::BOUNDARY, dim, maxDepth+1));
-          bdy.back().setWeight(100);
+          bdy.back().setWeight(1);
         }
 
         // +z and more ... add additional octant in +z dir
         if ( bdyFlags & ot::TreeNode::Z_POS_BDY ) {
           bdy.push_back(ot::TreeNode(x, y, (1u << maxDepth),
                 (d+1) | ot::TreeNode::BOUNDARY, dim, maxDepth+1));
-          bdy.back().setWeight(100);                
+          bdy.back().setWeight(1);                
         }
 
         //+x+y and more
@@ -731,7 +731,7 @@ namespace ot {
             (ot::TreeNode::X_POS_BDY + ot::TreeNode::Y_POS_BDY) ) { 
           bdy.push_back(ot::TreeNode((1u << maxDepth),(1u << maxDepth), z,
                 (d+1) | ot::TreeNode::BOUNDARY, dim, maxDepth+1));
-          bdy.back().setWeight(100);
+          bdy.back().setWeight(1);
         }
 
         //+x+z and more
@@ -739,7 +739,7 @@ namespace ot {
             (ot::TreeNode::X_POS_BDY + ot::TreeNode::Z_POS_BDY) ) {
           bdy.push_back(ot::TreeNode((1u << maxDepth), y, (1u << maxDepth),
                 (d+1) | ot::TreeNode::BOUNDARY, dim, maxDepth+1));
-          bdy.back().setWeight(100);
+          bdy.back().setWeight(1);
         }
 
         //+y+z and more
@@ -747,7 +747,7 @@ namespace ot {
             (ot::TreeNode::Y_POS_BDY + ot::TreeNode::Z_POS_BDY) ) {
           bdy.push_back(ot::TreeNode(x, (1u << maxDepth),(1u << maxDepth),
                 (d+1) | ot::TreeNode::BOUNDARY, dim, maxDepth+1));
-          bdy.back().setWeight(100);
+          bdy.back().setWeight(1);
         }
 
         // if global corner ...
@@ -757,7 +757,7 @@ namespace ot {
                 ot::TreeNode::Y_POS_BDY +  ot::TreeNode::Z_POS_BDY) ) {
           bdy.push_back(ot::TreeNode((1u << maxDepth), (1u << maxDepth), (1u << maxDepth),
                 (d+1) | ot::TreeNode::BOUNDARY, dim, maxDepth+1));
-          bdy.back().setWeight(100);
+          bdy.back().setWeight(1);
         }
       }//end if boundary
 
