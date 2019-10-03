@@ -1420,6 +1420,7 @@ int function2Octree(std::function<double(double,double,double)> fx, std::vector<
       nodes_new.clear();
     }
   
+  return nodes.size();
   // PROF_F2O_END
 } // end function2Octree
 

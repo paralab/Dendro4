@@ -930,9 +930,8 @@ namespace oda {
               }
 
             }
-
-
           }
+          return true;
         }
 
         bool odaLoopTestAll(ot::DA& da, MPI_Comm comm)

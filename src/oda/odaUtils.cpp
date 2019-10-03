@@ -3723,9 +3723,23 @@ std::vector<ot::TreeNode> remesh_DA_Treenode(ot::DA *da, std::vector<unsigned in
   } //end for i
   linOct.clear();
 
+  // =<< debug Sep 2019
+  int rank;
+  MPI_Comm_rank(comm, &rank);
+
+  std::cout << rank << ": Calling pts2octree" << std::endl;
+  // >>= debug Sep 2019
+
   ot::points2Octree(pts, gSize, linOct, dim, maxDepth, maxNumPts, comm);
 
+  // =<< debug Sep 2019
+  std::cout << rank << ": Calling balOctree" << std::endl;
+  // >>= debug Sep 2019
   ot::balanceOctree(linOct, tmpNodes, dim, maxDepth, incCorner, comm, NULL, NULL);
+    // =<< debug Sep 2019
+  std::cout << rank << ": Finished balOctree" << std::endl;
+  // >>= debug Sep 2019
+
 
   double hx, hy, hz;
   std::array<double, 8> dist, ifretain;

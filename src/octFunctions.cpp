@@ -427,10 +427,7 @@ namespace ot {
 
      }while(!feof(infile));
 
-
-
-
-
+      return nodes.size();
     }
 
   int readNodesFromFile (char* filename, std::vector<TreeNode > & nodes) {

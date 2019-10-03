@@ -9,6 +9,8 @@
 #include "externVars.h"
 #include "dendro.h"
 #include <TreeNode.h>
+#include <string>
+#include <Point.h>
 
 #include <iomanip>
 
@@ -42,8 +44,7 @@ void saveNodalVecAsVTK(ot::subDA* da, Vec vec, double* gsz, const char *fname);
 void interp_global_to_local(PetscScalar* glo, PetscScalar* __restrict loc, ot::DA* m_octDA);
 void interp_local_to_global(PetscScalar* __restrict loc, PetscScalar* glo, ot::DA* m_octDA);
 
-
-void build_taly_coordinates(double *coords /*out*/, const Point &pt, const Point &h) {
+void build_taly_coordinates(double *coords, const Point &pt, const Point &h) {
   const double &hx = h.x();
   const double &hy = h.y();
   const double &hz = h.z();
@@ -75,43 +76,43 @@ void build_taly_coordinates(double *coords /*out*/, const Point &pt, const Point
 }
 
 double ValueAtInit(const std::array<double,3> &pt) {
-    /// Calculate the diffuse interface phi
-    double phiDiffuse = 0.0;
-
-          
-          double amplitude = 0.2;
-
-          /// This is interface
-          double delta = 0.025;
-
-          double locationInt = 2.0;
-
-    std::array<double,3> centerofGaussian = {0.5, 0.0, 0.5};
-
-    double stdDevGaussian = 0.2;
-
-    /// Gaussian
-    double gaussian =
-              amplitude * exp(-((((pow((pt[0] - centerofGaussian[0]), 2)) / stdDevGaussian)) +
-                            ((pow((pt[2] - centerofGaussian[2]), 2)) / (stdDevGaussian))));
-
-    phiDiffuse =
-              tanh(((locationInt - pt[2]) - gaussian) / (sqrt(2) *delta));
+  /// Calculate the diffuse interface phi
+  double phiDiffuse = 0.0;
 
 
-    return phiDiffuse;
- }
+  double amplitude = 0.2;
+
+  /// This is interface
+  double delta = 0.025;
+
+  double locationInt = 2.0;
+
+  std::array<double,3> centerofGaussian = {0.5, 0.0, 0.5};
+
+  double stdDevGaussian = 0.2;
+
+  /// Gaussian
+  double gaussian =
+    amplitude * exp(-((((pow((pt[0] - centerofGaussian[0]), 2)) / stdDevGaussian)) +
+          ((pow((pt[2] - centerofGaussian[2]), 2)) / (stdDevGaussian))));
+
+  phiDiffuse =
+    tanh(((locationInt - pt[2]) - gaussian) / (sqrt(2) *delta));
+
+
+  return phiDiffuse;
+}
 
 std::vector<unsigned int> calc_refine_func_userProvidedDim(
-		ot::DA *da, 
-  const std::function<double(double, double, double)> &f_phi, 
+    ot::DA *da, 
+  const std::function<double(double, double, double)> &f_phi,
   const double* channel_min, 
   const double* channel_max, 
   const unsigned int refine_lvl_base, 
   const unsigned int refine_lvl_interface, 
   const unsigned int refine_lvl_channel_wall,
   bool enable_subda,
-  const double* problemSize,
+  double* problemSize,
 	const unsigned int initialRefinementLevel) {
 	
   double octToPhysScale[3];
@@ -141,7 +142,7 @@ std::vector<unsigned int> calc_refine_func_userProvidedDim(
 		double coords[8 * 3];
 
     // @check makrand
-    double refine_interface_tol = 0.01;
+    double refine_interface_tol = 0.85;
     
     // @check makrand
     build_taly_coordinates(coords, pt, h);
@@ -154,13 +155,14 @@ std::vector<unsigned int> calc_refine_func_userProvidedDim(
 		//find if coords are within subDA bounds
 		bool withinSubDA;
 		const double epsInOut = 1 * (problemSize[0] / pow(2, initialRefinementLevel));
-		withinSubDA =std::any_of(nodeCoords.begin(), nodeCoords.end(), [&](std::array<double,3>  d){
+		withinSubDA =std::any_of(nodeCoords.begin(), nodeCoords.end(), [&](std::vector<double>  d){
 				bool in_channel =
 						(((channel_min[0]) <= d[0] && d[0] < (channel_max[0] + epsInOut)) &&
 						 ((channel_min[1]) <= d[1] && d[1] < (channel_max[1] + epsInOut)) &&
 						 ((channel_min[2]) <= d[2] && d[2] < (channel_max[2] + epsInOut)));
 				return in_channel;
 		});
+
 		std::array<double, 8> phi;
 		// get the phi values at each node (if subda this needs to be within the subda bounds
 		if (enable_subda){
@@ -200,7 +202,7 @@ std::vector<unsigned int> calc_refine_func_userProvidedDim(
 			double eps_boundariesDuetosubDAcarve =
 					0.55 * (problemSize[0] / pow(2, initialRefinementLevel));
 			refineWall =
-					std::any_of(nodeCoords.begin(), nodeCoords.end(), [&](std::array<double,3> d) {
+					std::any_of(nodeCoords.begin(), nodeCoords.end(), [&](std::vector<double> d) {
 							bool onChannelWall = false;
 							bool onChannelInlet = (std::fabs(d[0] - channel_min[0]) <
 							                       eps_originalDAconformingBoundaries);
@@ -249,17 +251,25 @@ std::vector<unsigned int> calc_refine_func_userProvidedDim(
 }
 
 std::vector<unsigned int> calc_refine_func_estimated_domain_size(
-		ot::DA *da, const std::function<double(double, double, double)> &f_phi,
-		const double *problemSize, const double* channel_min,  const double* channel_max, 
-  const unsigned int refine_lvl_base, const unsigned int refine_lvl_interface, 
-  const unsigned int refine_lvl_channel_wall, bool enable_subda, 
-  const double *estimatedDomainMin, const double *estimatedDomainMax, 
-  const unsigned int initialRefinementLevel) {
-	  double octToPhysScale[3];
-    const unsigned int maxD = da->getMaxDepth();
-    octToPhysScale[0] = problemSize[0] / ((PetscScalar)(1 << (maxD - 1)));
-    octToPhysScale[1] = problemSize[1] / ((PetscScalar)(1 << (maxD - 1)));
-    octToPhysScale[2] = problemSize[2] / ((PetscScalar)(1 << (maxD - 1)));
+		ot::DA *da,
+		const std::function<double(double, double, double)> &f_phi,
+		double *problemSize,
+		const double* channel_min,
+		const double* channel_max,
+		const unsigned int refine_lvl_base,
+		const unsigned int refine_lvl_interface,
+		const unsigned int refine_lvl_channel_wall,
+		bool enable_subda,
+		const double *estimatedDomainMin,
+		const double *estimatedDomainMax,
+		const unsigned int initialRefinementLevel) {
+
+
+	double octToPhysScale[3];
+	const unsigned int maxD = da->getMaxDepth();
+	octToPhysScale[0] = problemSize[0] / ((PetscScalar)(1 << (maxD - 1)));
+	octToPhysScale[1] = problemSize[1] / ((PetscScalar)(1 << (maxD - 1)));
+	octToPhysScale[2] = problemSize[2] / ((PetscScalar)(1 << (maxD - 1)));
 
 	std::vector<unsigned int> refinement;
 	da->createVector(refinement, true, true, 1);
@@ -296,7 +306,7 @@ std::vector<unsigned int> calc_refine_func_estimated_domain_size(
 		//find if coords are within subDA bounds
 		bool withinSubDA;
 		const double epsInOut = 1 * (problemSize[0] / pow(2, initialRefinementLevel));
-		withinSubDA =std::any_of(nodeCoords.begin(), nodeCoords.end(), [&](std::array<double,3> d){
+		withinSubDA =std::any_of(nodeCoords.begin(), nodeCoords.end(), [&](std::vector<double> d){
 				bool in_channel =
 						(((channel_min[0]) <= d[0] && d[0] < (channel_max[0] + epsInOut)) &&
 						 ((channel_min[1]) <= d[1] && d[1] < (channel_max[1] + epsInOut)) &&
@@ -307,22 +317,17 @@ std::vector<unsigned int> calc_refine_func_estimated_domain_size(
 		std::array<double, 8> phi;
 		// get the phi values at each node (if subda this needs to be within the subda bounds
 		
-  if (enable_subda){
-			if (withinSubDA){
+
+		if (withinSubDA){
 				for (unsigned int n = 0; n < 8; n++) {
 					phi[n] = f_phi(coords[n * 3], coords[n * 3 + 1], coords[n * 3 + 2]);
 				}
-			} else{
+		} else{
 				for (unsigned int n = 0; n < 8; n++) {
 					phi[n] = 1.0;
 				}
-			}
-		}else{
-			// case for the fullDA
-			for (unsigned int n = 0; n < 8; n++) {
-				phi[n] = f_phi(coords[n * 3], coords[n * 3 + 1], coords[n * 3 + 2]);
-			}
 		}
+
 
 		// get the phi values at each node
 		//std::array<double, 8> phi;
@@ -345,7 +350,7 @@ std::vector<unsigned int> calc_refine_func_estimated_domain_size(
 		// which correspond to the sides of the original DA.
 		double eps = 1e-16;
 		refineWall =
-				std::any_of(nodeCoords.begin(), nodeCoords.end(), [&](std::array<double,3> d) {
+				std::any_of(nodeCoords.begin(), nodeCoords.end(), [&](std::vector<double> d) {
 						bool onChannelWall = false;
 						bool onChannelInlet =
 								(std::fabs(d[0] - estimatedDomainMin[0]) < eps);
@@ -372,7 +377,7 @@ std::vector<unsigned int> calc_refine_func_estimated_domain_size(
 
 		// refine if any nodes are below the phi interface tolerance (abs(phi) <
 		// interface_tol) or if the sign changes
-    double refine_interface_tol=0.01; // @check makrand
+    double refine_interface_tol=0.85; // @check makrand
 		bool refine_phi =
 				std::any_of(phi.begin(), phi.end(),
 				            [&](double d) {
@@ -385,7 +390,7 @@ std::vector<unsigned int> calc_refine_func_estimated_domain_size(
 			refinement[curr] = refine_lvl_interface;
 		} else if (refineWall) {
 			refinement[curr] = refine_lvl_channel_wall;
-	 } else if (!refine_phi && !refineWall) {
+		} else if (!refine_phi && !refineWall) {
 			refinement[curr] = refine_lvl_base;
 		} else if (refine_phi && refineWall) {
 			refinement[curr] = std::min(refine_lvl_interface, refine_lvl_channel_wall);
@@ -394,144 +399,196 @@ std::vector<unsigned int> calc_refine_func_estimated_domain_size(
 	return refinement;
 }
 
+
+void printApproximateWork(ot::subDA* octDA) {
+
+	MPI_Comm comm = octDA->getComm();
+
+	int rank, nProcs;
+	MPI_Comm_rank(comm, &rank);
+	MPI_Comm_size(comm, &nProcs);
+
+	const int N_NODES = 0;
+	const int N_GHOSTED_NODES = 1;
+	const int N_ELEMENTS = 2;
+	const int N_GHOSTED_ELEMENTS = 3;
+	unsigned int counts[4];
+	counts[N_NODES] = octDA->getNodeSize();
+	counts[N_GHOSTED_NODES] = octDA->getGhostedNodeSize();
+	counts[N_ELEMENTS] = octDA->getElementSize();
+	counts[N_GHOSTED_ELEMENTS] = octDA->getGhostedElementSize();
+
+	unsigned int mins[4], maxs[4], avgs[4];
+	for (int i = 0; i < 4; i++) {
+		MPI_Allreduce(&counts[i], &mins[i], 1, MPI_UNSIGNED, MPI_MIN, comm);
+		MPI_Allreduce(&counts[i], &maxs[i], 1, MPI_UNSIGNED, MPI_MAX, comm);
+		MPI_Allreduce(&counts[i], &avgs[i], 1, MPI_UNSIGNED, MPI_SUM, comm);
+		avgs[i] /= nProcs;
+	}
+	if (!rank) {
+		std::cout << "N_NODES - min: " << mins[N_NODES] << ", max: " << maxs[N_NODES] << ", avg: " <<  avgs[N_NODES] <<
+		std::endl;
+		std::cout << "N_GHOSTED_NODES - min: " << mins[N_GHOSTED_NODES] << ", max: " << maxs[N_GHOSTED_NODES] << ", avg: "
+		<< avgs[N_GHOSTED_NODES] << std::endl;
+		std::cout << "N_ELEMENTS - min: " << mins[N_ELEMENTS] << ", max: " << maxs[N_ELEMENTS] << ", avg: " <<
+		avgs[N_ELEMENTS] << std::endl;
+		std::cout << "N_GHOSTED_ELEMENTS - min: " << mins[N_GHOSTED_ELEMENTS] << ", max: " << maxs[N_GHOSTED_ELEMENTS]<<
+		", avg: " << avgs[N_GHOSTED_ELEMENTS] << std::endl;
+	}
+}
+
+
 int main(int argc, char ** argv ) {
-  int size, rank;
-  unsigned int dim = 3;
-  unsigned maxDepth = 30;
-  std::vector<ot::TreeNode> nodes, nodes_bal;
+	int size, rank;
+	unsigned int dim = 3;
+	unsigned maxDepth = 30;
 
-  PetscInitialize(&argc, &argv, "options", NULL);
-  ot::RegisterEvents();
-  ot::DA_Initialize(MPI_COMM_WORLD);
-  _InitializeHcurve(3);
+	std::vector<ot::TreeNode> nodes, nodes_bal;
 
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	//PetscInitialize(&argc, &argv, "options", NULL);
+	PetscInitialize (&argc,&argv,(char*)0,NULL);
+
+	ot::RegisterEvents();
+	ot::DA_Initialize(MPI_COMM_WORLD);
+
+	_InitializeHcurve(3);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+	ot::subDA* octDA = NULL;
+
+	/// Define the channel geometry
+	const double channelMin[3] = {0.0, 0.0, 0.0};
+	const double channelMax[3] = {1.0, 4.0, 1.0};
+	double daScalingFactor[3] = {4.0, 4.0, 4.0};
+	const unsigned int refine_lvl_base = 7;
+	const unsigned int refine_lvl_interface = 10;
+	const unsigned int refine_lvl_channel_wall = 7;
+	bool enable_subda = true;
+	const unsigned int initialRefinementLevel = 5;
+	const unsigned int max_depth = 30;
+	const bool refine_walls = false;
+
+	/// Setup function for carving out a subDA from the DA
+	/// less than 0 = remove, greater than 0 = keep
+	std::function<double(double, double, double)> fx_retain;
+	fx_retain = [&](double x, double y, double z) {
+			bool in_channel = ((channelMin[0] < x && x < channelMax[0]) &&
+			                   (channelMin[1] < y && y < channelMax[1]) &&
+			                   (channelMin[2] < z && z < channelMax[2]));
+			if (in_channel) {
+				return 1.0;
+			}
+			return -1.0;
+	};
+
+	/// setup function for wall refinement
+	auto fx_refine_walls = [&](double x, double y, double z) {
+			if (!refine_walls) {
+				return 1.0;
+			}
+
+			const double eps = 1e-12;
+			bool in_channel =
+					(((channelMin[0] + eps) < x && x < (channelMax[0] - eps)) &&
+					 ((channelMin[1] + eps) < y && y < (channelMax[1] - eps)) &&
+					 ((channelMin[2] + eps) < z && z < (channelMax[2] - eps)));
+			return in_channel ? 1.0 : -1.0;
+	};
 
 
-
-
-
-
-  const unsigned int max_depth = 30;
 	/// fullDA
 	ot::DA *mainDA = NULL; ///for the refine level formulation
-  printf("start by createRegularOctree\n");
-
-  const unsigned int initialRefinementLevel = 4 ; // input_data.mesh_def.refine_lvl_base;
-  createRegularOctree(nodes, initialRefinementLevel, 3, max_depth, MPI_COMM_WORLD);
-
-  ///Create regular octree by invoking Da constructor
-  ot::DA *base_da =
-        new ot::DA(nodes, PETSC_COMM_WORLD, PETSC_COMM_WORLD, 0.3); 
-  nodes.clear();
-
-	printf("Before calc_refine_func 1\n");
+	if (!rank) printf("start by createRegularOctree\n");
+	createRegularOctree(nodes, initialRefinementLevel, 3, max_depth, MPI_COMM_WORLD);
+	///Create regular octree by invoking Da constructor
+	ot::DA *base_da =
+			new ot::DA(nodes, PETSC_COMM_WORLD, PETSC_COMM_WORLD, 0.3);
+	nodes.clear();
+	if(!rank) printf("Before calc_refine_func 1\n");
 	// Use channel refined DA in the phi based refinement function
 	bool refineOjects = true;
-  
 	std::vector<unsigned int> levels = calc_refine_func_userProvidedDim(
-					base_da,
-					[&](double x, double y, double z) -> double {
-              std::array<double, 3> pp = {x, y, z};  
-							return ValueAtInit(pp);
-					},
-					&input_data.mesh_def, daScalingFactor, initialRefinementLevel);
+			base_da,
+			[&](double x, double y, double z) -> double {
+					std::array<double, 3> pp = {x, y, z};
+					return ValueAtInit(pp);
+			},
+			channelMin,
+			channelMax,
+			refine_lvl_base,
+			refine_lvl_interface,
+			refine_lvl_channel_wall,
+			enable_subda,
+			daScalingFactor,
+			initialRefinementLevel);
 
-			PrintInfo ("Size of the levels vector: ", levels.size ());
-			PrintInfo ("Proceeding to create midDa");
-			ot::DA *mid_da =
-					ot::remesh_DA(base_da, levels, daScalingFactor, fx_refine_walls, fx_retain, 1000, PETSC_COMM_WORLD, 2);
-			delete base_da;
-    
-			/// Estimate the size of the subDA for the given refinement
-			double subDA_boundingBoxEstimate_Min[3];
-			double subDA_boundingBoxEstimate_Max[3];
-			if (input_data.mesh_def.enable_subda) {
-				BaseDA subDAforBoundingBoxEstimate =
-						new ot::subDA(mid_da, fx_retain, daScalingFactor);
-				getBoundingBox(subDAforBoundingBoxEstimate, subDA_boundingBoxEstimate_Min,
-				               subDA_boundingBoxEstimate_Max);
-			} else {
-				// regular DA case
-				subDA_boundingBoxEstimate_Min[0] = 0.0;
-				subDA_boundingBoxEstimate_Min[1] = 0.0;
-				subDA_boundingBoxEstimate_Min[2] = 0.0;
-				subDA_boundingBoxEstimate_Max[0] = daScalingFactor[0];
-				subDA_boundingBoxEstimate_Max[1] = daScalingFactor[1];
-				subDA_boundingBoxEstimate_Max[2] = daScalingFactor[2];
-			}
-			levels.clear();
+	ot::DA *mid_da =
+			ot::remesh_DA(base_da, levels, daScalingFactor, fx_refine_walls, fx_retain, 1000, PETSC_COMM_WORLD);
 
-			// Coarsening step
-			refineOjects = true;
-			levels = calc_refine_func_estimated_domain_size(
-					mid_da,
-					[&](double x, double y, double z) -> double {
-							return initialConditionsCalculatorCHinitMesh.ValueAtInit(ZEROPTV(x, y, z));
-					},
-					daScalingFactor, &input_data.mesh_def, subDA_boundingBoxEstimate_Min,
-					subDA_boundingBoxEstimate_Max, initialRefinementLevel);
-			PrintInfo ("Proceeding to create mainDa");
+  if(!rank) printf("Finished remesh_DA \n");
 
-			///Makrand-debug: save fullda with weights:
-			std::vector<ot::TreeNode> mainDATreeNodes;
-			//mainDATreeNodes = ot::remesh_DA_Treenode (mid_da, levels, daScalingFactor, fx_refine_walls, fx_retain, 1000,
-			//                                          PETSC_COMM_WORLD, 2);
+	delete base_da;
+	/// Estimate the size of the subDA for the given refinement
+	double subDA_boundingBoxEstimate_Min[3];
+	double subDA_boundingBoxEstimate_Max[3];
 
-			mainDA = ot::remesh_DA(mid_da, levels, daScalingFactor, fx_refine_walls, fx_retain, 1000, PETSC_COMM_WORLD, 2);
-			delete mid_da;
+	ot::subDA* subDAforBoundingBoxEstimate =
+				new ot::subDA(mid_da, fx_retain, daScalingFactor);
+	subDAforBoundingBoxEstimate->getBoundingBox(subDA_boundingBoxEstimate_Min, subDA_boundingBoxEstimate_Max);
+	delete subDAforBoundingBoxEstimate;
+
+
+	levels.clear();
+	// Coarsening step
+	refineOjects = true;
+	levels = calc_refine_func_estimated_domain_size(
+			mid_da,
+			[&](double x, double y, double z) -> double {
+					std::array<double, 3> pp = {x, y, z};
+					return ValueAtInit(pp);
+			},
+			daScalingFactor,
+			channelMin,
+			channelMax,
+			refine_lvl_base,
+			refine_lvl_interface,
+			refine_lvl_channel_wall,
+			enable_subda,
+			subDA_boundingBoxEstimate_Min,
+			subDA_boundingBoxEstimate_Max,
+			initialRefinementLevel);
+
+	///Makrand-debug: save fullda with weights:
+	//std::vector<ot::TreeNode> mainDATreeNodes;
+	//mainDATreeNodes = ot::remesh_DA_Treenode (mid_da, levels, daScalingFactor, fx_refine_walls, fx_retain, 1000,
+	//                                          PETSC_COMM_WORLD, 2);
+  if(!rank) printf("=== === === === === === ===\n");
+  if(!rank) printf("Calling second remesh_DA\n");
+	mainDA = ot::remesh_DA(mid_da, levels, daScalingFactor, fx_refine_walls, fx_retain, 1000, PETSC_COMM_WORLD);
+  if(!rank) printf("After second remesh_DA\n");
+	delete mid_da;
 	/// Subda dimensions
 	double subDAmin[3];
 	double subDAmax[3];
-	if (enable_subda) {
-		if (modularFormulation){
-			octDA = new ot::subDA(combineTreeNodesInitialDA, fx_retain, daScalingFactor);
-			getBoundingBox(octDA, subDAmin, subDAmax);
-			PrintInfo("Carved subDA");
-			PrintInfo("min of the subDA is: [", subDAmin[0], ",", subDAmin[1], ",",
-			          subDAmin[2], "]");
-			PrintInfo("max of the subDA is: [", subDAmax[0], ",", subDAmax[1], ",",
-			          subDAmax[2], "]");
-		}else {
-			octDA = new ot::subDA(mainDA, fx_retain, daScalingFactor);
-			getBoundingBox(octDA, subDAmin, subDAmax);
-			PrintInfo("Carved subDA");
-			PrintInfo("min of the subDA is: [", subDAmin[0], ",", subDAmin[1], ",",
-			          subDAmin[2], "]");
-			PrintInfo("max of the subDA is: [", subDAmax[0], ",", subDAmax[1], ",",
-			          subDAmax[2], "]");
-		}
-	} else {
-		if (modularFormulation){
-			octDA = combineTreeNodesInitialDA;
-			PrintInfo("Created DA");
-		} else{
-			octDA = mainDA;
-			PrintInfo("Created DA");
-		}
-  }
-  
-  PetscLogEventEnd(functionToDAEvent, 0, 0, 0, 0);
+
+
+	octDA = new ot::subDA(mainDA, fx_retain, daScalingFactor);
+	octDA->getBoundingBox(subDAmin, subDAmax);
 
 	printApproximateWork(octDA);
+
 	MPI_Barrier(PETSC_COMM_WORLD);
-
-
- // clean up
- delete main_da;
- delete da;
-
-
-  // wrap up
-  ot::DA_Finalize();
-
-  // std::cout << rank << " === OT finalize ===" << std::endl;
-
-  PetscFinalize();
-
-  // std::cout << "<== All done ==>" << std::endl;
+	// clean up
+	delete mainDA;
+	delete octDA;
+	// wrap up
+	ot::DA_Finalize();
+	std::cout << rank << " === OT finalize ===" << std::endl;
+	PetscFinalize();
+	if (!rank) std::cout << "<== All done ==>" << std::endl;
 }//end main
+
 
 void saveNodalVecAsVTK(ot::DA* da, Vec vec, double* gSize, const char *file_prefix) {
   int rank, size;

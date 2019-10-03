@@ -58,6 +58,7 @@ option (DIM_2 "To enable DIM2 version of Sorting. Tree sort part is tested and w
 option(BUILD_HELPER_APPS "Build helper apps" ON)
 option(BUILD_DENDROTALY_EXAMPLES "Build dendro-taly integration examples/tests" ON)
 option(BUILD_CONSTRUCT_EXAMPLES "Build octree construct/balance examples/tests" ON)
+
 set(KWAY 128 CACHE INT 128)
 set(NUM_NPES_THRESHOLD 16 CACHE INT 16)
 
@@ -185,7 +186,7 @@ add_executable(holeMesh examples/src/drivers/holeMesh.cpp include/test/testUtils
     target_link_libraries(holeMesh dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
 add_executable(channelMesh examples/src/drivers/channelMesh.cpp include/test/testUtils.h include/test/testUtils.tcc src/test/testUtils.C )
-    target_link_libraries(holeMesh dendroDA dendro petsc ${MPI_LIBRARIES} m)
+    target_link_libraries(channelMesh dendroDA dendro petsc ${MPI_LIBRARIES} m)
 
 add_executable(testIntergrid examples/src/drivers/testIntergrid.cpp include/test/testUtils.h include/test/testUtils.tcc src/test/testUtils.C )
     target_link_libraries(testIntergrid dendroDA dendro petsc ${MPI_LIBRARIES} m)

@@ -15,7 +15,7 @@
 #endif
 #endif
 
-namespace ot {
+namespace ot { 
 
   int simpleCoarsen(const std::vector<TreeNode > &in, std::vector<TreeNode> &out, MPI_Comm comm) {
     PROF_SIMPLE_COARSE_BEGIN

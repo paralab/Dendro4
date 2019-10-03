@@ -417,7 +417,7 @@ Point DA::getNextOffsetByRotation(Point p, unsigned char d)
       return m;
 //    }
 #endif
-
+  return p;
 
 }
 
@@ -1920,6 +1920,8 @@ int DA::alignPointsWithDA(std::vector<double>& pts, std::vector<int>& labels) {
   delete [] sendDisps;
   delete [] recvCnts;
   delete [] recvDisps;
+
+  return 0;
 }
 
 } // end namespace ot

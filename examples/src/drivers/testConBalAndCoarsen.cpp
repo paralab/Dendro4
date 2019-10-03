@@ -132,8 +132,8 @@ int main(int argc, char ** argv ) {
     }
   
   // Sends numFilePoints and local_num_points to the others
-  MPI_Bcast(&local_num_pts, 1, MPI::INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&numFilePoints, 1, MPI::INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&local_num_pts, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&numFilePoints, 1, MPI_INT, 0, MPI_COMM_WORLD);
   
   // Keeping this until I get a fix for "overflow"
   if(numFilePoints % size != 0)
@@ -151,10 +151,10 @@ int main(int argc, char ** argv ) {
   std::cout << "local num pts: " << local_num_pts << std::endl;
   
   // Scatter the data
-  MPI_Scatter(&allPts.front(), local_num_pts/size, MPI::DOUBLE, &pts.front(), local_num_pts/size, MPI::DOUBLE, 0, MPI_COMM_WORLD);
+  MPI_Scatter(&allPts.front(), local_num_pts/size, MPI_DOUBLE, &pts.front(), local_num_pts/size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
   // Broadcast the points
-  MPI_Bcast(&allParticles.front(), sizeof(Particle) * numFilePoints, MPI::BYTE, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&allParticles.front(), sizeof(Particle) * numFilePoints, MPI_BYTE, 0, MPI_COMM_WORLD);
 
   particles = allParticles;
 
@@ -322,7 +322,7 @@ int main(int argc, char ** argv ) {
   if(rank == 1)
     std::cout << "rank 1: " << parCount << '\t' << balOct.size() << std::endl;
 
-  MPI_Reduce(&parCount, &parTotal, 1, MPI::INT, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&parCount, &parTotal, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
   
   parItr = balOct_Particles.begin();
   octants.resize(octants.size() + 1);
