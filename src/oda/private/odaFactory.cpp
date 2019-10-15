@@ -248,6 +248,11 @@ void DA::DA_FactoryPart3(std::vector<ot::TreeNode>& in, MPI_Comm comm, bool comp
           std::cout<<GRN<<"ot::blockPartStage1 begin"<<NRM<<std::endl;*/
     PROF_DA_BPART1_BEGIN
     // unsigned int hs_sz = in.size();
+
+    // XXX - Debug partitionW weights 
+    // Write out VTK of in. 
+    // treeNodesTovtk(in, rank, "FactoryPart3", false);
+
     // std::cout << rank << ": __HARI__ " << hs_sz << ", " << in[0].getWeight() << ", " << in[hs_sz/2].getWeight() << std::endl;
     ot::blockPartStage1(in, blocks, m_uiDimension, m_uiMaxDepth, m_mpiCommActive,m_uiTreeSortTol);
     /*MPI_Barrier(m_mpiCommActive);

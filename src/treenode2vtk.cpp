@@ -82,10 +82,19 @@ void treeNodesTovtk(std::vector<ot::TreeNode> &nodes, int mpi_rank, std::string 
       myfile << VTK_HEXAHEDRON << std::endl;
     }
 
+    // out << std::endl;
+    // out << "POINT_DATA " << num_verticies  << std::endl;
+    // out << "SCALARS weights float 1" << std::endl;
+    // out << "LOOKUP_TABLE default" << std::endl;
+
+    // for (int i = 0; i < nodes.size(); i++)
+    //   myfile << nodes[i].getWeight() << " ";
+
+    // out << std::endl;
+
+
     //myfile<<"CELL_DATA "<<num_cells<<std::endl;
     //myfile<<"POINT_DATA "<<(num_cells*unit_points)<<std::endl;
-
-
 
     myfile << "FIELD OCTREE_DATA " << num_data_field << std::endl;
 
@@ -96,7 +105,13 @@ void treeNodesTovtk(std::vector<ot::TreeNode> &nodes, int mpi_rank, std::string 
 
     myfile << std::endl;
 
-    myfile << "mpi_rank 1 " << num_cells << " int" << std::endl;
+    myfile << "weight 1 " << num_cells << " int" << std::endl;
+    for (int i = 0; i < nodes.size(); i++)
+      myfile << nodes[i].getWeight() << " ";
+
+    myfile << std::endl;
+
+    myfile << "mpirank 1 " << num_cells << " int" << std::endl;
     for (int i = 0; i < nodes.size(); i++)
       myfile << mpi_rank << " ";
 

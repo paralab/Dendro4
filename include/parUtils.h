@@ -248,7 +248,7 @@ PetscFunctionReturn(0);
 
 namespace par {
 
-
+  void print_trace(void);
 
   template <typename T>
     int Mpi_Isend(T* buf, int count, int dest, int tag, MPI_Comm comm, MPI_Request* request);

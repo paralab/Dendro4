@@ -3451,7 +3451,7 @@ std::vector<ot::TreeNode> function_to_Treenode(std::function<double(double, doub
         if ( std::none_of(dist.begin(), dist.end(), inside )) {
           elem.setWeight(1000);
         } else if ( std::all_of(dist.begin(), dist.end(), inside ) ) {
-          elem.setWeight(10);
+          elem.setWeight(100);
         } else {
           // intersection.
           elem.setWeight(surface_assembly_cost);
@@ -3665,7 +3665,12 @@ ot::DA *remesh_DA(ot::DA *da, std::vector<unsigned int> levels, double *gSize, s
 
   std::vector<ot::TreeNode> nodes = remesh_DA_Treenode(da, levels, gSize, fx_refine, fx_retain, surface_assembly_cost, comm);
 
+  int rank;
+  MPI_Comm_rank(comm, &rank);
+  
+  // if (!rank) std::cout << BLU << "=> Entering DA Constructor" << NRM << std::endl;
   ot::DA *new_da = new ot::DA(nodes, comm, comm, compressLut);
+  // if (!rank) std::cout << BLU << "<== leaving DA Constructor" << NRM << std::endl;
 
   return new_da;
 
@@ -3673,7 +3678,6 @@ ot::DA *remesh_DA(ot::DA *da, std::vector<unsigned int> levels, double *gSize, s
 
 std::vector<ot::TreeNode> remesh_DA_Treenode(ot::DA *da, std::vector<unsigned int> levels, double *gSize, std::function<double(double, double, double)> fx_refine, std::function<double ( double, double, double ) > fx_retain, unsigned int surface_assembly_cost, MPI_Comm comm)
 {
-
   unsigned int dim = 3;
   unsigned int maxNumPts = 1;
   bool incCorner = 1;
@@ -3706,9 +3710,14 @@ std::vector<ot::TreeNode> remesh_DA_Treenode(ot::DA *da, std::vector<unsigned in
     }
   }
 
+  int rank;
+  MPI_Comm_rank(comm, &rank);
+
+  // if (!rank) std::cout << "remesh_DA calling removeDups" << std::endl;
   par::removeDuplicates<ot::TreeNode>(tmpNodes, false, MPI_COMM_WORLD);
   std::swap(linOct, tmpNodes);
   tmpNodes.clear();
+  // if (!rank) std::cout << "remesh_DA calling partitionW" << linOct.size() << std::endl;
   par::partitionW<ot::TreeNode>(linOct, NULL, MPI_COMM_WORLD);
 
   maxDepth--;
@@ -3724,20 +3733,18 @@ std::vector<ot::TreeNode> remesh_DA_Treenode(ot::DA *da, std::vector<unsigned in
   linOct.clear();
 
   // =<< debug Sep 2019
-  int rank;
-  MPI_Comm_rank(comm, &rank);
 
-  std::cout << rank << ": Calling pts2octree" << std::endl;
+  // std::cout << rank << ": pts2octree : " << pts.size() << std::endl;
   // >>= debug Sep 2019
 
   ot::points2Octree(pts, gSize, linOct, dim, maxDepth, maxNumPts, comm);
-
+  par::partitionW<ot::TreeNode>(linOct, NULL, MPI_COMM_WORLD);
   // =<< debug Sep 2019
-  std::cout << rank << ": Calling balOctree" << std::endl;
+  // std::cout << rank << ": Calling balOctree : " << linOct.size() << std::endl;
   // >>= debug Sep 2019
   ot::balanceOctree(linOct, tmpNodes, dim, maxDepth, incCorner, comm, NULL, NULL);
     // =<< debug Sep 2019
-  std::cout << rank << ": Finished balOctree" << std::endl;
+    
   // >>= debug Sep 2019
 
 
@@ -3803,11 +3810,13 @@ std::vector<ot::TreeNode> remesh_DA_Treenode(ot::DA *da, std::vector<unsigned in
     }
     else
     {
-      elem.setWeight(1);
+      elem.setWeight(10);
     }
   }
 
   par::partitionW<ot::TreeNode>(tmpNodes, ot::getNodeWeight, comm);
+
+  // std::cout << rank << ": Finished partitionW : " << tmpNodes.size() << std::endl;
 
   return tmpNodes;
 

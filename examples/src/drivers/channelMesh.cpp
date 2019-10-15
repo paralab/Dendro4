@@ -11,6 +11,7 @@
 #include <TreeNode.h>
 #include <string>
 #include <Point.h>
+#include <colors.h>
 
 #include <iomanip>
 
@@ -418,6 +419,9 @@ void printApproximateWork(ot::subDA* octDA) {
 	counts[N_ELEMENTS] = octDA->getElementSize();
 	counts[N_GHOSTED_ELEMENTS] = octDA->getGhostedElementSize();
 
+
+  std::cout << "\t" << MAG << rank << NRM << " : " << GRN << counts[2] << NRM << " e " << GRN << counts[0] << NRM << " n" << std::endl; 
+
 	unsigned int mins[4], maxs[4], avgs[4];
 	for (int i = 0; i < 4; i++) {
 		MPI_Allreduce(&counts[i], &mins[i], 1, MPI_UNSIGNED, MPI_MIN, comm);
@@ -426,7 +430,8 @@ void printApproximateWork(ot::subDA* octDA) {
 		avgs[i] /= nProcs;
 	}
 	if (!rank) {
-		std::cout << "N_NODES - min: " << mins[N_NODES] << ", max: " << maxs[N_NODES] << ", avg: " <<  avgs[N_NODES] <<
+		std::cout << std::endl;
+    std::cout << "N_NODES - min: " << mins[N_NODES] << ", max: " << maxs[N_NODES] << ", avg: " <<  avgs[N_NODES] <<
 		std::endl;
 		std::cout << "N_GHOSTED_NODES - min: " << mins[N_GHOSTED_NODES] << ", max: " << maxs[N_GHOSTED_NODES] << ", avg: "
 		<< avgs[N_GHOSTED_NODES] << std::endl;
@@ -442,6 +447,12 @@ int main(int argc, char ** argv ) {
 	int size, rank;
 	unsigned int dim = 3;
 	unsigned maxDepth = 30;
+ 
+  /* TODO
+    1. Adjust weights for retained, non-retained and boundary nodes.
+    2. Try to make DA construction more balanced.
+  */
+
 
 	std::vector<ot::TreeNode> nodes, nodes_bal;
 
@@ -499,13 +510,13 @@ int main(int argc, char ** argv ) {
 
 	/// fullDA
 	ot::DA *mainDA = NULL; ///for the refine level formulation
-	if (!rank) printf("start by createRegularOctree\n");
+	// if (!rank) printf("start by createRegularOctree\n");
 	createRegularOctree(nodes, initialRefinementLevel, 3, max_depth, MPI_COMM_WORLD);
 	///Create regular octree by invoking Da constructor
 	ot::DA *base_da =
 			new ot::DA(nodes, PETSC_COMM_WORLD, PETSC_COMM_WORLD, 0.3);
 	nodes.clear();
-	if(!rank) printf("Before calc_refine_func 1\n");
+	// if(!rank) std::cout << YLW << "Before calc_refine_func 1" NRM << std::endl;
 	// Use channel refined DA in the phi based refinement function
 	bool refineOjects = true;
 	std::vector<unsigned int> levels = calc_refine_func_userProvidedDim(
@@ -526,7 +537,9 @@ int main(int argc, char ** argv ) {
 	ot::DA *mid_da =
 			ot::remesh_DA(base_da, levels, daScalingFactor, fx_refine_walls, fx_retain, 1000, PETSC_COMM_WORLD);
 
-  if(!rank) printf("Finished remesh_DA \n");
+  levels.clear();
+
+  // if(!rank) std::cout << GRN << "Finished remesh_DA" << NRM << std::endl;
 
 	delete base_da;
 	/// Estimate the size of the subDA for the given refinement
@@ -537,7 +550,6 @@ int main(int argc, char ** argv ) {
 				new ot::subDA(mid_da, fx_retain, daScalingFactor);
 	subDAforBoundingBoxEstimate->getBoundingBox(subDA_boundingBoxEstimate_Min, subDA_boundingBoxEstimate_Max);
 	delete subDAforBoundingBoxEstimate;
-
 
 	levels.clear();
 	// Coarsening step
@@ -563,18 +575,22 @@ int main(int argc, char ** argv ) {
 	//std::vector<ot::TreeNode> mainDATreeNodes;
 	//mainDATreeNodes = ot::remesh_DA_Treenode (mid_da, levels, daScalingFactor, fx_refine_walls, fx_retain, 1000,
 	//                                          PETSC_COMM_WORLD, 2);
-  if(!rank) printf("=== === === === === === ===\n");
-  if(!rank) printf("Calling second remesh_DA\n");
+  // if(!rank) std::cout << MAG << "!==!==!==!==!==!==!==" << NRM << std::endl;
+  // if(!rank) std::cout << YLW << "Calling second remesh_DA" << NRM << std::endl;
 	mainDA = ot::remesh_DA(mid_da, levels, daScalingFactor, fx_refine_walls, fx_retain, 1000, PETSC_COMM_WORLD);
-  if(!rank) printf("After second remesh_DA\n");
+  levels.clear();
+
+  // if(!rank) std::cout << GRN << "After second remesh_DA" << NRM << std::endl;
+  // if(!rank) std::cout << MAG << "!==!==!==!==!==!==!==" << NRM << std::endl;
 	delete mid_da;
 	/// Subda dimensions
 	double subDAmin[3];
 	double subDAmax[3];
 
-
 	octDA = new ot::subDA(mainDA, fx_retain, daScalingFactor);
-	octDA->getBoundingBox(subDAmin, subDAmax);
+	
+  
+  octDA->getBoundingBox(subDAmin, subDAmax);
 
 	printApproximateWork(octDA);
 
@@ -584,9 +600,9 @@ int main(int argc, char ** argv ) {
 	delete octDA;
 	// wrap up
 	ot::DA_Finalize();
-	std::cout << rank << " === OT finalize ===" << std::endl;
+	// std::cout << rank << GRN " === OT finalize ===" <<  NRM << std::endl;
 	PetscFinalize();
-	if (!rank) std::cout << "<== All done ==>" << std::endl;
+	if (!rank) std::cout << BLU << "<== All done ==>" << NRM << std::endl;
 }//end main
 
 

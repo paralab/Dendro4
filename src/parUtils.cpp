@@ -10,6 +10,12 @@
 #include "dtypes.h"
 #include "parUtils.h"
 //#include "parUtils.tcc"
+#include <execinfo.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <cxxabi.h>
+#include <string>
+#include <colors.h>
 
 #ifdef __DEBUG__
 #ifndef __DEBUG_PAR__
@@ -18,6 +24,62 @@
 #endif
 
 namespace par {
+
+  void print_trace(void) {
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    size_t i, size;
+    enum Constexpr { MAX_SIZE = 1024 };
+    void *array[MAX_SIZE];
+    char **bt_syms;
+
+    size_t funcnamesize = 256;
+    char funcname[256];
+
+    if (!rank) {
+      size = backtrace(array, MAX_SIZE);
+      bt_syms = backtrace_symbols(array, size);
+      int tabb=4;
+      for (unsigned int i=size-3; i>0; i--) {
+        for (int j=0; j<tabb; ++j)
+          std::cout << ' ';
+        char *begin_name = 0, *begin_offset = 0, *end_offset = 0;
+
+	      for (char *p = bt_syms[i]; *p; ++p) {
+	        if (*p == '(')
+		        begin_name = p;
+	        else if (*p == '+')
+		        begin_offset = p;
+	        else if (*p == ')' && begin_offset) {
+		        end_offset = p;
+		        break;
+	        }
+	      }
+
+	      if (begin_name && begin_offset && end_offset && begin_name < begin_offset) {
+	        *begin_name++ = '\0';
+	        *begin_offset++ = '\0';
+	        *end_offset = '\0';
+
+	        int status;
+	        char* ret = abi::__cxa_demangle(begin_name, funcname, &funcnamesize, &status);
+
+	        if (status == 0) {
+            // std::cout << GRN << "↳" << YLW << bt_syms[i] << " : " << BLU << funcname << MAG << "➠" << begin_offset << NRM << std::endl;
+            std::cout << GRN << "▶" << BLU << ret << NRM << std::endl;
+  	      } else {
+	  	      // demangling failed. Output function name as a C function with no arguments.
+            std::cout << GRN << "⚑" << YLW << bt_syms[i] << " : " << BLU << begin_name << MAG << "➠" << begin_offset << NRM << std::endl;
+	        }
+	      } else {
+	        // couldn't parse the line? print the whole line.
+          std::cout << GRN << "➥" << YLW << bt_syms[i] << NRM << std::endl;
+	      }
+        tabb+=2;
+      }
+    } // !rank
+  } // print_trace
+
 
   unsigned int splitCommBinary( MPI_Comm orig_comm, MPI_Comm *new_comm) {
     int npes, rank;

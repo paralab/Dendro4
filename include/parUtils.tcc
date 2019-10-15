@@ -20,8 +20,6 @@
 #include "seqUtils.h"
 #include "treenode2vtk.h"
 
-
-
 #ifdef __DEBUG__
 #ifndef __DEBUG_PAR__
 #define __DEBUG_PAR__
@@ -1314,7 +1312,6 @@ namespace par {
   template<typename T>
   int partitionW(std::vector<T> &nodeList, unsigned int (*getWeight)(const T *), MPI_Comm comm) {
 
-
 #ifdef __PROFILE_WITH_BARRIER__
     MPI_Barrier(comm);
 #endif
@@ -1335,6 +1332,9 @@ namespace par {
     int rank;
 
     MPI_Comm_rank(comm, &rank);
+
+    // if (!rank) std::cout << "     >>= Entering partitionW" << std::endl; 
+    // par::print_trace();
 
     MPI_Request request;
     MPI_Status status;
@@ -1608,9 +1608,11 @@ namespace par {
 #endif
     PROF_REMDUP_BEGIN
 
+
     int size, rank;
     MPI_Comm_size(comm, &size);
     MPI_Comm_rank(comm, &rank);
+    // if(!rank) std::cout << "==> Entering removeDups " << std::endl;
 
     std::vector<T> tmpVec;
     if (!isSorted) {
@@ -1622,6 +1624,9 @@ namespace par {
       //std::cout << "  rank: " << rank << " after samplesort, size: " << tmpVec.size() << std::endl;
     } else {
       swap(tmpVec, vecT);
+      // todo - remove debug print
+      // if(!rank) std::cout << "    --> Calling partW from removeDups " << RED << "1" << NRM << std::endl;
+      par::partitionW<T>(tmpVec, NULL, comm);
     }
 
 #ifdef __DEBUG_PAR__
@@ -1633,7 +1638,7 @@ namespace par {
 #endif
 
     vecT.clear();
-    par::partitionW<T>(tmpVec, NULL, comm);
+
 
 #ifdef __DEBUG_PAR__
     MPI_Barrier(comm);
@@ -1703,6 +1708,8 @@ namespace par {
 
     swap(vecT, tmpVec);
     tmpVec.clear();
+
+    // if(!rank) std::cout << "    --> Calling partW from removeDups " << GRN << "2" << NRM << std::endl;
     par::partitionW<T>(vecT, NULL, comm);
 
 #ifdef __DEBUG_PAR__
@@ -1712,6 +1719,8 @@ namespace par {
     }
     MPI_Barrier(comm);
 #endif
+
+    // if(!rank) std::cout << "<== Leaving removeDups " << std::endl;
 
     PROF_REMDUP_END
   }//end function

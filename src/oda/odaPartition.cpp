@@ -144,6 +144,8 @@ namespace ot {
 
     isSingular.clear();
 
+    // if (!rankActive) 
+    //  std::cout << "    ~~ Calling partitionW global Coarse" << std::endl;
     par::partitionW<ot::TreeNode>(globalCoarse, getNodeWeight, commActive);
 
     //Reset weights
@@ -481,9 +483,12 @@ namespace ot {
     }//end if npes > 1
 
     isSingular.clear();
+
+    // if (!rankActive) 
+    //  std::cout << "    ~~ Calling partitionW global Coarse" << std::endl;
     par::partitionW<ot::TreeNode>(globalCoarse, getNodeWeight, commActive);
 
-
+    // @todo - remove after partition Bug is fixed.
 
     //Reset weights
     for (unsigned int i=0;i<globalCoarse.size(); i++) {
