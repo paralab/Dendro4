@@ -20,9 +20,9 @@
 #define DendroIntLSpecifier %lld
 #define DendroUIntLSpecifier %llu
 #else
-#define DendroIntL int
-#define DendroIntLSpecifier %d
-#define DendroUIntLSpecifier %u
+#define DendroIntL long
+#define DendroIntLSpecifier %ld
+#define DendroUIntLSpecifier %lu
 #endif
 
 #endif
