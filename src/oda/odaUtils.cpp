@@ -991,6 +991,515 @@ void interpolateData(ot::subDA *da, Vec in, Vec out, Vec *gradOut,
   }
 }
 
+
+// Hari - Dec 2019
+
+void interpolateData(ot::subDA *da, Vec in, Vec out, Vec *gradOut,
+                     unsigned int dof, const std::vector<double> &pts, const double *problemSize, const double *subDA_max, std::function<double ( double, double, double ) > fx_retain, unsigned int max_refinement_at_bdy)
+{
+
+  assert(da != NULL);
+
+  int rank = da->getRankAll();
+  int npes = da->getNpesAll();
+  MPI_Comm comm = da->getComm();
+
+  std::vector<ot::TreeNode> minBlocks;
+  unsigned int maxDepth;
+
+  int npesActive;
+  if (!rank)
+  {
+    minBlocks = da->getMinAllBlocks();
+    maxDepth = da->getMaxDepth();
+    npesActive = da->getNpesActive();
+  }
+
+  par::Mpi_Bcast<unsigned int>(&maxDepth, 1, 0, comm);
+  par::Mpi_Bcast<int>(&npesActive, 1, 0, comm);
+
+  unsigned int balOctMaxD = (maxDepth - 1);
+  const unsigned int octMaxCoord = (1u << balOctMaxD);
+
+  if (rank)
+  {
+    minBlocks.resize(npesActive);
+  }
+
+  auto retain = [](double d){ return d > 0.0; };
+  par::Mpi_Bcast<ot::TreeNode>(&(*(minBlocks.begin())), npesActive, 0, comm);
+
+  std::vector<ot::NodeAndValues<double, 3>> ptsWrapper;
+
+  int numPts = (pts.size()) / 3;
+  double xFac, yFac, zFac;
+  double hx, hy, hz;
+  std::array<double, 8> dist;
+  Point pt;
+
+  if (problemSize != NULL)
+  {
+    xFac = static_cast<double>(1u << balOctMaxD) / problemSize[0];
+    yFac = static_cast<double>(1u << balOctMaxD) / problemSize[1];
+    zFac = static_cast<double>(1u << balOctMaxD) / problemSize[2];
+  }
+  else
+  {
+    xFac = static_cast<double>(1u << balOctMaxD);
+    yFac = static_cast<double>(1u << balOctMaxD);
+    zFac = static_cast<double>(1u << balOctMaxD);
+  }
+
+  Point p2(xFac, yFac, zFac);
+
+  const unsigned int subDA_max_x = static_cast<unsigned int>(subDA_max[0] * xFac);
+  const unsigned int subDA_max_y = static_cast<unsigned int>(subDA_max[1] * yFac);
+  const unsigned int subDA_max_z = static_cast<unsigned int>(subDA_max[2] * zFac);
+
+  for (int i = 0; i < numPts; i++)
+  {
+    ot::NodeAndValues<double, 3> tmpObj;
+    unsigned int xint = static_cast<unsigned int>(pts[(3 * i)] * xFac);
+    unsigned int yint = static_cast<unsigned int>(pts[(3 * i) + 1] * yFac);
+    unsigned int zint = static_cast<unsigned int>(pts[(3 * i) + 2] * zFac);
+
+    ot::TreeNode nd = ot::TreeNode(xint, yint, zint, maxDepth, 3, maxDepth);
+    ot::TreeNode an;
+
+    bool found_intersection = false;
+    unsigned int intersection_depth = max_refinement_at_bdy;
+    while(!found_intersection && intersection_depth) {
+      an = nd.getAncestor(intersection_depth);
+
+      pt = an.getAnchor();
+      pt *= p2;
+
+      hx = xFac * (1 << (maxDepth - an.getLevel()));
+      hy = yFac * (1 << (maxDepth - an.getLevel()));
+      hz = zFac * (1 << (maxDepth - an.getLevel()));
+
+
+      dist[0] = fx_retain(pt.x(), pt.y(), pt.z());
+      dist[1] = fx_retain(pt.x() + hx, pt.y(), pt.z());
+      dist[2] = fx_retain(pt.x(), pt.y() + hy, pt.z());
+      dist[3] = fx_retain(pt.x() + hx, pt.y() + hy, pt.z());
+
+      dist[4] = fx_retain(pt.x(), pt.y(), pt.z() + hz);
+      dist[5] = fx_retain(pt.x() + hx, pt.y(), pt.z() + hz);
+      dist[6] = fx_retain(pt.x(), pt.y() + hy, pt.z() + hz);
+      dist[7] = fx_retain(pt.x() + hx, pt.y() + hy, pt.z() + hz);
+
+      if (std::none_of(dist.begin(), dist.end(), retain)) {
+          intersection_depth--;
+      } else if (std::all_of(dist.begin(), dist.end(), inside)) {
+          found_intersection = true;  
+      } else {
+        // intersected 
+        found_intersection = true;
+      }
+    }
+
+    tmpObj.node = an;
+    tmpObj.values[0] = pts[(3 * i)];
+    tmpObj.values[1] = pts[(3 * i) + 1];
+    tmpObj.values[2] = pts[(3 * i) + 2];
+    ptsWrapper.push_back(tmpObj);
+
+  } //end for i
+
+  //Re-distribute ptsWrapper to align with minBlocks
+  int *sendCnts = new int[npes];
+  assert(sendCnts);
+
+  int *tmpSendCnts = new int[npes];
+  assert(tmpSendCnts);
+
+  for (int i = 0; i < npes; i++)
+  {
+    sendCnts[i] = 0;
+    tmpSendCnts[i] = 0;
+  } //end for i
+
+  unsigned int *part = NULL;
+  if (numPts)
+  {
+    part = new unsigned int[numPts];
+    assert(part);
+  }
+
+  for (int i = 0; i < numPts; i++)
+  {
+    bool found = seq::maxLowerBound<ot::TreeNode>(minBlocks,
+                                                  ptsWrapper[i].node, part[i], NULL, NULL);
+    assert(found);
+    assert(part[i] < npes);
+    sendCnts[part[i]]++;
+  } //end for i
+
+  int *sendDisps = new int[npes];
+  assert(sendDisps);
+
+  sendDisps[0] = 0;
+  for (int i = 1; i < npes; i++)
+  {
+    sendDisps[i] = sendDisps[i - 1] + sendCnts[i - 1];
+  } //end for i
+
+  std::vector<ot::NodeAndValues<double, 3>> sendList(numPts);
+
+  unsigned int *commMap = NULL;
+  if (numPts)
+  {
+    commMap = new unsigned int[numPts];
+    assert(commMap);
+  }
+
+  for (int i = 0; i < numPts; i++)
+  {
+    unsigned int pId = part[i];
+    unsigned int sId = (sendDisps[pId] + tmpSendCnts[pId]);
+    assert(sId < numPts);
+    sendList[sId] = ptsWrapper[i];
+    commMap[sId] = i;
+    tmpSendCnts[pId]++;
+  } //end for i
+
+  if (part)
+  {
+    delete[] part;
+    part = NULL;
+  }
+  delete[] tmpSendCnts;
+
+  ptsWrapper.clear();
+
+  int *recvCnts = new int[npes];
+  assert(recvCnts);
+
+  par::Mpi_Alltoall<int>(sendCnts, recvCnts, 1, comm);
+
+  int *recvDisps = new int[npes];
+  assert(recvDisps);
+
+  recvDisps[0] = 0;
+  for (int i = 1; i < npes; i++)
+  {
+    recvDisps[i] = recvDisps[i - 1] + recvCnts[i - 1];
+  } //end for i
+
+  std::vector<ot::NodeAndValues<double, 3>> recvList(recvDisps[npes - 1] + recvCnts[npes - 1]);
+
+  ot::NodeAndValues<double, 3> *sendListPtr = NULL;
+  ot::NodeAndValues<double, 3> *recvListPtr = NULL;
+
+  if (!(sendList.empty()))
+  {
+    sendListPtr = (&(*(sendList.begin())));
+  }
+
+  if (!(recvList.empty()))
+  {
+    recvListPtr = (&(*(recvList.begin())));
+  }
+
+  par::Mpi_Alltoallv_sparse<ot::NodeAndValues<double, 3>>(sendListPtr,
+                                                          sendCnts, sendDisps, recvListPtr, recvCnts, recvDisps, comm);
+  sendList.clear();
+
+  //Sort recvList but also store the mapping to the original order
+  std::vector<seq::IndexHolder<ot::NodeAndValues<double, 3>>> localList(recvList.size());
+  for (unsigned int i = 0; i < recvList.size(); i++)
+  {
+    localList[i].index = i;
+    localList[i].value = &(*(recvList.begin() + i));
+  } //end for i
+
+  sort(localList.begin(), localList.end());
+
+  bool computeGradient = (gradOut != NULL);
+
+  std::vector<double> tmpOut(dof * localList.size());
+  std::vector<double> tmpGradOut;
+  if (computeGradient)
+  {
+    tmpGradOut.resize(3 * dof * localList.size());
+  }
+
+  PetscScalar *inArr;
+  da->vecGetBuffer(in, inArr, false, false, true, dof);
+
+  da->ReadFromGhostsBegin<PetscScalar>(inArr, dof);
+  da->ReadFromGhostsEnd<PetscScalar>(inArr);
+
+  //interpolate at the received points
+  //The pts must be inside the domain and not on the positive boundaries
+  unsigned int ptsCtr = 0;
+  double hxFac, hyFac, hzFac;
+  if (problemSize == NULL)
+  {
+    hxFac = (1.0 / static_cast<double>(1u << balOctMaxD));
+    hyFac = (1.0 / static_cast<double>(1u << balOctMaxD));
+    hzFac = (1.0 / static_cast<double>(1u << balOctMaxD));
+  }
+  else
+  {
+    hxFac = (problemSize[0] / static_cast<double>(1u << balOctMaxD));
+    hyFac = (problemSize[1] / static_cast<double>(1u << balOctMaxD));
+    hzFac = (problemSize[2] / static_cast<double>(1u << balOctMaxD));
+  }
+
+  // std::cout << "first point: " << (localList[ptsCtr].value)->node << " -- " << ((localList[ptsCtr].value)->values)[0] << "," << ((localList[ptsCtr].value)->values)[1] << ", " << ((localList[ptsCtr].value)->values)[2] <<  std::endl;
+
+  for (da->init<ot::DA_FLAGS::WRITABLE>();
+       (da->curr() < da->end<ot::DA_FLAGS::WRITABLE>()) &&
+       (ptsCtr < localList.size());
+       da->next<ot::DA_FLAGS::WRITABLE>())
+  {
+
+    Point pt = da->getCurrentOffset();
+    unsigned int currLev = da->getLevel(da->curr());
+
+    ot::TreeNode currOct(pt.xint(), pt.yint(), pt.zint(), currLev, 3, maxDepth);
+
+    unsigned int outIdx = localList[ptsCtr].index;
+
+    while ((localList[ptsCtr].value)->node < currOct)
+    {
+      // std::cout << "skipping " << ptsCtr << ": " << (localList[ptsCtr].value)->node << " >>= " << currOct << std::endl;
+      for (int k = 0; k < dof; k++)
+        tmpOut[(dof * outIdx) + k] = -2.0;
+      ptsCtr++;
+      outIdx = localList[ptsCtr].index;
+    }
+
+    unsigned int indices[8];
+    da->getNodeIndices(indices);
+
+    unsigned char childNum = da->getChildNumber();
+    unsigned char hnMask = da->getHangingNodeIndex(da->curr());
+    unsigned char elemType = 0;
+    GET_ETYPE_BLOCK(elemType, hnMask, childNum)
+
+    double x0 = (pt.x()) * hxFac;
+    double y0 = (pt.y()) * hyFac;
+    double z0 = (pt.z()) * hzFac;
+    double fac = (1.0 / static_cast<double>(1u << balOctMaxD));
+    double hxOct = (static_cast<double>(1u << (maxDepth - currLev))) * hxFac;
+
+    //All the recieved points lie within some octant or the other.
+    //So the ptsCtr will be incremented properly inside this loop.
+    //Evaluate at all points within this octant
+    unsigned bdy_max = 1u << (maxDepth - 1);
+    //~~~~~~~~~~~~~~~
+    // std::cout << "Interpolate Data: " << ptsCtr << "/" << localList.size() << std::endl;
+    // std::cout << "currOct: " << currOct << std::endl;
+    // std::cout << "localList"
+    //~~~~~~~~~~~~~~~
+    while ((ptsCtr < localList.size()) &&
+           ((currOct == ((localList[ptsCtr].value)->node)) ||
+            (currOct.isAncestor(((localList[ptsCtr].value)->node))) || ((localList[ptsCtr].value)->node.getX() == bdy_max) || ((localList[ptsCtr].value)->node.getY() == bdy_max) || ((localList[ptsCtr].value)->node.getZ() == bdy_max)))
+    {
+
+      double px = ((localList[ptsCtr].value)->values)[0];
+      double py = ((localList[ptsCtr].value)->values)[1];
+      double pz = ((localList[ptsCtr].value)->values)[2];
+      double xloc = (2.0 * (px - x0) / hxOct) - 1.0;
+      double yloc = (2.0 * (py - y0) / hxOct) - 1.0;
+      double zloc = (2.0 * (pz - z0) / hxOct) - 1.0;
+
+      double ShFnVals[8];
+      for (int j = 0; j < 8; j++)
+      {
+        ShFnVals[j] = (ShapeFnCoeffs[childNum][elemType][j][0] +
+                       (ShapeFnCoeffs[childNum][elemType][j][1] * xloc) +
+                       (ShapeFnCoeffs[childNum][elemType][j][2] * yloc) +
+                       (ShapeFnCoeffs[childNum][elemType][j][3] * zloc) +
+                       (ShapeFnCoeffs[childNum][elemType][j][4] * xloc * yloc) +
+                       (ShapeFnCoeffs[childNum][elemType][j][5] * yloc * zloc) +
+                       (ShapeFnCoeffs[childNum][elemType][j][6] * zloc * xloc) +
+                       (ShapeFnCoeffs[childNum][elemType][j][7] * xloc * yloc * zloc));
+      } //end for j
+
+      for (int k = 0; k < dof; k++)
+      {
+        tmpOut[(dof * outIdx) + k] = 0.0;
+        for (int j = 0; j < 8; j++)
+        {
+          tmpOut[(dof * outIdx) + k] += (inArr[(dof * indices[j]) + k] * ShFnVals[j]);
+        } //end for j
+      }   //end for k
+
+      if (computeGradient)
+      {
+
+        double GradShFnVals[8][3];
+        for (int j = 0; j < 8; j++)
+        {
+          GradShFnVals[j][0] = (ShapeFnCoeffs[childNum][elemType][j][1] +
+                                (ShapeFnCoeffs[childNum][elemType][j][4] * yloc) +
+                                (ShapeFnCoeffs[childNum][elemType][j][6] * zloc) +
+                                (ShapeFnCoeffs[childNum][elemType][j][7] * yloc * zloc));
+
+          GradShFnVals[j][1] = (ShapeFnCoeffs[childNum][elemType][j][2] +
+                                (ShapeFnCoeffs[childNum][elemType][j][4] * xloc) +
+                                (ShapeFnCoeffs[childNum][elemType][j][5] * zloc) +
+                                (ShapeFnCoeffs[childNum][elemType][j][7] * xloc * zloc));
+
+          GradShFnVals[j][2] = (ShapeFnCoeffs[childNum][elemType][j][3] +
+                                (ShapeFnCoeffs[childNum][elemType][j][5] * yloc) +
+                                (ShapeFnCoeffs[childNum][elemType][j][6] * xloc) +
+                                (ShapeFnCoeffs[childNum][elemType][j][7] * xloc * yloc));
+        } //end for j
+
+        double gradFac = (2.0 / hxOct);
+
+        for (int k = 0; k < dof; k++)
+        {
+          for (int l = 0; l < 3; l++)
+          {
+            tmpGradOut[(3 * dof * outIdx) + (3 * k) + l] = 0.0;
+            for (int j = 0; j < 8; j++)
+            {
+              tmpGradOut[(3 * dof * outIdx) + (3 * k) + l] += (inArr[(dof * indices[j]) + k] * GradShFnVals[j][l]);
+            } //end for j
+            tmpGradOut[(3 * dof * outIdx) + (3 * k) + l] *= gradFac;
+          } //end for l
+        }   //end for k
+
+      } //end if need grad
+
+      ptsCtr++;
+      outIdx = localList[ptsCtr].index;
+    } //end while
+
+  } //end writable loop
+  // std::cout << "Interpolate Data: " << ptsCtr << "/" << localList.size() << std::endl;
+  // } else {
+  //   assert(localList.empty());
+
+  da->vecRestoreBuffer(in, inArr, false, false, true, dof);
+
+  recvList.clear();
+  localList.clear();
+
+  //Return the results. This communication is the exact reverse of the earlier
+  //communication.
+
+  std::vector<double> results(dof * numPts);
+  for (int i = 0; i < npes; i++)
+  {
+    sendCnts[i] *= dof;
+    sendDisps[i] *= dof;
+    recvCnts[i] *= dof;
+    recvDisps[i] *= dof;
+  } //end for i
+
+  double *tmpOutPtr = NULL;
+  double *resultsPtr = NULL;
+
+  if (!(tmpOut.empty()))
+  {
+    tmpOutPtr = (&(*(tmpOut.begin())));
+  }
+
+  if (!(results.empty()))
+  {
+    resultsPtr = (&(*(results.begin())));
+  }
+
+  par::Mpi_Alltoallv_sparse<double>(tmpOutPtr, recvCnts, recvDisps,
+                                    resultsPtr, sendCnts, sendDisps, comm);
+  tmpOut.clear();
+
+  std::vector<double> gradResults;
+  if (computeGradient)
+  {
+    for (int i = 0; i < npes; i++)
+    {
+      sendCnts[i] *= 3;
+      sendDisps[i] *= 3;
+      recvCnts[i] *= 3;
+      recvDisps[i] *= 3;
+    } //end for i
+    gradResults.resize(3 * dof * numPts);
+
+    double *tmpGradOutPtr = NULL;
+    double *gradResultsPtr = NULL;
+
+    if (!(tmpGradOut.empty()))
+    {
+      tmpGradOutPtr = (&(*(tmpGradOut.begin())));
+    }
+
+    if (!(gradResults.empty()))
+    {
+      gradResultsPtr = (&(*(gradResults.begin())));
+    }
+
+    par::Mpi_Alltoallv_sparse<double>(tmpGradOutPtr, recvCnts, recvDisps,
+                                      gradResultsPtr, sendCnts, sendDisps, comm);
+    tmpGradOut.clear();
+  }
+
+  assert(sendCnts);
+  delete[] sendCnts;
+  sendCnts = NULL;
+
+  assert(sendDisps);
+  delete[] sendDisps;
+  sendDisps = NULL;
+
+  assert(recvCnts);
+  delete[] recvCnts;
+  recvCnts = NULL;
+
+  assert(recvDisps);
+  delete[] recvDisps;
+  recvDisps = NULL;
+
+  //Use commMap and re-order the results in the same order as the original
+  //points
+  PetscInt outSz;
+  VecGetLocalSize(out, &outSz);
+  assert(outSz == (dof * numPts));
+
+  PetscScalar *outArr;
+  VecGetArray(out, &outArr);
+  for (int i = 0; i < numPts; i++)
+  {
+    for (int j = 0; j < dof; j++)
+    {
+      outArr[(dof * commMap[i]) + j] = results[(dof * i) + j];
+    } //end for j
+  }   //end for i
+  VecRestoreArray(out, &outArr);
+
+  if (computeGradient)
+  {
+    PetscInt gradOutSz;
+    assert(gradOut != NULL);
+    VecGetLocalSize((*gradOut), &gradOutSz);
+    assert(gradOutSz == (3 * dof * numPts));
+    PetscScalar *gradOutArr;
+    VecGetArray((*gradOut), &gradOutArr);
+    for (int i = 0; i < numPts; i++)
+    {
+      for (int j = 0; j < (3 * dof); j++)
+      {
+        gradOutArr[(3 * dof * commMap[i]) + j] = gradResults[(3 * dof * i) + j];
+      } //end for j
+    }   //end for i
+    VecRestoreArray((*gradOut), &gradOutArr);
+  }
+
+  if (commMap)
+  {
+    delete[] commMap;
+    commMap = NULL;
+  }
+}
+
+
 /*
   void interpolateData(ot::DA* da, std::vector<double> & in,
       std::vector<double> & out, std::vector<double> * gradOut,

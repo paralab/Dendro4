@@ -282,6 +282,10 @@ namespace ot {
   void interpolateData(ot::subDA* da, Vec in, Vec out, Vec* gradOut,
       unsigned int dof, const std::vector<double>& pts, const double* problemSize, const double* subDA_max);
 
+  // add retain function and also max_refinement_at_bdy
+  void interpolateData(ot::subDA* da, Vec in, Vec out, Vec* gradOut,
+      unsigned int dof, const std::vector<double>& pts, const double* problemSize, const double* subDA_max, std::function<double ( double, double, double ) > fx_retain, unsigned int max_refinement_at_bdy);
+
   void getNodeCoordinates(ot::DA* da, std::vector<double> &pts, const double* problemSize);
   void getNodeCoordinates(ot::subDA* da, std::vector<double> &pts, const double* problemSize,  const double* subDA_max);
 
